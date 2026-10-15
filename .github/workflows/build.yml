@@ -1,0 +1,28 @@
+name: Build add-on
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check script syntax
+        run: |
+          mkdir -p /tmp/check
+          for f in packs/behavior_pack/scripts/*.js; do cp "$f" "/tmp/check/$(basename "${f%.js}").mjs"; done
+          for f in /tmp/check/*.mjs; do node --check "$f"; done
+      - name: Validate and build .mcaddon
+        run: python3 tools/build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SomethingReplacedMyDog
+          path: dist/SomethingReplacedMyDog.mcaddon

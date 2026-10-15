@@ -1,0 +1,15 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:item": {
+    "description": {
+      "identifier": "srmd:dog_whistle",
+      "menu_category": { "category": "equipment" }
+    },
+    "components": {
+      "minecraft:icon": "srmd_dog_whistle",
+      "minecraft:display_name": { "value": "Jerry's Whistle" },
+      "minecraft:max_stack_size": 1,
+      "minecraft:glint": false
+    }
+  }
+}

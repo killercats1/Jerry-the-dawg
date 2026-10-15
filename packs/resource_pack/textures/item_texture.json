@@ -1,0 +1,9 @@
+{
+  "resource_pack_name": "srmd",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "srmd_dog_whistle": { "textures": "textures/items/dog_whistle" },
+    "srmd_magnifier": { "textures": "textures/items/magnifier" },
+    "srmd_dog_treat": { "textures": "textures/items/dog_treat" }
+  }
+}
