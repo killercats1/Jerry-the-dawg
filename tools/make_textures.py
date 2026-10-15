@@ -21,9 +21,8 @@ PALETTE = {
     "T": (168, 107, 50, 255),    # biscuit shadow
     "b": (139, 90, 43, 255),     # wood
     "B": (92, 58, 26, 255),      # dark wood
-    "o": (154, 160, 166, 255),   # lens ring
-    "l": (168, 224, 255, 255),   # lens
-    "L": (232, 248, 255, 255),   # lens shine
+    "v": (212, 225, 87, 255),    # tennis ball
+    "V": (158, 157, 36, 255),    # tennis ball shadow
     "g": (217, 217, 217, 255),   # fur
     "G": (166, 166, 166, 255),   # dark fur
     "n": (26, 26, 26, 255),      # nose
@@ -50,22 +49,41 @@ WHISTLE = [
     "................",
 ]
 
-MAGNIFIER = [
+BRUSH = [
     "................",
-    "....kkkkk.......",
-    "...koooook......",
-    "..koLLlllok.....",
-    "..koLllllok.....",
-    "..kolllllok.....",
-    "..kolllllok.....",
-    "..kollllLok.....",
-    "...koooook......",
-    "....kkkkkbk.....",
-    ".........kbBk...",
-    "..........kbBk..",
-    "...........kbBk.",
-    "............kBk.",
-    ".............k..",
+    ".........kkkkk..",
+    "........kbbbbbk.",
+    ".......kbwbwbwbk",
+    ".......kbbwbwbbk",
+    ".......kbwbwbwbk",
+    ".......kbbwbwbbk",
+    "........kbbbbbk.",
+    ".......kBkkkkk..",
+    "......kBBk......",
+    ".....kBBk.......",
+    "....kBBk........",
+    "...kBBk.........",
+    "..kBBk..........",
+    "..kkk...........",
+    "................",
+]
+
+BALL = [
+    "................",
+    "................",
+    "......kkkk......",
+    "....kkvvvvkk....",
+    "...kvwvvvvvvk...",
+    "...kvvwvvvvVk...",
+    "..kvvvvwvvvvVk..",
+    "..kvvvvvwwvvVk..",
+    "..kvvvvvvvwvVk..",
+    "..kvvvvvvvvwVk..",
+    "...kvvvvvvvwk...",
+    "...kVvvvvvVVk...",
+    "....kkVVVVkk....",
+    "......kkkk......",
+    "................",
     "................",
 ]
 
@@ -137,7 +155,8 @@ def write_png(path, grid, scale=1, background=None):
 def main():
     items = ROOT / "packs/resource_pack/textures/items"
     write_png(items / "dog_whistle.png", WHISTLE)
-    write_png(items / "magnifier.png", MAGNIFIER)
+    write_png(items / "pet_brush.png", BRUSH)
+    write_png(items / "tennis_ball.png", BALL)
     write_png(items / "dog_treat.png", TREAT)
     for pack in ("behavior_pack", "resource_pack"):
         write_png(ROOT / "packs" / pack / "pack_icon.png", DOG_FACE, scale=8, background=(255, 211, 110, 255))

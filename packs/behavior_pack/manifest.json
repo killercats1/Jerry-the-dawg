@@ -1,28 +1,54 @@
 {
   "format_version": 2,
   "header": {
-    "name": "Something Replaced My Dog: Cozy Edition",
-    "description": "Jerry's acting weird... A cozy, no-horror mystery about your dog. (Behavior Pack)",
+    "name": "Jerry & Friends: Cozy Pets",
+    "description": "Hang out with Jerry, your very good dog. A chill pet add-on. (Behavior Pack)",
     "uuid": "20179938-1253-4d94-8513-96913b63c7cb",
-    "version": [1, 0, 0],
-    "min_engine_version": [1, 21, 0]
+    "version": [
+      2,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
   },
   "modules": [
     {
       "type": "data",
       "uuid": "5f638929-5d27-4e35-a274-f60f896efd67",
-      "version": [1, 0, 0]
+      "version": [
+        2,
+        0,
+        0
+      ]
     },
     {
       "type": "script",
       "language": "javascript",
       "uuid": "8b2e0f09-fd34-493a-bfd2-6541eb0dd040",
-      "version": [1, 0, 0],
+      "version": [
+        2,
+        0,
+        0
+      ],
       "entry": "scripts/main.js"
     }
   ],
   "dependencies": [
-    { "module_name": "@minecraft/server", "version": "1.11.0" },
-    { "uuid": "d80c4791-7e85-431d-a693-6c60068cf29a", "version": [1, 0, 0] }
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.11.0"
+    },
+    {
+      "uuid": "d80c4791-7e85-431d-a693-6c60068cf29a",
+      "version": [
+        2,
+        0,
+        0
+      ]
+    }
   ]
 }

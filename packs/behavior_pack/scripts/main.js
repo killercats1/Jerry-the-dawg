@@ -2,52 +2,53 @@ import { world, system, ItemStack } from "@minecraft/server";
 import * as T from "./text.js";
 
 // ---------------------------------------------------------------------------
-// Story: Jerry (a tamed wolf) gets secretly swapped for Copycat, a shapeshifting
-// cat. The player spots the quirks, collects clues with the magnifier, unmasks
-// the imposter with a treat, then follows paw prints to rescue the real Jerry.
-// Every player has their own story, saved in dynamic properties.
+// Jerry & Friends: a chill pet add-on. Every player gets Jerry, a tamed wolf.
+// Treats, brushing, playing and time together raise friendship. At "Buddy" a
+// cat named Mochi joins the family; at "Best Friend" Jerry brings you gifts.
+// Progress is saved per player in dynamic properties.
 // ---------------------------------------------------------------------------
 
 const ITEMS = {
-  whistle: "srmd:dog_whistle",
-  magnifier: "srmd:magnifier",
-  treat: "srmd:dog_treat",
+  whistle: "jf:dog_whistle",
+  brush: "jf:pet_brush",
+  treat: "jf:dog_treat",
+  ball: "jf:tennis_ball",
 };
 const OUR_ITEMS = new Set(Object.values(ITEMS));
 
-const STAGE = { NEW: 0, HAPPY: 1, SUSPICIOUS: 2, CONFRONT: 3, RESCUE: 4, DONE: 5 };
-const STAGE_NAMES = ["Not started", "Happy days", "Something seems off", "Confront the imposter", "Find Jerry", "The End"];
-
-// Timing, in seconds of play time.
-const FORESHADOW_AT = 120;
-const SWAP_AFTER = 180; // earliest swap (waits for night)
-const SWAP_FORCE_AFTER = 420; // swap even during the day
-const CLUES_NEEDED = 3;
-
 const PROP = {
-  stage: "srmd:stage",
-  timer: "srmd:timer",
-  clueMask: "srmd:clue_mask",
-  dog: "srmd:dog_id",
-  cat: "srmd:cat_id",
-  house: "srmd:house",
+  started: "jf:started",
+  friendship: "jf:friendship",
+  dog: "jf:dog_id",
+  cat: "jf:cat_id",
+  hasCat: "jf:has_cat",
 };
-const TAG = { pet: "srmd_pet", real: "srmd_real", fake: "srmd_fake", cat: "srmd_cat" };
+const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat" };
 const DIMENSIONS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
 const COLLAR_RED = 14;
-const COLLAR_ORANGE = 1;
+
+// Friendship goes 0-100. Level thresholds line up with T.LEVELS.
+const MAX_FRIENDSHIP = 100;
+const LEVEL_MIN = [0, 25, 60, 100];
+const CAT_LEVEL = 1;
+const GIFT_LEVEL = 2;
+const GAIN = { treat: 5, brush: 3, ball: 4, together: 1 };
+const COOLDOWN = { treat: 60, brush: 30, ball: 45 }; // seconds before an action earns friendship again
 
 let seconds = 0;
-const nextMoment = new Map(); // player id -> seconds when the next quirk/moment may happen
-const lastQuirk = new Map();
+const cooldowns = new Map(); // "playerId:action" -> seconds when it earns friendship again
+const nextMoment = new Map();
+const nextGift = new Map();
 const lastUse = new Map();
-const rescueReadyAt = new Map(); // waits for Copycat's confession to finish
 const pendingIntro = new Set();
+const pendingCat = new Set();
 
 // ---------------------------------------------------------------- helpers
 
 const rand = (min, max) => min + Math.random() * (max - min);
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+const ownerTag = (player) => `jf_owner_${player.id}`;
 
 function isValid(entity) {
   if (!entity) return false;
@@ -63,10 +64,9 @@ function getNum(player, key) {
   return typeof value === "number" ? value : 0;
 }
 
-const getStage = (player) => getNum(player, PROP.stage);
-const setStage = (player, stage) => player.setDynamicProperty(PROP.stage, stage);
-const ownerTag = (player) => `srmd_owner_${player.id}`;
-const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+function isNear(pet, player, range) {
+  return isValid(pet) && pet.dimension.id === player.dimension.id && dist(pet.location, player.location) <= range;
+}
 
 function particle(dim, id, location) {
   try {
@@ -84,9 +84,10 @@ function sound(dim, id, location) {
   }
 }
 
-function puff(dim, at, id = "minecraft:totem_particle", count = 12) {
+function sparkle(pet, id = "minecraft:heart_particle", count = 5) {
+  const at = pet.location;
   for (let i = 0; i < count; i++) {
-    particle(dim, id, { x: at.x + rand(-0.6, 0.6), y: at.y + rand(0.2, 1.2), z: at.z + rand(-0.6, 0.6) });
+    particle(pet.dimension, id, { x: at.x + rand(-0.5, 0.5), y: at.y + rand(0.5, 1.3), z: at.z + rand(-0.5, 0.5) });
   }
 }
 
@@ -102,32 +103,12 @@ function title(player, main, subtitle) {
   } catch {}
 }
 
-// Sends lines one at a time like a conversation, then calls `done`.
-function say(player, lines, gap = 60, done) {
+function say(player, lines, gap = 70) {
   lines.forEach((line, i) =>
     system.runTimeout(() => {
       if (isValid(player)) player.sendMessage(line);
     }, i * gap)
   );
-  if (done) {
-    system.runTimeout(() => {
-      if (isValid(player)) done();
-    }, lines.length * gap);
-  }
-}
-
-function compass(dx, dz) {
-  const names = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
-  const angle = (Math.atan2(dx, -dz) * 180) / Math.PI; // 0 = north (-Z), 90 = east (+X)
-  return names[(Math.round(angle / 45) + 8) % 8];
-}
-
-function inView(player, entity) {
-  const head = player.getHeadLocation();
-  const view = player.getViewDirection();
-  const to = { x: entity.location.x - head.x, y: entity.location.y + 0.4 - head.y, z: entity.location.z - head.z };
-  const length = Math.hypot(to.x, to.y, to.z) || 1;
-  return (to.x * view.x + to.y * view.y + to.z * view.z) / length > 0.35;
 }
 
 const isNight = () => {
@@ -156,19 +137,46 @@ function give(player, id) {
   if (leftover) player.dimension.spawnItem(leftover, player.location);
 }
 
-function takeItem(player, id) {
-  const inv = inventory(player);
-  if (!inv) return;
-  for (let i = 0; i < inv.size; i++) if (inv.getItem(i)?.typeId === id) inv.setItem(i, undefined);
+// ---------------------------------------------------------------- friendship
+
+function levelOf(friendship) {
+  let level = 0;
+  LEVEL_MIN.forEach((min, i) => {
+    if (friendship >= min) level = i;
+  });
+  return level;
+}
+
+function friendshipBar(player) {
+  const friendship = getNum(player, PROP.friendship);
+  const filled = Math.round(friendship / 10);
+  return `§c${"|".repeat(filled)}§8${"|".repeat(10 - filled)} §7${T.LEVELS[levelOf(friendship)]}`;
+}
+
+function addFriendship(player, amount) {
+  const before = getNum(player, PROP.friendship);
+  const after = Math.min(MAX_FRIENDSHIP, before + amount);
+  player.setDynamicProperty(PROP.friendship, after);
+  const level = levelOf(after);
+  if (level > levelOf(before)) {
+    title(player, "§aFriendship up!", `§fJerry is now your §e${T.LEVELS[level]}`);
+    sound(player.dimension, "random.levelup", player.location);
+    system.runTimeout(() => {
+      if (isValid(player)) player.sendMessage(T.LEVEL_UP[level]);
+    }, 40);
+  }
+}
+
+// Each action only earns friendship once per cooldown, so spamming doesn't max it out.
+function earn(player, action) {
+  const key = `${player.id}:${action}`;
+  if (seconds < (cooldowns.get(key) ?? 0)) return false;
+  cooldowns.set(key, seconds + COOLDOWN[action]);
+  addFriendship(player, GAIN[action]);
+  return true;
 }
 
 // ---------------------------------------------------------------- pets
-
-function dogRole(stage) {
-  if (stage === STAGE.HAPPY || stage === STAGE.DONE) return TAG.real;
-  if (stage === STAGE.SUSPICIOUS || stage === STAGE.CONFRONT) return TAG.fake;
-  return undefined;
-}
 
 function findPet(player, prop, role) {
   const id = player.getDynamicProperty(prop);
@@ -190,6 +198,9 @@ function findPet(player, prop, role) {
   return undefined;
 }
 
+const findDog = (player) => findPet(player, PROP.dog, TAG.dog);
+const findCat = (player) => (player.getDynamicProperty(PROP.hasCat) ? findPet(player, PROP.cat, TAG.cat) : undefined);
+
 function tame(pet, player) {
   try {
     if (pet.getComponent("minecraft:is_tamed")) return;
@@ -204,7 +215,7 @@ function setCollar(pet, color) {
   } catch {}
 }
 
-// Story pets can't be hurt, so the story can't get stuck on a dead dog.
+// Your pets can't get hurt, so you never lose them.
 function protect(pet) {
   try {
     pet.addEffect("resistance", 600, { amplifier: 255, showParticles: false });
@@ -212,8 +223,8 @@ function protect(pet) {
   } catch {}
 }
 
-function spawnPet(player, typeId, role, name, location, collar) {
-  const pet = player.dimension.spawnEntity(typeId, location);
+function spawnPet(player, typeId, role, name, prop, collar) {
+  const pet = player.dimension.spawnEntity(typeId, player.location);
   try {
     if (pet.getComponent("minecraft:is_baby")) pet.triggerEvent("minecraft:ageable_grow_up");
   } catch {}
@@ -221,6 +232,7 @@ function spawnPet(player, typeId, role, name, location, collar) {
   pet.addTag(TAG.pet);
   pet.addTag(role);
   pet.addTag(ownerTag(player));
+  player.setDynamicProperty(prop, pet.id);
   tame(pet, player);
   protect(pet);
   // Taming finishes on the next ticks; the collar only exists once tamed.
@@ -231,6 +243,9 @@ function spawnPet(player, typeId, role, name, location, collar) {
   }, 5);
   return pet;
 }
+
+const spawnJerry = (player) => spawnPet(player, "minecraft:wolf", TAG.dog, "Jerry", PROP.dog, COLLAR_RED);
+const spawnMochi = (player) => spawnPet(player, "minecraft:cat", TAG.cat, "Mochi", PROP.cat);
 
 function bring(pet, player) {
   try {
@@ -246,327 +261,113 @@ function removeAllPets(player) {
   }
 }
 
-function protectAll(player) {
-  const role = dogRole(getStage(player));
-  const dog = role && findPet(player, PROP.dog, role);
-  if (dog) protect(dog);
-  const cat = getStage(player) >= STAGE.RESCUE && findPet(player, PROP.cat, TAG.cat);
-  if (cat) protect(cat);
+function hop(pet, strength = 0.45) {
+  try {
+    pet.applyImpulse({ x: rand(-0.15, 0.15), y: strength, z: rand(-0.15, 0.15) });
+  } catch {}
 }
 
-// ---------------------------------------------------------------- chapter 1: happy days
+function spin(pet) {
+  for (let i = 1; i <= 12; i++) {
+    system.runTimeout(() => {
+      if (!isValid(pet)) return;
+      try {
+        const rotation = pet.getRotation();
+        pet.teleport(pet.location, { rotation: { x: rotation.x, y: rotation.y + 30 } });
+      } catch {}
+    }, i * 2);
+  }
+}
+
+// ---------------------------------------------------------------- start & cat
 
 function scheduleIntro(player, delay) {
   if (pendingIntro.has(player.id)) return;
   pendingIntro.add(player.id);
   system.runTimeout(() => {
     pendingIntro.delete(player.id);
-    if (isValid(player) && getStage(player) === STAGE.NEW) startIntro(player);
+    if (isValid(player) && !player.getDynamicProperty(PROP.started)) startIntro(player);
   }, delay);
 }
 
 function startIntro(player) {
   removeAllPets(player);
-  const jerry = spawnPet(player, "minecraft:wolf", TAG.real, "Jerry", player.location, COLLAR_RED);
-  player.setDynamicProperty(PROP.dog, jerry.id);
-  player.setDynamicProperty(PROP.timer, 0);
-  setStage(player, STAGE.HAPPY);
-  give(player, ITEMS.whistle);
-  title(player, T.TITLE, "§fCozy Edition");
+  spawnJerry(player);
+  player.setDynamicProperty(PROP.started, true);
+  for (const id of Object.values(ITEMS)) give(player, id);
+  title(player, T.TITLE, "§fYour very good dog");
   sound(player.dimension, "mob.wolf.bark", player.location);
   say(player, T.INTRO, 80);
   nextMoment.set(player.id, seconds + 30);
 }
 
-function tickHappy(player) {
-  const timer = getNum(player, PROP.timer) + 1;
-  player.setDynamicProperty(PROP.timer, timer);
-  const jerry = findPet(player, PROP.dog, TAG.real);
+function scheduleCat(player) {
+  if (pendingCat.has(player.id)) return;
+  pendingCat.add(player.id);
+  system.runTimeout(() => {
+    pendingCat.delete(player.id);
+    if (!isValid(player) || player.getDynamicProperty(PROP.hasCat)) return;
+    player.setDynamicProperty(PROP.hasCat, true);
+    const mochi = spawnMochi(player);
+    sound(player.dimension, "mob.cat.meow", player.location);
+    sparkle(mochi);
+    title(player, "§dA new friend!", "§fMeet Mochi");
+    say(player, T.CAT_ARRIVES, 70);
+  }, 200);
+}
 
-  if (timer === FORESHADOW_AT) {
-    const p = player.location;
-    sound(player.dimension, "mob.cat.straymeow", { x: p.x + rand(-8, 8), y: p.y, z: p.z + rand(-8, 8) });
-    actionbar(player, T.FORESHADOW);
-    return;
-  }
-  if (timer >= SWAP_AFTER && (isNight() || timer >= SWAP_FORCE_AFTER) && trySwap(player, jerry)) return;
+// ---------------------------------------------------------------- every second
 
-  if (!jerry || jerry.dimension.id !== player.dimension.id || dist(jerry.location, player.location) > 16) return;
-  if (seconds < (nextMoment.get(player.id) ?? 0)) return;
-  nextMoment.set(player.id, seconds + Math.floor(rand(35, 60)));
-  const moment = pick(T.HAPPY_MOMENTS);
-  sound(jerry.dimension, moment.sound, jerry.location);
-  if (moment.action === "hop") {
-    try {
-      jerry.applyImpulse({ x: 0, y: 0.5, z: 0 });
-    } catch {}
-  }
+function playMoment(player, dog, cat) {
+  const options = [...T.MOMENTS];
+  if (isNight()) options.push(...T.NIGHT_MOMENTS);
+  if (isNear(cat, player, 16)) options.push(...T.CAT_MOMENTS);
+  const moment = pick(options);
+  const source = T.CAT_MOMENTS.includes(moment) ? cat : dog;
+  sound(source.dimension, moment.sound, source.location);
+  if (moment.action === "hop") hop(dog);
   actionbar(player, moment.text);
 }
 
-// ---------------------------------------------------------------- the swap
-
-// The swap only happens while the player isn't watching Jerry (unless forced).
-function trySwap(player, jerry, force = false) {
-  if (!jerry || jerry.dimension.id !== player.dimension.id) {
-    if (!force) return false;
-    if (isValid(jerry)) jerry.remove();
-    doSwap(player, player.location);
-    return true;
-  }
-  const d = dist(player.location, jerry.location);
-  if (!force && (d > 40 || (d < 20 && inView(player, jerry)))) return false;
-  const location = jerry.location;
-  jerry.remove();
-  doSwap(player, location);
-  return true;
-}
-
-function doSwap(player, location) {
-  const fake = spawnPet(player, "minecraft:wolf", TAG.fake, "Jerry", location, COLLAR_ORANGE);
-  player.setDynamicProperty(PROP.dog, fake.id);
-  player.setDynamicProperty(PROP.clueMask, 0);
-  setStage(player, STAGE.SUSPICIOUS);
-  puff(player.dimension, location);
-  sound(player.dimension, "random.pop", location);
-  system.runTimeout(() => {
-    if (isValid(player)) actionbar(player, T.SWAP_ACTIONBAR);
-  }, 30);
-  system.runTimeout(() => {
-    if (isValid(player)) say(player, T.SWAP_LINES, 80, () => give(player, ITEMS.magnifier));
-  }, 200);
-  nextMoment.set(player.id, seconds + 25);
-}
-
-// ---------------------------------------------------------------- chapter 2: something seems off
-
-function tickSuspicious(player) {
-  const fake = findPet(player, PROP.dog, TAG.fake);
-  if (!fake || fake.dimension.id !== player.dimension.id || dist(fake.location, player.location) > 16) return;
-  if (seconds < (nextMoment.get(player.id) ?? 0)) return;
-  nextMoment.set(player.id, seconds + Math.floor(rand(15, 32)));
-
-  const options = T.QUIRKS.filter((q) => q !== lastQuirk.get(player.id));
-  const quirk = pick(options);
-  lastQuirk.set(player.id, quirk);
-  doQuirk(player, fake, quirk);
-}
-
-function doQuirk(player, fake, quirk) {
-  const dim = fake.dimension;
-  if (quirk.sound) sound(dim, quirk.sound, fake.location);
+function bringGift(player, dog) {
+  const gift = pick(T.GIFTS);
   try {
-    switch (quirk.action) {
-      case "name":
-        fake.nameTag = pick(T.NAME_GLITCHES);
-        system.runTimeout(() => {
-          if (isValid(fake)) fake.nameTag = "Jerry";
-        }, 60);
-        break;
-      case "fish":
-        dim.spawnItem(new ItemStack("minecraft:cod", 1), player.location);
-        break;
-      case "pounce":
-        fake.applyImpulse({ x: 0, y: 0.55, z: 0 });
-        break;
-      case "spin":
-        for (let i = 1; i <= 12; i++) {
-          system.runTimeout(() => {
-            if (!isValid(fake)) return;
-            const rotation = fake.getRotation();
-            fake.teleport(fake.location, { rotation: { x: rotation.x, y: rotation.y + 30 } });
-          }, i * 2);
-        }
-        break;
-    }
+    dog.dimension.spawnItem(new ItemStack(gift.item, 1), dog.location);
   } catch {}
-  actionbar(player, quirk.text);
+  sound(dog.dimension, "mob.wolf.bark", dog.location);
+  sparkle(dog, "minecraft:villager_happy", 6);
+  player.sendMessage(`§bJerry§7 brought you a gift: §f${gift.name}§7! He's very proud.`);
 }
 
-function inspectFake(player, fake) {
-  if (getStage(player) === STAGE.CONFRONT) {
-    actionbar(player, T.ALREADY_SURE);
-    return;
-  }
-  let mask = getNum(player, PROP.clueMask);
-  const remaining = T.CLUES.map((_, i) => i).filter((i) => !(mask & (1 << i)));
-  const clue = pick(remaining);
-  mask |= 1 << clue;
-  player.setDynamicProperty(PROP.clueMask, mask);
-  const found = T.CLUES.length - remaining.length + 1;
-
-  puff(fake.dimension, fake.location, "minecraft:villager_happy", 6);
-  sound(player.dimension, "random.orb", player.location);
-  player.sendMessage(`§eClue ${found}/${CLUES_NEEDED}: §f${T.CLUES[clue]}`);
-
-  if (found >= CLUES_NEEDED) {
-    setStage(player, STAGE.CONFRONT);
-    title(player, "§cThat's not Jerry!", "§f...probably.");
-    say(player, T.CLUES_DONE, 70, () => give(player, ITEMS.treat));
-  }
+function protectAll(player) {
+  const dog = findDog(player);
+  if (dog) protect(dog);
+  const cat = findCat(player);
+  if (cat) protect(cat);
 }
 
-// ---------------------------------------------------------------- chapter 3: the reveal
+function tick(player) {
+  if (!player.getDynamicProperty(PROP.started)) return scheduleIntro(player, 60);
+  if (seconds % 10 === 0) protectAll(player);
 
-function reveal(player, fake) {
-  setStage(player, STAGE.RESCUE);
-  rescueReadyAt.set(player.id, Infinity); // paw prints start once Copycat finishes talking
-  actionbar(player, T.TREAT_SNIFF);
+  const friendship = getNum(player, PROP.friendship);
+  if (levelOf(friendship) >= CAT_LEVEL && !player.getDynamicProperty(PROP.hasCat)) scheduleCat(player);
 
-  const dim = fake.dimension;
-  let at = fake.location;
-  system.runTimeout(() => {
-    if (!isValid(player)) return;
-    if (isValid(fake)) {
-      at = fake.location;
-      fake.remove();
+  const dog = findDog(player);
+  if (!isNear(dog, player, 16)) return;
+  if (seconds % 60 === 0) addFriendship(player, GAIN.together);
+
+  if (levelOf(friendship) >= GIFT_LEVEL) {
+    if (!nextGift.has(player.id)) nextGift.set(player.id, seconds + 120);
+    if (seconds >= nextGift.get(player.id)) {
+      nextGift.set(player.id, seconds + Math.floor(rand(180, 300)));
+      return bringGift(player, dog);
     }
-    puff(dim, at, "minecraft:totem_particle", 24);
-    sound(dim, "random.pop", at);
-    sound(dim, "mob.cat.meow", at);
-    const cat = spawnPet(player, "minecraft:cat", TAG.cat, "Copycat", at);
-    player.setDynamicProperty(PROP.cat, cat.id);
-    player.setDynamicProperty(PROP.dog, undefined);
-    takeItem(player, ITEMS.treat);
-    title(player, "§6It was a CAT!", "§fThe whole time?!");
-    say(player, T.REVEAL, 90, () => {
-      rescueReadyAt.delete(player.id);
-      if (!getHouse(player)) planHouse(player);
-      say(player, T.RESCUE_START, 70);
-    });
-  }, 50);
-}
-
-// ---------------------------------------------------------------- chapter 4: find Jerry
-
-function getHouse(player) {
-  try {
-    const raw = player.getDynamicProperty(PROP.house);
-    return typeof raw === "string" ? JSON.parse(raw) : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-const saveHouse = (player, house) => player.setDynamicProperty(PROP.house, JSON.stringify(house));
-
-function findGround(dim, x, startY, z) {
-  for (let y = startY + 16; y >= startY - 24; y--) {
-    let here, below, above;
-    try {
-      here = dim.getBlock({ x, y, z });
-      below = dim.getBlock({ x, y: y - 1, z });
-      above = dim.getBlock({ x, y: y + 1, z });
-    } catch {
-      continue; // outside the world's height limits
-    }
-    if (!here || !below || !above) return undefined; // chunk not loaded
-    if (below.typeId.includes("leaves")) continue; // no dog houses in trees
-    if (here.isAir && above.isAir && !below.isAir && !below.isLiquid) return y;
-  }
-  return undefined;
-}
-
-function planHouse(player) {
-  const dim = player.dimension;
-  const p = player.location;
-  let spot;
-  for (let attempt = 0; attempt < 16 && !spot; attempt++) {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = rand(22, 32);
-    const x = Math.floor(p.x + Math.cos(angle) * radius);
-    const z = Math.floor(p.z + Math.sin(angle) * radius);
-    const y = findGround(dim, x, Math.floor(p.y), z);
-    if (y !== undefined) spot = { x, y, z };
-  }
-  if (!spot) spot = { x: Math.floor(p.x) + 24, y: Math.floor(p.y), z: Math.floor(p.z) };
-
-  // Point the doorway back toward the player.
-  const dx = p.x - spot.x;
-  const dz = p.z - spot.z;
-  const door = Math.abs(dx) > Math.abs(dz) ? { x: Math.sign(dx), z: 0 } : { x: 0, z: Math.sign(dz) || 1 };
-  const house = { ...spot, dim: dim.id, door, built: false };
-  saveHouse(player, house);
-  return house;
-}
-
-function setBlock(dim, location, type) {
-  const block = dim.getBlock(location);
-  if (!block) throw new Error("chunk not loaded");
-  if (typeof block.setType === "function") block.setType(type);
-  else dim.runCommandAsync(`setblock ${location.x} ${location.y} ${location.z} ${type}`);
-}
-
-// A 5x5 plank dog house with a red roof and a bone block on top as a landmark.
-function buildHouse(dim, h) {
-  const set = (dx, dy, dz, type) => setBlock(dim, { x: h.x + dx, y: h.y + dy, z: h.z + dz }, type);
-  try {
-    for (let dx = -2; dx <= 2; dx++) {
-      for (let dz = -2; dz <= 2; dz++) {
-        const edge = Math.abs(dx) === 2 || Math.abs(dz) === 2;
-        const isDoor = (h.door.x !== 0 && dx === 2 * h.door.x && dz === 0) || (h.door.z !== 0 && dz === 2 * h.door.z && dx === 0);
-        set(dx, -1, dz, "minecraft:oak_planks");
-        for (let dy = 0; dy <= 1; dy++) set(dx, dy, dz, edge && !isDoor ? "minecraft:oak_planks" : "minecraft:air");
-        if (!edge) set(dx, 0, dz, "minecraft:yellow_carpet");
-        set(dx, 2, dz, "minecraft:red_wool");
-        set(dx, 3, dz, Math.abs(dx) <= 1 && Math.abs(dz) <= 1 ? "minecraft:red_wool" : "minecraft:air");
-      }
-    }
-    set(0, 4, 0, "minecraft:red_wool");
-    set(0, 5, 0, "minecraft:bone_block");
-    return true;
-  } catch (error) {
-    console.warn(`[srmd] dog house not built yet: ${error}`);
-    return false;
-  }
-}
-
-function tickRescue(player) {
-  if (seconds < (rescueReadyAt.get(player.id) ?? 0)) return;
-  const house = getHouse(player) ?? planHouse(player);
-  if (player.dimension.id !== house.dim) {
-    actionbar(player, T.WRONG_DIMENSION);
-    return;
-  }
-  const dim = player.dimension;
-  if (!house.built && buildHouse(dim, house)) {
-    house.built = true;
-    saveHouse(player, house);
   }
 
-  const p = player.location;
-  const dx = house.x + 0.5 - p.x;
-  const dz = house.z + 0.5 - p.z;
-  const d = Math.hypot(dx, dz);
-  if (d < 4.5 && Math.abs(house.y - p.y) < 6) {
-    reunion(player, { x: house.x + 0.5, y: house.y, z: house.z + 0.5 });
-    return;
-  }
-
-  // Paw prints: a trail of sparkles leading toward the dog house.
-  for (let step = 2; step <= Math.min(10, d - 1); step += 2) {
-    particle(dim, "minecraft:villager_happy", { x: p.x + (dx / d) * step, y: p.y + 0.3, z: p.z + (dz / d) * step });
-  }
-  actionbar(player, `§ePaw prints lead §f${compass(dx, dz)} §7- ${Math.round(d)} blocks`);
-  if (d < 20 && seconds % 3 === 0) sound(dim, "mob.wolf.panting", { x: house.x + 0.5, y: house.y + 0.5, z: house.z + 0.5 });
-}
-
-// ---------------------------------------------------------------- chapter 5: the reunion
-
-function reunion(player, at) {
-  setStage(player, STAGE.DONE);
-  const dim = player.dimension;
-  const jerry = spawnPet(player, "minecraft:wolf", TAG.real, "Jerry", at, COLLAR_RED);
-  player.setDynamicProperty(PROP.dog, jerry.id);
-  for (let i = 0; i < 6; i++) {
-    system.runTimeout(() => {
-      if (isValid(jerry)) puff(dim, jerry.location, "minecraft:heart_particle", 4);
-    }, i * 10);
-  }
-  sound(dim, "mob.wolf.bark", at);
-  sound(dim, "random.levelup", player.location);
-  title(player, "§aJERRY!", "§fYou found him!");
-  say(player, T.REUNION, 90);
+  if (seconds < (nextMoment.get(player.id) ?? 0)) return;
+  nextMoment.set(player.id, seconds + Math.floor(rand(35, 60)));
+  playMoment(player, dog, findCat(player));
 }
 
 // ---------------------------------------------------------------- item actions
@@ -580,124 +381,110 @@ function lookTarget(player) {
   return undefined;
 }
 
+// Which of the player's pets (if any) is this?
+function petKind(player, entity) {
+  if (!isValid(entity) || !entity.hasTag(ownerTag(player))) return undefined;
+  if (entity.hasTag(TAG.dog)) return "dog";
+  if (entity.hasTag(TAG.cat)) return "cat";
+  return undefined;
+}
+
 function whistle(player) {
   sound(player.dimension, "note.flute", player.location);
-  const stage = getStage(player);
-  if (stage === STAGE.NEW) return;
-  const came = [];
-
-  const role = dogRole(stage);
-  if (role) {
-    const dog = findPet(player, PROP.dog, role);
-    if (dog) bring(dog, player);
-    else {
-      const collar = role === TAG.real ? COLLAR_RED : COLLAR_ORANGE;
-      player.setDynamicProperty(PROP.dog, spawnPet(player, "minecraft:wolf", role, "Jerry", player.location, collar).id);
-    }
-    came.push("§bJerry");
-  }
-  if (stage >= STAGE.RESCUE) {
-    const cat = findPet(player, PROP.cat, TAG.cat);
+  const dog = findDog(player);
+  if (dog) bring(dog, player);
+  else spawnJerry(player);
+  let text = "§bJerry";
+  if (player.getDynamicProperty(PROP.hasCat)) {
+    const cat = findCat(player);
     if (cat) bring(cat, player);
-    else player.setDynamicProperty(PROP.cat, spawnPet(player, "minecraft:cat", TAG.cat, "Copycat", player.location).id);
-    came.push("§6Copycat");
+    else spawnMochi(player);
+    text += " §7and §dMochi";
   }
-
-  if (stage === STAGE.RESCUE) actionbar(player, T.STILL_NAPPING);
-  else actionbar(player, `${came.join(" §7and ")} §7came running!`);
+  actionbar(player, `${text} §7came running!  ${friendshipBar(player)}`);
 }
 
-function inspect(player, target) {
-  sound(player.dimension, "item.spyglass.use", player.location);
-  if (!target) return actionbar(player, T.LOOK_AT_JERRY);
-  const mine = target.hasTag(ownerTag(player));
-  if (mine && target.hasTag(TAG.fake)) return inspectFake(player, target);
-  if (mine && target.hasTag(TAG.real)) return actionbar(player, pick(T.INSPECT_REAL));
-  if (mine && target.hasTag(TAG.cat)) return actionbar(player, pick(T.INSPECT_CAT));
-  if (target.typeId === "minecraft:wolf") return actionbar(player, T.INSPECT_WOLF);
-  if (target.typeId === "minecraft:cat") return actionbar(player, T.INSPECT_CAT_OTHER);
-  actionbar(player, T.INSPECT_OTHER);
+function giveTreat(player, target) {
+  const kind = petKind(player, target);
+  if (!kind) return actionbar(player, T.TREAT_OTHER);
+  sparkle(target);
+  if (kind === "cat") {
+    sound(target.dimension, "mob.cat.purr", target.location);
+    return actionbar(player, T.TREAT_CAT);
+  }
+  sound(target.dimension, "mob.wolf.bark", target.location);
+  const earned = earn(player, "treat");
+  actionbar(player, `${pick(T.TREAT)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
 }
 
-function offerTreat(player, target) {
-  if (!target || !target.hasTag(ownerTag(player))) return actionbar(player, T.TREAT_NOT_JERRY);
-  if (target.hasTag(TAG.fake)) {
-    if (getStage(player) === STAGE.CONFRONT) return reveal(player, target);
-    return actionbar(player, T.TREAT_TOO_EARLY);
+function brush(player, target) {
+  const kind = petKind(player, target);
+  if (!kind) return actionbar(player, T.BRUSH_OTHER);
+  sparkle(target, "minecraft:villager_happy", 8);
+  if (kind === "cat") {
+    sound(target.dimension, "mob.cat.purr", target.location);
+    return actionbar(player, T.BRUSH_CAT);
   }
-  if (target.hasTag(TAG.real)) {
-    puff(target.dimension, target.location, "minecraft:heart_particle", 5);
-    sound(target.dimension, "mob.wolf.bark", target.location);
-    return actionbar(player, pick(T.TREAT_REAL));
+  sound(target.dimension, "mob.wolf.panting", target.location);
+  const earned = earn(player, "brush");
+  actionbar(player, `${pick(T.BRUSH)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
+}
+
+function play(player) {
+  const dog = findDog(player);
+  if (!isNear(dog, player, 16)) return actionbar(player, T.TOO_FAR);
+  for (let i = 0; i < 4; i++) {
+    system.runTimeout(() => {
+      if (!isValid(dog)) return;
+      hop(dog);
+      if (i % 2 === 0) sound(dog.dimension, "mob.wolf.bark", dog.location);
+    }, i * 12);
   }
-  if (target.hasTag(TAG.cat)) return actionbar(player, T.TREAT_CAT);
-  actionbar(player, T.TREAT_NOT_JERRY);
+  spin(dog);
+  let text = pick(T.PLAY);
+  const cat = findCat(player);
+  if (isNear(cat, player, 16)) {
+    hop(cat, 0.4);
+    sound(cat.dimension, "mob.cat.meow", cat.location);
+    text += T.PLAY_CAT;
+  }
+  const earned = earn(player, "ball");
+  actionbar(player, `${text}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
 }
 
 function useItem(player, itemId, target) {
-  // Tapping an entity can fire both the interact and the item-use event.
+  // Tapping a pet can fire both the interact and the item-use event.
   const now = system.currentTick;
   if (now - (lastUse.get(player.id) ?? -100) < 8) return;
   lastUse.set(player.id, now);
 
   if (itemId === ITEMS.whistle) return whistle(player);
+  if (itemId === ITEMS.ball) return play(player);
   target = isValid(target) ? target : lookTarget(player);
-  if (itemId === ITEMS.magnifier) return inspect(player, target);
-  if (itemId === ITEMS.treat) return offerTreat(player, target);
+  if (itemId === ITEMS.treat) return giveTreat(player, target);
+  if (itemId === ITEMS.brush) return brush(player, target);
 }
 
-// ---------------------------------------------------------------- testing commands
+// ---------------------------------------------------------------- commands
 
-function resetStory(player) {
+function resetPets(player) {
   removeAllPets(player);
   for (const key of Object.values(PROP)) player.setDynamicProperty(key, undefined);
-  takeItem(player, ITEMS.magnifier);
-  takeItem(player, ITEMS.treat);
-  rescueReadyAt.delete(player.id);
+  nextGift.delete(player.id);
   startIntro(player);
 }
 
-function skipChapter(player) {
-  switch (getStage(player)) {
-    case STAGE.NEW:
-      return startIntro(player);
-    case STAGE.HAPPY:
-      trySwap(player, findPet(player, PROP.dog, TAG.real), true);
-      return give(player, ITEMS.magnifier);
-    case STAGE.SUSPICIOUS:
-      player.setDynamicProperty(PROP.clueMask, 0b111);
-      setStage(player, STAGE.CONFRONT);
-      return say(player, T.CLUES_DONE, 40, () => give(player, ITEMS.treat));
-    case STAGE.CONFRONT: {
-      const fake = findPet(player, PROP.dog, TAG.fake) ?? spawnPet(player, "minecraft:wolf", TAG.fake, "Jerry", player.location);
-      return reveal(player, fake);
-    }
-    case STAGE.RESCUE:
-      rescueReadyAt.delete(player.id);
-      return reunion(player, player.location);
-    default:
-      player.sendMessage("§7The story is complete! Use §f/scriptevent srmd:reset§7 to replay.");
-  }
-}
-
-function status(player) {
-  const stage = getStage(player);
-  const clues = getNum(player, PROP.clueMask).toString(2).split("1").length - 1;
-  player.sendMessage(
-    `§6[SRMD]§f Chapter ${stage}: ${STAGE_NAMES[stage] ?? "?"} §7| play time ${getNum(player, PROP.timer)}s | clues ${clues}/${CLUES_NEEDED}`
-  );
-}
+system.afterEvents.scriptEventReceive.subscribe(
+  ({ id, sourceEntity: player }) => {
+    if (player?.typeId !== "minecraft:player") return;
+    if (id === "jf:status") player.sendMessage(`§6[Jerry & Friends]§f Friendship: ${friendshipBar(player)} §7(${getNum(player, PROP.friendship)}/100)`);
+    else if (id === "jf:reset") resetPets(player);
+    else if (id === "jf:boost") addFriendship(player, 25);
+  },
+  { namespaces: ["jf"] }
+);
 
 // ---------------------------------------------------------------- events
-
-function tick(player) {
-  const stage = getStage(player);
-  if (stage === STAGE.NEW) return scheduleIntro(player, 60);
-  if (seconds % 10 === 0) protectAll(player);
-  if (stage === STAGE.HAPPY) tickHappy(player);
-  else if (stage === STAGE.SUSPICIOUS || stage === STAGE.CONFRONT) tickSuspicious(player);
-  else if (stage === STAGE.RESCUE) tickRescue(player);
-}
 
 system.runInterval(() => {
   seconds++;
@@ -705,18 +492,16 @@ system.runInterval(() => {
     try {
       tick(player);
     } catch (error) {
-      console.warn(`[srmd] ${error}`);
+      console.warn(`[jf] ${error}`);
     }
   }
 }, 20);
 
 world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
   if (!initialSpawn) return;
-  rescueReadyAt.delete(player.id); // in case they left mid-dialogue
-  const stage = getStage(player);
-  if (stage === STAGE.NEW) return scheduleIntro(player, 100);
+  if (!player.getDynamicProperty(PROP.started)) return scheduleIntro(player, 100);
   system.runTimeout(() => {
-    if (isValid(player)) player.sendMessage(`§6[Something Replaced My Dog]§7 Chapter: §f${STAGE_NAMES[stage]}`);
+    if (isValid(player)) player.sendMessage(T.WELCOME_BACK);
   }, 100);
 });
 
@@ -741,20 +526,6 @@ world.afterEvents.entityLoad?.subscribe(({ entity }) => {
   if (!isValid(entity) || !entity.hasTag(TAG.pet)) return;
   const owner = world.getAllPlayers().find((p) => entity.hasTag(ownerTag(p)));
   if (!owner) return;
-  const stage = getStage(owner);
-  const isCat = entity.hasTag(TAG.cat);
-  const role = isCat ? TAG.cat : entity.hasTag(TAG.fake) ? TAG.fake : TAG.real;
-  const expected = isCat ? stage >= STAGE.RESCUE : role === dogRole(stage);
-  const current = owner.getDynamicProperty(isCat ? PROP.cat : PROP.dog);
-  if (!expected || (typeof current === "string" && current !== entity.id)) entity.remove();
+  const current = owner.getDynamicProperty(entity.hasTag(TAG.cat) ? PROP.cat : PROP.dog);
+  if (typeof current === "string" && current !== entity.id) entity.remove();
 });
-
-system.afterEvents.scriptEventReceive.subscribe(
-  ({ id, sourceEntity }) => {
-    if (sourceEntity?.typeId !== "minecraft:player") return;
-    if (id === "srmd:reset") resetStory(sourceEntity);
-    else if (id === "srmd:skip") skipChapter(sourceEntity);
-    else if (id === "srmd:status") status(sourceEntity);
-  },
-  { namespaces: ["srmd"] }
-);

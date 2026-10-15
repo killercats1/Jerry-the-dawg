@@ -1,9 +1,10 @@
 {
-  "resource_pack_name": "srmd",
+  "resource_pack_name": "jerry_and_friends",
   "texture_name": "atlas.items",
   "texture_data": {
-    "srmd_dog_whistle": { "textures": "textures/items/dog_whistle" },
-    "srmd_magnifier": { "textures": "textures/items/magnifier" },
-    "srmd_dog_treat": { "textures": "textures/items/dog_treat" }
+    "jf_dog_whistle": { "textures": "textures/items/dog_whistle" },
+    "jf_pet_brush": { "textures": "textures/items/pet_brush" },
+    "jf_dog_treat": { "textures": "textures/items/dog_treat" },
+    "jf_tennis_ball": { "textures": "textures/items/tennis_ball" }
   }
 }

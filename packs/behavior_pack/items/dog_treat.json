@@ -2,14 +2,13 @@
   "format_version": "1.20.80",
   "minecraft:item": {
     "description": {
-      "identifier": "srmd:dog_treat",
+      "identifier": "jf:dog_treat",
       "menu_category": { "category": "equipment" }
     },
     "components": {
-      "minecraft:icon": "srmd_dog_treat",
-      "minecraft:display_name": { "value": "Jerry's Favorite Treat" },
-      "minecraft:max_stack_size": 1,
-      "minecraft:glint": true
+      "minecraft:icon": "jf_dog_treat",
+      "minecraft:display_name": { "value": "Jerry's Treats" },
+      "minecraft:max_stack_size": 1
     }
   }
 }

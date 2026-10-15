@@ -1,4 +1,4 @@
-"""Validates the packs and bundles them into dist/SomethingReplacedMyDog.mcaddon.
+"""Validates the packs and bundles them into dist/JerryAndFriends.mcaddon.
 
 Run from anywhere:  python3 tools/build.py
 Open the resulting .mcaddon on a phone/PC and Minecraft imports both packs.
@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PACKS = ROOT / "packs"
-OUT = ROOT / "dist" / "SomethingReplacedMyDog.mcaddon"
+OUT = ROOT / "dist" / "JerryAndFriends.mcaddon"
 
 
 def validate():
@@ -34,7 +34,7 @@ def build():
             for path in sorted((PACKS / pack).rglob("*")):
                 if path.is_file():
                     # Fixed timestamp keeps the archive identical between builds.
-                    info = zipfile.ZipInfo(f"SRMD_{pack}/{path.relative_to(PACKS / pack).as_posix()}", (2026, 1, 1, 0, 0, 0))
+                    info = zipfile.ZipInfo(f"JerryAndFriends_{pack}/{path.relative_to(PACKS / pack).as_posix()}", (2026, 1, 1, 0, 0, 0))
                     info.compress_type = zipfile.ZIP_DEFLATED
                     zf.writestr(info, path.read_bytes())
     print(f"Built {OUT.relative_to(ROOT)} ({OUT.stat().st_size} bytes)")
