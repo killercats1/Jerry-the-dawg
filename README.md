@@ -22,10 +22,15 @@ You also get five items:
 
 ## Talking to Jerry 🎤
 
-Use **Talk to Jerry** and a text box pops up. On a phone or tablet, tap the **microphone button on
-your keyboard** and just say it out loud: your phone's voice typing turns it into text. Just like in
-the video, a **speaker icon pops up over Jerry's head** when he hears you, and then he reacts.
-(On Windows, press **Win + H** for voice typing. Or just type.)
+1. Use **Talk to Jerry**, or **sneak and tap Jerry** with an empty hand.
+2. Tap the **microphone button on your keyboard** and say it out loud. Your phone's voice typing
+   turns it into text. (On Windows, press **Win + H**. Or just type.)
+3. Just like in the video, a **speaker icon pops up over Jerry's head** when he hears you, and he reacts.
+4. With **Keep talking** on, the talk box pops back up after he answers, so you can keep the
+   conversation going: just tap the mic again. Close the box (or send nothing) to stop.
+
+You can give a few commands at once (*"sit, then roll over, then speak"*), and Jerry understands
+common voice-typing mistakes like "role over", "set" or "Gerry".
 
 | Say something like... | Jerry... |
 |---|---|
@@ -43,7 +48,8 @@ the video, a **speaker icon pops up over Jerry's head** when he hears you, and t
 | anything he doesn't know | tilts his head, confused but happy |
 
 > Why a text box? Minecraft Bedrock add-ons aren't allowed to use the microphone, so the keyboard's
-> voice typing does the listening. Add your own phrases in the `VOICE` list in `scripts/text.js`.
+> voice typing does the listening. Add your own phrases in the `VOICE` list in `scripts/text.js`,
+> and teach Jerry new mishearings in `MISHEARD`.
 
 ## Friendship
 

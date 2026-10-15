@@ -95,8 +95,21 @@ export const CAT_ARRIVES = [
 // Used by the "Talk to Jerry" item. On phones, tap the microphone on the keyboard to say it out loud.
 
 export const TALK_TITLE = "Talk to Jerry";
-export const TALK_LABEL = "Say something to Jerry!\n§7Tip: tap the §fmicrophone§7 on your keyboard to say it out loud.\nTry: sit, come, roll over, good boy, speak, spin, fetch, Mochi";
+export const TALK_LABEL = "Say something to Jerry!\n§7Tap the §fmicrophone§7 on your keyboard and say it out loud.\nTry: sit, come, roll over, good boy, speak, spin, fetch, Mochi\nOr a few at once: \"sit, then roll over, then speak\"";
 export const TALK_PLACEHOLDER = "Good boy, Jerry!";
+export const TALK_KEEP_GOING = "Keep talking (this box pops back up after Jerry answers)";
+
+// Words voice typing often gets wrong, and what they should have been.
+export const MISHEARD = {
+  role: "roll", rolled: "roll", rolling: "roll", rollover: "roll over", rolls: "roll",
+  set: "sit", sat: "sit", seat: "sit", sitting: "sit", sits: "sit",
+  gerry: "jerry", jeri: "jerry", jerri: "jerry", jerrie: "jerry", cherry: "jerry", jerrys: "jerry", "jerry's": "jerry",
+  spinning: "spin", spins: "spin", jumping: "jump", jumps: "jump", barking: "bark", sleeping: "sleep",
+  mocha: "mochi", moshi: "mochi", mochis: "mochi", mochie: "mochi", motchi: "mochi",
+  comeon: "come", kom: "come",
+};
+// Distinctive words that still count when one letter is off, like "speek" or "fetchh".
+export const FUZZY_WORDS = ["speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello"];
 
 // The first entry whose words appear in what you said wins, so more specific phrases go first.
 // action: what Jerry does (see talkAction in main.js). praise: also earns a little friendship.

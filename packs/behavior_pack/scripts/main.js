@@ -24,6 +24,7 @@ const PROP = {
   dog: "jf:dog_id",
   cat: "jf:cat_id",
   hasCat: "jf:has_cat",
+  keepTalking: "jf:keep_talking",
 };
 const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat" };
 const DIMENSIONS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
@@ -553,7 +554,11 @@ function petJerry(player, dog) {
 // on phones the keyboard's microphone button turns speech into text for us.
 
 function openTalk(player, retries = 3) {
-  const form = new ModalFormData().title(T.TALK_TITLE).textField(T.TALK_LABEL, T.TALK_PLACEHOLDER);
+  const keepTalking = player.getDynamicProperty(PROP.keepTalking) !== false;
+  const form = new ModalFormData()
+    .title(T.TALK_TITLE)
+    .textField(T.TALK_LABEL, T.TALK_PLACEHOLDER)
+    .toggle(T.TALK_KEEP_GOING, keepTalking);
   form
     .show(player)
     .then((response) => {
@@ -562,30 +567,100 @@ function openTalk(player, retries = 3) {
         if (response.cancelationReason === "UserBusy" && retries > 0) {
           system.runTimeout(() => isValid(player) && openTalk(player, retries - 1), 10);
         }
-        return;
+        return; // closed with X: the conversation is over
       }
       const said = String(response.formValues?.[0] ?? "").trim();
-      if (said) hearSpeech(player, said);
+      const keepGoing = response.formValues?.[1] !== false;
+      player.setDynamicProperty(PROP.keepTalking, keepGoing);
+      if (!said) return; // sending nothing also ends the conversation
+      const busyTicks = hearSpeech(player, said);
+      // Conversation mode: once Jerry has finished reacting, the talk box pops back up,
+      // so on a phone you just tap the keyboard microphone again.
+      if (keepGoing && busyTicks > 0) {
+        system.runTimeout(() => isValid(player) && openTalk(player), busyTicks + 30);
+      }
     })
     .catch((error) => console.warn(`[jf] talk form failed: ${error}`));
 }
 
-function matchVoice(said) {
-  const text = ` ${said.toLowerCase().replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ")} `;
+function levenshtein(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) {
+      row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = row;
+  }
+  return prev[b.length];
+}
+
+// Voice typing often mishears words ("role over", "set", "Gerry"), so fix the common ones and
+// let a few distinctive words match when they're one letter off.
+function cleanWords(text) {
+  return text
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => {
+      if (T.MISHEARD[word]) return T.MISHEARD[word];
+      const close = T.FUZZY_WORDS.find((target) => levenshtein(word, target) <= 1);
+      return close ?? word;
+    })
+    .join(" ");
+}
+
+function matchVoice(part) {
+  const text = ` ${cleanWords(part)} `;
   return T.VOICE.find((entry) => entry.words.some((word) => text.includes(` ${word} `)));
 }
 
+// "sit, then roll over and speak" -> [sit, roll, bark]
+function parseCommands(said) {
+  const parts = said
+    .toLowerCase()
+    .replace(/-/g, " ")
+    .replace(/[,.!?;:]+/g, " | ")
+    .replace(/\b(and then|then|after that|and)\b/g, " | ")
+    .split("|")
+    .map((part) => part.replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const entries = [];
+  for (const part of parts) {
+    const entry = matchVoice(part);
+    if (entry && entries[entries.length - 1] !== entry) entries.push(entry);
+  }
+  return entries.slice(0, 4);
+}
+
+// How long each reaction takes, so the next command (or the talk box) waits for it.
+const ACTION_TICKS = { roll: 56, spin: 34, play: 50, greet: 40 };
+const actionTicks = (entry) => ACTION_TICKS[entry.action] ?? 30;
+
+// Returns how many ticks Jerry will be busy reacting (0 if he couldn't hear you).
 function hearSpeech(player, said) {
   player.sendMessage(`§7You: §f"${said.slice(0, 80)}"`);
   const dog = findDog(player);
-  const entry = matchVoice(said);
+  const commands = parseCommands(said);
   // "come" works from anywhere, like the whistle; everything else needs Jerry in earshot.
-  if (!dog || (entry?.action !== "come" && !isNear(dog, player, 24))) return player.sendMessage(T.CANT_HEAR);
+  const calledHim = commands.some((entry) => entry.action === "come");
+  if (!dog || (!calledHim && !isNear(dog, player, 24))) {
+    player.sendMessage(T.CANT_HEAR);
+    return 0;
+  }
   // Like in the video: a speaker icon pops up over Jerry when he hears you, then he reacts.
-  showSpeaker(dog, entry?.action === "bark" ? 70 : 45);
-  system.runTimeout(() => {
-    if (isValid(player) && isValid(dog)) respond(player, dog, entry);
-  }, 12);
+  showSpeaker(dog, commands.some((entry) => entry.action === "bark") ? 70 : 45);
+  if (!commands.length) {
+    system.runTimeout(() => isValid(player) && isValid(dog) && respond(player, dog, undefined), 12);
+    return 50;
+  }
+  let at = 12;
+  for (const entry of commands) {
+    system.runTimeout(() => {
+      if (isValid(player) && isValid(dog)) respond(player, dog, entry);
+    }, at);
+    at += actionTicks(entry);
+  }
+  return at;
 }
 
 function respond(player, dog, entry) {
@@ -699,9 +774,13 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack }) => {
 world.beforeEvents.playerInteractWithEntity?.subscribe((event) => {
   const id = event.itemStack?.typeId;
   if (!id && event.target.typeId === JERRY) {
+    // Empty hand: tap to pet him, or sneak + tap to start talking.
     const { player, target } = event;
+    const talk = player.isSneaking;
     system.run(() => {
-      if (isValid(player) && isValid(target) && target.hasTag(ownerTag(player))) petJerry(player, target);
+      if (!isValid(player) || !isValid(target) || !target.hasTag(ownerTag(player))) return;
+      if (talk) openTalk(player);
+      else petJerry(player, target);
     });
     return;
   }
