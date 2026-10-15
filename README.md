@@ -8,7 +8,7 @@ just a very good boy (and eventually a cat).
 
 ## What you get
 
-When you join a world, **Jerry** (a tamed wolf with a red collar) shows up along with four items:
+When you join a world, **Jerry** (a tamed wolf with a red collar) shows up along with five items:
 
 | Item | What it does |
 |---|---|
@@ -16,6 +16,29 @@ When you join a world, **Jerry** (a tamed wolf with a red collar) shows up along
 | 🪮 **Pet Brush** | Use on Jerry: sparkles and a very fluffy dog |
 | 🎾 **Tennis Ball** | Use anywhere near Jerry: zoomies! |
 | 📯 **Jerry's Whistle** | Calls your pets to you from anywhere, and shows your friendship |
+| 💬 **Talk to Jerry** | Say something and Jerry reacts (see below) |
+
+## Talking to Jerry 🎤
+
+Use **Talk to Jerry** and a text box pops up. On a phone or tablet, tap the **microphone button on
+your keyboard** and just say it out loud: your phone's voice typing turns it into text and Jerry
+reacts. (On Windows, press **Win + H** for voice typing. Or just type.)
+
+| Say something like... | Jerry... |
+|---|---|
+| "good boy", "love you" | wags and wiggles (+ a little friendship) |
+| "sit", "stay", "wait" | stays put until you say "come" |
+| "come", "here", "let's go" | comes to you, even from far away |
+| "speak", "bark" | barks |
+| "spin", "dance", "roll over" | does a spin |
+| "jump", "hop" | jumps |
+| "fetch", "play" | zoomies! |
+| "treat", "hungry" | gets excited |
+| "sleep", "tired" | yawns |
+| "Mochi", "kitty" | Mochi says hi |
+
+> Why a text box? Minecraft Bedrock add-ons aren't allowed to use the microphone, so the keyboard's
+> voice typing does the listening. Add your own phrases in the `VOICE` list in `scripts/text.js`.
 
 ## Friendship
 
@@ -41,7 +64,7 @@ Your pets can't get hurt, so you never lose them.
    (the resource pack is added automatically).
 4. Load the world. Jerry shows up a few seconds after you spawn.
 
-No experimental toggles are needed. Requires Minecraft Bedrock **1.21.0 or newer**.
+No experimental toggles are needed. Requires Minecraft Bedrock **1.21.40 or newer**.
 
 ## Commands (cheats on)
 
@@ -58,6 +81,7 @@ packs/behavior_pack/      scripts/main.js (pet logic), scripts/text.js (all mess
 packs/resource_pack/      item textures + icon mappings
 tools/make_textures.py    regenerates the pixel-art PNGs
 tools/build.py            validates JSON and builds dist/JerryAndFriends.mcaddon
+tools/tsconfig.json       CI type-checks the scripts against the real Minecraft API
 ```
 
 To change any message, edit `packs/behavior_pack/scripts/text.js`. Friendship numbers and

@@ -106,6 +106,25 @@ TREAT = [
     "................",
 ]
 
+TALK = [
+    "................",
+    "................",
+    "..kkkkkkkkkkkk..",
+    ".kwwwwwwwwwwwwk.",
+    ".kwwwwwwwwwwwwk.",
+    ".kwnnwwnnwwnnwk.",
+    ".kwnnwwnnwwnnwk.",
+    ".kwwwwwwwwwwwwk.",
+    ".kwwwwwwwwwwwwk.",
+    "..kkkkwwkkkkkk..",
+    "......kwk.......",
+    ".....kwk........",
+    ".....kk.........",
+    "................",
+    "................",
+    "................",
+]
+
 DOG_FACE = [
     "................",
     "..kk........kk..",
@@ -157,6 +176,7 @@ def main():
     write_png(items / "dog_whistle.png", WHISTLE)
     write_png(items / "pet_brush.png", BRUSH)
     write_png(items / "tennis_ball.png", BALL)
+    write_png(items / "talk.png", TALK)
     write_png(items / "dog_treat.png", TREAT)
     for pack in ("behavior_pack", "resource_pack"):
         write_png(ROOT / "packs" / pack / "pack_icon.png", DOG_FACE, scale=8, background=(255, 211, 110, 255))

@@ -1,4 +1,5 @@
 import { world, system, ItemStack } from "@minecraft/server";
+import { ModalFormData } from "@minecraft/server-ui";
 import * as T from "./text.js";
 
 // ---------------------------------------------------------------------------
@@ -13,6 +14,7 @@ const ITEMS = {
   brush: "jf:pet_brush",
   treat: "jf:dog_treat",
   ball: "jf:tennis_ball",
+  talk: "jf:talk",
 };
 const OUR_ITEMS = new Set(Object.values(ITEMS));
 
@@ -32,8 +34,8 @@ const MAX_FRIENDSHIP = 100;
 const LEVEL_MIN = [0, 25, 60, 100];
 const CAT_LEVEL = 1;
 const GIFT_LEVEL = 2;
-const GAIN = { treat: 5, brush: 3, ball: 4, together: 1 };
-const COOLDOWN = { treat: 60, brush: 30, ball: 45 }; // seconds before an action earns friendship again
+const GAIN = { treat: 5, brush: 3, ball: 4, talk: 2, together: 1 };
+const COOLDOWN = { treat: 60, brush: 30, ball: 45, talk: 30 }; // seconds before an action earns friendship again
 
 let seconds = 0;
 const cooldowns = new Map(); // "playerId:action" -> seconds when it earns friendship again
@@ -459,10 +461,99 @@ function useItem(player, itemId, target) {
   lastUse.set(player.id, now);
 
   if (itemId === ITEMS.whistle) return whistle(player);
+  if (itemId === ITEMS.talk) return openTalk(player);
   if (itemId === ITEMS.ball) return play(player);
   target = isValid(target) ? target : lookTarget(player);
   if (itemId === ITEMS.treat) return giveTreat(player, target);
   if (itemId === ITEMS.brush) return brush(player, target);
+}
+
+// ---------------------------------------------------------------- talking
+// Bedrock add-ons can't use the microphone, so "voice" goes through a text box:
+// on phones the keyboard's microphone button turns speech into text for us.
+
+function openTalk(player, retries = 3) {
+  const form = new ModalFormData().title(T.TALK_TITLE).textField(T.TALK_LABEL, T.TALK_PLACEHOLDER);
+  form
+    .show(player)
+    .then((response) => {
+      if (response.canceled) {
+        // "UserBusy" means another screen (like chat) was still closing; try again shortly.
+        if (response.cancelationReason === "UserBusy" && retries > 0) {
+          system.runTimeout(() => isValid(player) && openTalk(player, retries - 1), 10);
+        }
+        return;
+      }
+      const said = String(response.formValues?.[0] ?? "").trim();
+      if (said) hearSpeech(player, said);
+    })
+    .catch((error) => console.warn(`[jf] talk form failed: ${error}`));
+}
+
+function matchVoice(said) {
+  const text = ` ${said.toLowerCase().replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ")} `;
+  return T.VOICE.find((entry) => entry.words.some((word) => text.includes(` ${word} `)));
+}
+
+function hearSpeech(player, said) {
+  player.sendMessage(`§7You: §f"${said.slice(0, 80)}"`);
+  const dog = findDog(player);
+  const entry = matchVoice(said);
+  // "come" works from anywhere, like the whistle; everything else needs Jerry in earshot.
+  if (!dog || (entry?.action !== "come" && !isNear(dog, player, 24))) return player.sendMessage(T.CANT_HEAR);
+  if (!entry) {
+    sound(dog.dimension, "mob.wolf.whine", dog.location);
+    return player.sendMessage(pick(T.VOICE_UNKNOWN));
+  }
+  if (entry.action === "play") return play(player);
+  talkAction(player, dog, entry.action);
+  let reply = entry.replies ? pick(entry.replies) : "";
+  if (entry.action === "mochi") {
+    const cat = findCat(player);
+    reply = cat ? pick(T.VOICE_MOCHI) : T.VOICE_NO_CAT;
+    if (cat) {
+      sound(cat.dimension, "mob.cat.meow", cat.location);
+      sparkle(cat);
+    }
+  }
+  if (entry.praise && earn(player, "talk")) reply += `  ${friendshipBar(player)}`;
+  player.sendMessage(reply);
+}
+
+function talkAction(player, dog, action) {
+  const dim = dog.dimension;
+  switch (action) {
+    case "love":
+      sparkle(dog);
+      sound(dim, "mob.wolf.panting", dog.location);
+      return hop(dog, 0.3);
+    case "stay":
+      sound(dim, "mob.wolf.bark", dog.location);
+      try {
+        dog.addEffect("slowness", 20 * 60, { amplifier: 255, showParticles: false });
+      } catch {}
+      return;
+    case "come":
+      try {
+        dog.removeEffect("slowness");
+      } catch {}
+      if (!isNear(dog, player, 6)) bring(dog, player);
+      return sound(dim, "mob.wolf.bark", dog.location);
+    case "bark":
+      sound(dim, "mob.wolf.bark", dog.location);
+      return system.runTimeout(() => isValid(dog) && sound(dog.dimension, "mob.wolf.bark", dog.location), 8);
+    case "spin":
+      sparkle(dog, "minecraft:villager_happy", 6);
+      return spin(dog);
+    case "hop":
+      sound(dim, "mob.wolf.bark", dog.location);
+      return hop(dog, 0.55);
+    case "excited":
+      hop(dog, 0.35);
+      return sound(dim, "mob.wolf.whine", dog.location);
+    case "yawn":
+      return sound(dim, "mob.wolf.panting", dog.location);
+  }
 }
 
 // ---------------------------------------------------------------- commands
@@ -475,8 +566,9 @@ function resetPets(player) {
 }
 
 system.afterEvents.scriptEventReceive.subscribe(
-  ({ id, sourceEntity: player }) => {
-    if (player?.typeId !== "minecraft:player") return;
+  ({ id, sourceEntity }) => {
+    const player = world.getAllPlayers().find((p) => p.id === sourceEntity?.id);
+    if (!player) return;
     if (id === "jf:status") player.sendMessage(`§6[Jerry & Friends]§f Friendship: ${friendshipBar(player)} §7(${getNum(player, PROP.friendship)}/100)`);
     else if (id === "jf:reset") resetPets(player);
     else if (id === "jf:boost") addFriendship(player, 25);
@@ -501,7 +593,9 @@ world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
   if (!initialSpawn) return;
   if (!player.getDynamicProperty(PROP.started)) return scheduleIntro(player, 100);
   system.runTimeout(() => {
-    if (isValid(player)) player.sendMessage(T.WELCOME_BACK);
+    if (!isValid(player)) return;
+    player.sendMessage(T.WELCOME_BACK);
+    give(player, ITEMS.talk); // players from before "Talk to Jerry" existed
   }, 100);
 });
 

@@ -6,6 +6,7 @@ export const TITLE = "§6Jerry & Friends";
 export const INTRO = [
   "§6[Jerry & Friends]§f Meet §bJerry§f, the goodest boy in the whole Overworld!",
   "§7Give him §fTreats§7, use the §fPet Brush§7, and throw the §fTennis Ball§7 to play.",
+  "§7Use §fTalk to Jerry§7 and say something! (On a phone, tap the keyboard microphone to say it out loud.)",
   "§7The more time you spend together, the better friends you'll be. Lost him? Use §fJerry's Whistle§7.",
 ];
 
@@ -80,4 +81,44 @@ export const GIFTS = [
 export const CAT_ARRIVES = [
   "§7A fluffy cat wandered over to say hi to §bJerry§7...",
   "§7They're friends already! Meet §dMochi§7, your new cat. The whistle calls Mochi too.",
+];
+
+// ---------------------------------------------------------------- talking to Jerry
+// Used by the "Talk to Jerry" item. On phones, tap the microphone on the keyboard to say it out loud.
+
+export const TALK_TITLE = "Talk to Jerry";
+export const TALK_LABEL = "Say something to Jerry!\n§7Tip: tap the §fmicrophone§7 on your keyboard to say it out loud.\nTry: sit, come, good boy, speak, spin, fetch, Mochi";
+export const TALK_PLACEHOLDER = "Good boy, Jerry!";
+
+// The first entry whose words appear in what you said wins, so more specific phrases go first.
+// action: what Jerry does (see talkAction in main.js). praise: also earns a little friendship.
+export const VOICE = [
+  { words: ["good boy", "good dog", "love you", "best boy", "good job", "well done", "cute"], action: "love", praise: true,
+    replies: ["§bJerry§7's tail is wagging so fast it's basically a propeller.", "§bJerry§7 knows. He's very aware. *happy wiggle*"] },
+  { words: ["sit", "stay", "wait", "stop", "freeze"], action: "stay",
+    replies: ["§bJerry§7 stays right there and waits patiently. Say §f\"come\"§7 to call him.", "§bJerry§7 freezes like a statue. A fluffy statue. Say §f\"come\"§7 when you're ready."] },
+  { words: ["come", "here", "let's go", "lets go", "follow", "okay", "release", "free"], action: "come",
+    replies: ["§bJerry§7 comes trotting over!", "§bJerry§7 zooms right to you."] },
+  { words: ["speak", "bark", "woof", "talk", "say something"], action: "bark",
+    replies: ["§bJerry§f: WOOF! WOOF!", "§bJerry§f: Woof! §7(He said it with feeling.)"] },
+  { words: ["spin", "roll over", "dance", "twirl", "trick"], action: "spin",
+    replies: ["§bJerry§7 does a spin! Ta-da!", "§bJerry§7 shows off his best dance move."] },
+  { words: ["jump", "hop", "up"], action: "hop",
+    replies: ["§bJerry§7 jumps! Boing!", "§bJerry§7 hops like a bunny. A big fluffy bunny."] },
+  { words: ["fetch", "play", "ball", "zoomies"], action: "play" },
+  { words: ["treat", "hungry", "food", "snack", "dinner", "eat"], action: "excited",
+    replies: ["§bJerry§7's ears perk up at the word \"treat\". Better give him one!", "§bJerry§7 is drooling a tiny bit."] },
+  { words: ["sleep", "tired", "night", "nap", "bed"], action: "yawn",
+    replies: ["§bJerry§7 does a big sleepy yawn.", "§bJerry§7 curls up for a little snooze."] },
+  { words: ["mochi", "kitty", "cat"], action: "mochi" },
+  { words: ["hello", "hi", "hey", "morning", "jerry"], action: "bark",
+    replies: ["§bJerry§7 barks hello and wags his whole body.", "§bJerry§7 barks hello right back!"] },
+];
+
+export const VOICE_MOCHI = ["§dMochi§f: Mrrp! §7(That means hi.)", "§dMochi§7 meows back at you and slow-blinks."];
+export const CANT_HEAR = "§7Jerry's too far away to hear you. Try the whistle!";
+export const VOICE_NO_CAT = "§bJerry§7 tilts his head. A cat? Where? He'd love a friend someday.";
+export const VOICE_UNKNOWN = [
+  "§bJerry§7 tilts his head. He doesn't know that one yet... but he loves hearing your voice.",
+  "§bJerry§7 listens very carefully, then wags his tail anyway.",
 ];

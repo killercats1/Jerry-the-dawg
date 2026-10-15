@@ -2,9 +2,20 @@
   "resource_pack_name": "jerry_and_friends",
   "texture_name": "atlas.items",
   "texture_data": {
-    "jf_dog_whistle": { "textures": "textures/items/dog_whistle" },
-    "jf_pet_brush": { "textures": "textures/items/pet_brush" },
-    "jf_dog_treat": { "textures": "textures/items/dog_treat" },
-    "jf_tennis_ball": { "textures": "textures/items/tennis_ball" }
+    "jf_dog_whistle": {
+      "textures": "textures/items/dog_whistle"
+    },
+    "jf_pet_brush": {
+      "textures": "textures/items/pet_brush"
+    },
+    "jf_dog_treat": {
+      "textures": "textures/items/dog_treat"
+    },
+    "jf_tennis_ball": {
+      "textures": "textures/items/tennis_ball"
+    },
+    "jf_talk": {
+      "textures": "textures/items/talk"
+    }
   }
 }
