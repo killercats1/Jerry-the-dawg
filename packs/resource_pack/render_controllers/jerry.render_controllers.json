@@ -3,9 +3,30 @@
   "render_controllers": {
     "controller.render.jf_jerry": {
       "geometry": "Geometry.default",
-      "materials": [{ "*": "Material.default" }],
-      "textures": ["Texture.default"],
-      "part_visibility": [{ "speaker": "query.property('jf:speaking')" }]
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Texture.default"
+      ]
+    },
+    "controller.render.jf_jerry_extras": {
+      "geometry": "Geometry.extras",
+      "materials": [
+        {
+          "*": "Material.extras"
+        }
+      ],
+      "textures": [
+        "Texture.extras"
+      ],
+      "part_visibility": [
+        {
+          "speaker": "query.property('jf:speaking')"
+        }
+      ]
     }
   }
 }

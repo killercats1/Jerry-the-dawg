@@ -8,8 +8,8 @@ just a very good boy (and eventually a cat).
 
 ## What you get
 
-When you join a world, **Jerry** shows up: a fluffy white-and-grey dog with a red collar and his own
-animations (he can sit, roll over and tilt his head). **Tap him with an empty hand to pet him.**
+When you join a world, **Jerry** shows up: he looks just like a regular tamed wolf (red collar and all,
+and he uses your resource pack's wolf texture), but he knows tricks: sitting, rolling over and tilting his head. **Tap him with an empty hand to pet him.**
 You also get five items:
 
 | Item | What it does |
@@ -83,8 +83,8 @@ No experimental toggles are needed. Requires Minecraft Bedrock **1.21.40 or newe
 
 ```
 packs/behavior_pack/      scripts/main.js (pet logic), scripts/text.js (all messages), items/, entities/jerry.json
-packs/resource_pack/      Jerry's model, animations (sit / roll over / head tilt / speaker icon), textures
-tools/make_jerry.py       regenerates Jerry's 3D model + texture from one cube list
+packs/resource_pack/      Jerry's model (vanilla wolf shape), animations (sit / roll over / head tilt / speaker icon)
+tools/make_jerry.py       regenerates Jerry's model (based on Mojang's vanilla wolf) and the speaker icon
 tools/make_textures.py    regenerates the item and pack icons
 tools/build.py            validates JSON and builds dist/JerryAndFriends.mcaddon
 tools/tsconfig.json       CI type-checks the scripts against the real Minecraft API

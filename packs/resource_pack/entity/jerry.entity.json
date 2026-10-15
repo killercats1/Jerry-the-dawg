@@ -3,9 +3,18 @@
   "minecraft:client_entity": {
     "description": {
       "identifier": "jf:jerry",
-      "materials": { "default": "entity_alphatest" },
-      "textures": { "default": "textures/entity/jf_jerry" },
-      "geometry": { "default": "geometry.jf_jerry" },
+      "materials": {
+        "default": "wolf",
+        "extras": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/wolf/wolf_tame",
+        "extras": "textures/entity/jf_jerry_extras"
+      },
+      "geometry": {
+        "default": "geometry.jf_jerry",
+        "extras": "geometry.jf_jerry_extras"
+      },
       "animations": {
         "look_at_target": "animation.common.look_at_target",
         "walk": "animation.jf_jerry.walk",
@@ -18,9 +27,20 @@
         "speaker": "controller.animation.jf_jerry.speaker"
       },
       "scripts": {
-        "animate": ["look_at_target", { "walk": "query.modified_move_speed" }, "tail_wag", "pose", "speaker"]
+        "animate": [
+          "look_at_target",
+          {
+            "walk": "query.modified_move_speed"
+          },
+          "tail_wag",
+          "pose",
+          "speaker"
+        ]
       },
-      "render_controllers": ["controller.render.jf_jerry"]
+      "render_controllers": [
+        "controller.render.jf_jerry",
+        "controller.render.jf_jerry_extras"
+      ]
     }
   }
 }
