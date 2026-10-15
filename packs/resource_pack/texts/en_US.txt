@@ -1,0 +1,2 @@
+entity.jf:jerry.name=Jerry
+action.interact.jf_pet=Pet

@@ -1,0 +1,42 @@
+{
+  "format_version": "1.10.0",
+  "animation_controllers": {
+    "controller.animation.jf_jerry.pose": {
+      "initial_state": "default",
+      "states": {
+        "default": {
+          "transitions": [
+            { "sit": "query.property('jf:pose') == 1" },
+            { "roll": "query.property('jf:pose') == 2" },
+            { "tilt": "query.property('jf:pose') == 3" }
+          ]
+        },
+        "sit": {
+          "animations": ["sit"],
+          "blend_transition": 0.25,
+          "transitions": [{ "default": "query.property('jf:pose') != 1" }]
+        },
+        "roll": {
+          "animations": ["roll_over"],
+          "transitions": [{ "default": "query.property('jf:pose') != 2" }]
+        },
+        "tilt": {
+          "animations": ["head_tilt"],
+          "transitions": [{ "default": "query.property('jf:pose') != 3" }]
+        }
+      }
+    },
+    "controller.animation.jf_jerry.speaker": {
+      "initial_state": "hidden",
+      "states": {
+        "hidden": {
+          "transitions": [{ "shown": "query.property('jf:speaking')" }]
+        },
+        "shown": {
+          "animations": ["speaker_pop"],
+          "transitions": [{ "hidden": "!query.property('jf:speaking')" }]
+        }
+      }
+    }
+  }
+}

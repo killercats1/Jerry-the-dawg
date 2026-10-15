@@ -27,15 +27,16 @@ const PROP = {
 };
 const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat" };
 const DIMENSIONS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
-const COLLAR_RED = 14;
+const JERRY = "jf:jerry";
+const POSE = { stand: 0, sit: 1, roll: 2, tilt: 3 }; // matches the jf:pose property in entities/jerry.json
 
 // Friendship goes 0-100. Level thresholds line up with T.LEVELS.
 const MAX_FRIENDSHIP = 100;
 const LEVEL_MIN = [0, 25, 60, 100];
 const CAT_LEVEL = 1;
 const GIFT_LEVEL = 2;
-const GAIN = { treat: 5, brush: 3, ball: 4, talk: 2, together: 1 };
-const COOLDOWN = { treat: 60, brush: 30, ball: 45, talk: 30 }; // seconds before an action earns friendship again
+const GAIN = { treat: 5, brush: 3, ball: 4, talk: 2, pet: 2, together: 1 };
+const COOLDOWN = { treat: 60, brush: 30, ball: 45, talk: 30, pet: 20 }; // seconds before an action earns friendship again
 
 let seconds = 0;
 const cooldowns = new Map(); // "playerId:action" -> seconds when it earns friendship again
@@ -44,6 +45,8 @@ const nextGift = new Map();
 const lastUse = new Map();
 const pendingIntro = new Set();
 const pendingCat = new Set();
+const poseTimers = new Map(); // dog id -> latest trick, so an older timer doesn't cut a newer trick short
+const speakerTimers = new Map();
 
 // ---------------------------------------------------------------- helpers
 
@@ -200,20 +203,20 @@ function findPet(player, prop, role) {
   return undefined;
 }
 
-const findDog = (player) => findPet(player, PROP.dog, TAG.dog);
+function findDog(player) {
+  const dog = findPet(player, PROP.dog, TAG.dog);
+  if (!dog || dog.typeId === JERRY) return dog;
+  // Older versions used a vanilla wolf for Jerry; swap in the new Jerry where the old one stood.
+  const at = { dimension: dog.dimension, location: dog.location };
+  dog.remove();
+  return spawnJerry(player, at);
+}
 const findCat = (player) => (player.getDynamicProperty(PROP.hasCat) ? findPet(player, PROP.cat, TAG.cat) : undefined);
 
 function tame(pet, player) {
   try {
     if (pet.getComponent("minecraft:is_tamed")) return;
     pet.getComponent("minecraft:tameable")?.tame(player);
-  } catch {}
-}
-
-function setCollar(pet, color) {
-  try {
-    const component = pet.getComponent("minecraft:color");
-    if (component) component.value = color;
   } catch {}
 }
 
@@ -225,8 +228,8 @@ function protect(pet) {
   } catch {}
 }
 
-function spawnPet(player, typeId, role, name, prop, collar) {
-  const pet = player.dimension.spawnEntity(typeId, player.location);
+function spawnPet(player, typeId, role, name, prop, at = { dimension: player.dimension, location: player.location }) {
+  const pet = at.dimension.spawnEntity(typeId, at.location);
   try {
     if (pet.getComponent("minecraft:is_baby")) pet.triggerEvent("minecraft:ageable_grow_up");
   } catch {}
@@ -237,22 +240,87 @@ function spawnPet(player, typeId, role, name, prop, collar) {
   player.setDynamicProperty(prop, pet.id);
   tame(pet, player);
   protect(pet);
-  // Taming finishes on the next ticks; the collar only exists once tamed.
+  // In case taming didn't stick on the spawn tick.
   system.runTimeout(() => {
-    if (!isValid(pet) || !isValid(player)) return;
-    tame(pet, player);
-    if (collar !== undefined) setCollar(pet, collar);
+    if (isValid(pet) && isValid(player)) tame(pet, player);
   }, 5);
   return pet;
 }
 
-const spawnJerry = (player) => spawnPet(player, "minecraft:wolf", TAG.dog, "Jerry", PROP.dog, COLLAR_RED);
+const spawnJerry = (player, at) => spawnPet(player, JERRY, TAG.dog, "Jerry", PROP.dog, at);
 const spawnMochi = (player) => spawnPet(player, "minecraft:cat", TAG.cat, "Mochi", PROP.cat);
 
 function bring(pet, player) {
   try {
     pet.teleport(player.location, { dimension: player.dimension });
   } catch {}
+}
+
+// ---------------------------------------------------------------- Jerry's poses
+// The client animations (sit, roll over, head tilt, speaker icon) are driven by entity properties.
+
+function setPose(dog, pose) {
+  try {
+    dog.setProperty("jf:pose", pose);
+  } catch {}
+}
+
+const isSitting = (dog) => dog.getDynamicProperty("jf:sitting") === true;
+
+function sit(dog) {
+  try {
+    dog.triggerEvent("jf:sit"); // stops following and wandering
+  } catch {}
+  dog.setDynamicProperty("jf:sitting", true);
+  setPose(dog, POSE.sit);
+}
+
+function stand(dog) {
+  try {
+    dog.triggerEvent("jf:stand");
+  } catch {}
+  dog.setDynamicProperty("jf:sitting", undefined);
+  setPose(dog, POSE.stand);
+}
+
+// A short trick (roll over, head tilt), then back to sitting or standing.
+function trick(dog, pose, ticks) {
+  const token = (poseTimers.get(dog.id) ?? 0) + 1;
+  poseTimers.set(dog.id, token);
+  const holdStill = pose === POSE.roll && !isSitting(dog);
+  if (holdStill) {
+    try {
+      dog.triggerEvent("jf:sit");
+    } catch {}
+  }
+  setPose(dog, pose);
+  system.runTimeout(() => {
+    if (!isValid(dog) || poseTimers.get(dog.id) !== token) return;
+    if (holdStill && !isSitting(dog)) {
+      try {
+        dog.triggerEvent("jf:stand");
+      } catch {}
+    }
+    setPose(dog, isSitting(dog) ? POSE.sit : POSE.stand);
+  }, ticks);
+}
+
+const rollOver = (dog) => trick(dog, POSE.roll, 50);
+const tiltHead = (dog) => trick(dog, POSE.tilt, 36);
+
+// The speaker icon that pops up over Jerry's head when he hears you.
+function showSpeaker(dog, ticks) {
+  const token = (speakerTimers.get(dog.id) ?? 0) + 1;
+  speakerTimers.set(dog.id, token);
+  try {
+    dog.setProperty("jf:speaking", true);
+  } catch {}
+  system.runTimeout(() => {
+    if (!isValid(dog) || speakerTimers.get(dog.id) !== token) return;
+    try {
+      dog.setProperty("jf:speaking", false);
+    } catch {}
+  }, ticks);
 }
 
 function removeAllPets(player) {
@@ -328,6 +396,8 @@ function playMoment(player, dog, cat) {
   const source = T.CAT_MOMENTS.includes(moment) ? cat : dog;
   sound(source.dimension, moment.sound, source.location);
   if (moment.action === "hop") hop(dog);
+  if (moment.action === "roll" && !isSitting(dog)) rollOver(dog);
+  if (moment.action === "tilt") tiltHead(dog);
   actionbar(player, moment.text);
 }
 
@@ -394,8 +464,10 @@ function petKind(player, entity) {
 function whistle(player) {
   sound(player.dimension, "note.flute", player.location);
   const dog = findDog(player);
-  if (dog) bring(dog, player);
-  else spawnJerry(player);
+  if (dog) {
+    if (isSitting(dog)) stand(dog);
+    bring(dog, player);
+  } else spawnJerry(player);
   let text = "§bJerry";
   if (player.getDynamicProperty(PROP.hasCat)) {
     const cat = findCat(player);
@@ -468,6 +540,14 @@ function useItem(player, itemId, target) {
   if (itemId === ITEMS.brush) return brush(player, target);
 }
 
+function petJerry(player, dog) {
+  sparkle(dog);
+  sound(dog.dimension, "mob.wolf.panting", dog.location);
+  tiltHead(dog);
+  const earned = earn(player, "pet");
+  actionbar(player, `${pick(T.PET)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
+}
+
 // ---------------------------------------------------------------- talking
 // Bedrock add-ons can't use the microphone, so "voice" goes through a text box:
 // on phones the keyboard's microphone button turns speech into text for us.
@@ -501,8 +581,17 @@ function hearSpeech(player, said) {
   const entry = matchVoice(said);
   // "come" works from anywhere, like the whistle; everything else needs Jerry in earshot.
   if (!dog || (entry?.action !== "come" && !isNear(dog, player, 24))) return player.sendMessage(T.CANT_HEAR);
+  // Like in the video: a speaker icon pops up over Jerry when he hears you, then he reacts.
+  showSpeaker(dog, entry?.action === "bark" ? 70 : 45);
+  system.runTimeout(() => {
+    if (isValid(player) && isValid(dog)) respond(player, dog, entry);
+  }, 12);
+}
+
+function respond(player, dog, entry) {
   if (!entry) {
     sound(dog.dimension, "mob.wolf.whine", dog.location);
+    tiltHead(dog);
     return player.sendMessage(pick(T.VOICE_UNKNOWN));
   }
   if (entry.action === "play") return play(player);
@@ -527,18 +616,20 @@ function talkAction(player, dog, action) {
       sparkle(dog);
       sound(dim, "mob.wolf.panting", dog.location);
       return hop(dog, 0.3);
-    case "stay":
+    case "sit":
       sound(dim, "mob.wolf.bark", dog.location);
-      try {
-        dog.addEffect("slowness", 20 * 60, { amplifier: 255, showParticles: false });
-      } catch {}
-      return;
+      return sit(dog);
     case "come":
-      try {
-        dog.removeEffect("slowness");
-      } catch {}
+      if (isSitting(dog)) stand(dog);
       if (!isNear(dog, player, 6)) bring(dog, player);
       return sound(dim, "mob.wolf.bark", dog.location);
+    case "roll":
+      sparkle(dog, "minecraft:villager_happy", 6);
+      sound(dim, "mob.wolf.panting", dog.location);
+      return rollOver(dog);
+    case "greet":
+      sound(dim, "mob.wolf.bark", dog.location);
+      return tiltHead(dog);
     case "bark":
       sound(dim, "mob.wolf.bark", dog.location);
       return system.runTimeout(() => isValid(dog) && sound(dog.dimension, "mob.wolf.bark", dog.location), 8);
@@ -604,9 +695,16 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack }) => {
   useItem(source, itemStack.typeId);
 });
 
-// Using one of our items on a pet should not make it sit down.
+// Using one of our items on a pet should not make it sit down; an empty hand pets Jerry.
 world.beforeEvents.playerInteractWithEntity?.subscribe((event) => {
   const id = event.itemStack?.typeId;
+  if (!id && event.target.typeId === JERRY) {
+    const { player, target } = event;
+    system.run(() => {
+      if (isValid(player) && isValid(target) && target.hasTag(ownerTag(player))) petJerry(player, target);
+    });
+    return;
+  }
   if (!id || !OUR_ITEMS.has(id)) return;
   event.cancel = true;
   const { player, target } = event;

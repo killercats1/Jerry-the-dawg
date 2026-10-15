@@ -29,6 +29,8 @@ export const MOMENTS = [
   { sound: "mob.wolf.shake", text: "§bJerry§7 shakes off. You are now slightly damp." },
   { sound: "mob.wolf.panting", text: "§bJerry§7 sniffs a flower. He approves of this flower." },
   { sound: "mob.wolf.bark", text: "§bJerry§7 looks at you like you're his favourite person. You are." },
+  { sound: "mob.wolf.panting", action: "roll", text: "§bJerry§7 rolls onto his back for belly rubs!" },
+  { sound: "mob.wolf.whine", action: "tilt", text: "§bJerry§7 tilts his head at you. So curious." },
 ];
 
 export const NIGHT_MOMENTS = [
@@ -63,6 +65,12 @@ export const PLAY = [
   "§bJerry§7 chases the ball in happy circles.",
   "§bJerry§7 brings the ball back... and won't let go. Classic.",
 ];
+export const PET = [
+  "§bJerry§7 leans into the pets. Best. Feeling. Ever.",
+  "§bJerry§7 tilts his head and wags his tail.",
+  "§bJerry§7 does a happy little wiggle.",
+];
+
 export const PLAY_CAT = " §dMochi§7 joins in!";
 export const TOO_FAR = "§7Jerry's too far away to play. Try the whistle!";
 
@@ -87,7 +95,7 @@ export const CAT_ARRIVES = [
 // Used by the "Talk to Jerry" item. On phones, tap the microphone on the keyboard to say it out loud.
 
 export const TALK_TITLE = "Talk to Jerry";
-export const TALK_LABEL = "Say something to Jerry!\n§7Tip: tap the §fmicrophone§7 on your keyboard to say it out loud.\nTry: sit, come, good boy, speak, spin, fetch, Mochi";
+export const TALK_LABEL = "Say something to Jerry!\n§7Tip: tap the §fmicrophone§7 on your keyboard to say it out loud.\nTry: sit, come, roll over, good boy, speak, spin, fetch, Mochi";
 export const TALK_PLACEHOLDER = "Good boy, Jerry!";
 
 // The first entry whose words appear in what you said wins, so more specific phrases go first.
@@ -95,13 +103,15 @@ export const TALK_PLACEHOLDER = "Good boy, Jerry!";
 export const VOICE = [
   { words: ["good boy", "good dog", "love you", "best boy", "good job", "well done", "cute"], action: "love", praise: true,
     replies: ["§bJerry§7's tail is wagging so fast it's basically a propeller.", "§bJerry§7 knows. He's very aware. *happy wiggle*"] },
-  { words: ["sit", "stay", "wait", "stop", "freeze"], action: "stay",
-    replies: ["§bJerry§7 stays right there and waits patiently. Say §f\"come\"§7 to call him.", "§bJerry§7 freezes like a statue. A fluffy statue. Say §f\"come\"§7 when you're ready."] },
-  { words: ["come", "here", "let's go", "lets go", "follow", "okay", "release", "free"], action: "come",
+  { words: ["roll over", "roll", "play dead", "belly rub", "belly rubs", "belly"], action: "roll",
+    replies: ["§bJerry§7 rolls over onto his back! Belly rubs, please.", "§bJerry§7 flops over with his paws in the air."] },
+  { words: ["sit", "stay", "wait", "stop", "freeze", "down"], action: "sit",
+    replies: ["§bJerry§7 sits down and waits patiently. Say §f\"come\"§7 to call him.", "§bJerry§7 sits like a very good boy. Say §f\"come\"§7 when you're ready."] },
+  { words: ["come", "here", "let's go", "lets go", "follow", "okay", "release", "free", "stand"], action: "come",
     replies: ["§bJerry§7 comes trotting over!", "§bJerry§7 zooms right to you."] },
   { words: ["speak", "bark", "woof", "talk", "say something"], action: "bark",
     replies: ["§bJerry§f: WOOF! WOOF!", "§bJerry§f: Woof! §7(He said it with feeling.)"] },
-  { words: ["spin", "roll over", "dance", "twirl", "trick"], action: "spin",
+  { words: ["spin", "dance", "twirl", "trick"], action: "spin",
     replies: ["§bJerry§7 does a spin! Ta-da!", "§bJerry§7 shows off his best dance move."] },
   { words: ["jump", "hop", "up"], action: "hop",
     replies: ["§bJerry§7 jumps! Boing!", "§bJerry§7 hops like a bunny. A big fluffy bunny."] },
@@ -111,7 +121,7 @@ export const VOICE = [
   { words: ["sleep", "tired", "night", "nap", "bed"], action: "yawn",
     replies: ["§bJerry§7 does a big sleepy yawn.", "§bJerry§7 curls up for a little snooze."] },
   { words: ["mochi", "kitty", "cat"], action: "mochi" },
-  { words: ["hello", "hi", "hey", "morning", "jerry"], action: "bark",
+  { words: ["hello", "hi", "hey", "morning", "jerry"], action: "greet",
     replies: ["§bJerry§7 barks hello and wags his whole body.", "§bJerry§7 barks hello right back!"] },
 ];
 

@@ -1,0 +1,11 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.jf_jerry": {
+      "geometry": "Geometry.default",
+      "materials": [{ "*": "Material.default" }],
+      "textures": ["Texture.default"],
+      "part_visibility": [{ "speaker": "query.property('jf:speaking')" }]
+    }
+  }
+}

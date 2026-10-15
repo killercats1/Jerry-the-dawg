@@ -1,0 +1,26 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "jf:jerry",
+      "materials": { "default": "entity_alphatest" },
+      "textures": { "default": "textures/entity/jf_jerry" },
+      "geometry": { "default": "geometry.jf_jerry" },
+      "animations": {
+        "look_at_target": "animation.common.look_at_target",
+        "walk": "animation.jf_jerry.walk",
+        "tail_wag": "animation.jf_jerry.tail_wag",
+        "sit": "animation.jf_jerry.sit",
+        "roll_over": "animation.jf_jerry.roll_over",
+        "head_tilt": "animation.jf_jerry.head_tilt",
+        "speaker_pop": "animation.jf_jerry.speaker_pop",
+        "pose": "controller.animation.jf_jerry.pose",
+        "speaker": "controller.animation.jf_jerry.speaker"
+      },
+      "scripts": {
+        "animate": ["look_at_target", { "walk": "query.modified_move_speed" }, "tail_wag", "pose", "speaker"]
+      },
+      "render_controllers": ["controller.render.jf_jerry"]
+    }
+  }
+}

@@ -8,7 +8,9 @@ just a very good boy (and eventually a cat).
 
 ## What you get
 
-When you join a world, **Jerry** (a tamed wolf with a red collar) shows up along with five items:
+When you join a world, **Jerry** shows up: a fluffy white-and-grey dog with a red collar and his own
+animations (he can sit, roll over and tilt his head). **Tap him with an empty hand to pet him.**
+You also get five items:
 
 | Item | What it does |
 |---|---|
@@ -21,21 +23,24 @@ When you join a world, **Jerry** (a tamed wolf with a red collar) shows up along
 ## Talking to Jerry 🎤
 
 Use **Talk to Jerry** and a text box pops up. On a phone or tablet, tap the **microphone button on
-your keyboard** and just say it out loud: your phone's voice typing turns it into text and Jerry
-reacts. (On Windows, press **Win + H** for voice typing. Or just type.)
+your keyboard** and just say it out loud: your phone's voice typing turns it into text. Just like in
+the video, a **speaker icon pops up over Jerry's head** when he hears you, and then he reacts.
+(On Windows, press **Win + H** for voice typing. Or just type.)
 
 | Say something like... | Jerry... |
 |---|---|
 | "good boy", "love you" | wags and wiggles (+ a little friendship) |
-| "sit", "stay", "wait" | stays put until you say "come" |
+| "roll over", "play dead", "belly rubs" | rolls onto his back, paws in the air |
+| "sit", "stay", "down" | sits and stays until you say "come" |
 | "come", "here", "let's go" | comes to you, even from far away |
 | "speak", "bark" | barks |
-| "spin", "dance", "roll over" | does a spin |
+| "spin", "dance" | does a spin |
 | "jump", "hop" | jumps |
 | "fetch", "play" | zoomies! |
 | "treat", "hungry" | gets excited |
 | "sleep", "tired" | yawns |
 | "Mochi", "kitty" | Mochi says hi |
+| anything he doesn't know | tilts his head, confused but happy |
 
 > Why a text box? Minecraft Bedrock add-ons aren't allowed to use the microphone, so the keyboard's
 > voice typing does the listening. Add your own phrases in the `VOICE` list in `scripts/text.js`.
@@ -77,9 +82,10 @@ No experimental toggles are needed. Requires Minecraft Bedrock **1.21.40 or newe
 ## Project layout
 
 ```
-packs/behavior_pack/      scripts/main.js (pet logic), scripts/text.js (all messages), items/
-packs/resource_pack/      item textures + icon mappings
-tools/make_textures.py    regenerates the pixel-art PNGs
+packs/behavior_pack/      scripts/main.js (pet logic), scripts/text.js (all messages), items/, entities/jerry.json
+packs/resource_pack/      Jerry's model, animations (sit / roll over / head tilt / speaker icon), textures
+tools/make_jerry.py       regenerates Jerry's 3D model + texture from one cube list
+tools/make_textures.py    regenerates the item and pack icons
 tools/build.py            validates JSON and builds dist/JerryAndFriends.mcaddon
 tools/tsconfig.json       CI type-checks the scripts against the real Minecraft API
 ```

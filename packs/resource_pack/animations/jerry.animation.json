@@ -1,0 +1,223 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.jf_jerry.walk": {
+      "loop": true,
+      "bones": {
+        "leg0": {
+          "rotation": [
+            "math.cos(query.anim_time * 38.17) * 60.0",
+            0,
+            0
+          ]
+        },
+        "leg1": {
+          "rotation": [
+            "-math.cos(query.anim_time * 38.17) * 60.0",
+            0,
+            0
+          ]
+        },
+        "leg2": {
+          "rotation": [
+            "-math.cos(query.anim_time * 38.17) * 60.0",
+            0,
+            0
+          ]
+        },
+        "leg3": {
+          "rotation": [
+            "math.cos(query.anim_time * 38.17) * 60.0",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_jerry.tail_wag": {
+      "loop": true,
+      "bones": {
+        "tail": {
+          "rotation": [
+            0,
+            "math.sin(query.anim_time * 540.0) * 22.0",
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_jerry.sit": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            25,
+            0,
+            0
+          ]
+        },
+        "leg2": {
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -5,
+            0
+          ]
+        },
+        "leg3": {
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -5,
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            75,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_jerry.roll_over": {
+      "loop": "hold_on_last_frame",
+      "animation_length": 2.4,
+      "bones": {
+        "root": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.3": [
+              0,
+              0,
+              90
+            ],
+            "0.6": [
+              0,
+              0,
+              180
+            ],
+            "1.8": [
+              0,
+              0,
+              180
+            ],
+            "2.1": [
+              0,
+              0,
+              270
+            ],
+            "2.4": [
+              0,
+              0,
+              360
+            ]
+          }
+        },
+        "leg0": {
+          "rotation": [
+            "math.sin(query.anim_time * 900.0) * 25.0",
+            0,
+            0
+          ]
+        },
+        "leg1": {
+          "rotation": [
+            "-math.sin(query.anim_time * 900.0) * 25.0",
+            0,
+            0
+          ]
+        },
+        "leg2": {
+          "rotation": [
+            "-math.sin(query.anim_time * 900.0) * 25.0",
+            0,
+            0
+          ]
+        },
+        "leg3": {
+          "rotation": [
+            "math.sin(query.anim_time * 900.0) * 25.0",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_jerry.head_tilt": {
+      "loop": "hold_on_last_frame",
+      "animation_length": 1.7,
+      "bones": {
+        "head": {
+          "rotation": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.25": [
+              0,
+              0,
+              28
+            ],
+            "1.4": [
+              0,
+              0,
+              28
+            ],
+            "1.7": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.jf_jerry.speaker_pop": {
+      "loop": "hold_on_last_frame",
+      "animation_length": 0.3,
+      "bones": {
+        "speaker": {
+          "scale": {
+            "0.0": [
+              0.2,
+              0.2,
+              0.2
+            ],
+            "0.15": [
+              1.25,
+              1.25,
+              1.25
+            ],
+            "0.3": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      }
+    }
+  }
+}
