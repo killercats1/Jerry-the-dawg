@@ -48,6 +48,9 @@ const pendingIntro = new Set();
 const pendingCat = new Set();
 const poseTimers = new Map(); // dog id -> latest trick, so an older timer doesn't cut a newer trick short
 const speakerTimers = new Map();
+// The optional phone voice helper (voice-helper/jerry_voice.py) checks in every few seconds.
+const voiceHelper = { lastSeen: -999, lastListener: undefined };
+const LISTEN_TAG = "jf_listen"; // the helper listens when it sees this tag on a player
 
 // ---------------------------------------------------------------- helpers
 
@@ -534,7 +537,7 @@ function useItem(player, itemId, target) {
   lastUse.set(player.id, now);
 
   if (itemId === ITEMS.whistle) return whistle(player);
-  if (itemId === ITEMS.talk) return openTalk(player);
+  if (itemId === ITEMS.talk) return startTalking(player);
   if (itemId === ITEMS.ball) return play(player);
   target = isValid(target) ? target : lookTarget(player);
   if (itemId === ITEMS.treat) return giveTreat(player, target);
@@ -552,6 +555,65 @@ function petJerry(player, dog) {
 // ---------------------------------------------------------------- talking
 // Bedrock add-ons can't use the microphone, so "voice" goes through a text box:
 // on phones the keyboard's microphone button turns speech into text for us.
+
+// ---------------------------------------------------------------- real voice (phone helper)
+// Add-ons can't use the microphone, so the Jerry Voice helper app listens for us and sends
+// what it heard back with "/scriptevent jf:voice <text>" over Minecraft's /connect.
+
+const voiceConnected = () => seconds - voiceHelper.lastSeen < 15;
+
+function startTalking(player) {
+  if (!voiceConnected()) return openTalk(player);
+  voiceHelper.lastListener = player.id;
+  player.addTag(LISTEN_TAG);
+  actionbar(player, T.VOICE_GET_READY);
+  // If the helper doesn't pick it up quickly, it's gone; fall back to the text box.
+  system.runTimeout(() => {
+    if (!isValid(player) || !player.hasTag(LISTEN_TAG)) return;
+    player.removeTag(LISTEN_TAG);
+    voiceHelper.lastSeen = -999;
+    player.sendMessage(T.VOICE_LOST);
+    openTalk(player);
+  }, 50);
+}
+
+function onVoiceHello() {
+  const wasConnected = voiceConnected();
+  voiceHelper.lastSeen = seconds;
+  if (wasConnected) return;
+  for (const player of world.getAllPlayers()) {
+    player.sendMessage(T.VOICE_CONNECTED);
+    const dog = findDog(player);
+    if (dog && isNear(dog, player, 24)) {
+      showSpeaker(dog, 50);
+      sound(dog.dimension, "mob.wolf.bark", dog.location);
+    }
+  }
+}
+
+function onVoiceStatus(player, status) {
+  if (status === "listening") {
+    // Keep the hint up while the microphone is open.
+    for (let i = 0; i < 3; i++) system.runTimeout(() => isValid(player) && actionbar(player, T.VOICE_LISTENING), i * 40);
+    const dog = findDog(player);
+    if (dog && isNear(dog, player, 24)) tiltHead(dog); // ears up, he's listening
+  } else if (status === "nothing") {
+    actionbar(player, T.VOICE_NOTHING);
+  }
+}
+
+// alwaysOn: heard by the always-listening mode, so only react to things meant for Jerry:
+// anything with his name in it, or a short command on its own ("sit", "roll over").
+function onVoice(player, text, alwaysOn) {
+  if (!text) return;
+  if (alwaysOn) {
+    const words = cleanWords(text.toLowerCase().replace(/[^a-z' ]+/g, " "));
+    const saidName = /\bjerry\b/.test(words);
+    const shortCommand = words.split(" ").filter(Boolean).length <= 3 && parseCommands(text).length > 0;
+    if (!saidName && !shortCommand) return;
+  }
+  hearSpeech(player, text);
+}
 
 function openTalk(player, retries = 3) {
   const keepTalking = player.getDynamicProperty(PROP.keepTalking) !== false;
@@ -732,9 +794,18 @@ function resetPets(player) {
 }
 
 system.afterEvents.scriptEventReceive.subscribe(
-  ({ id, sourceEntity }) => {
-    const player = world.getAllPlayers().find((p) => p.id === sourceEntity?.id);
+  ({ id, sourceEntity, message }) => {
+    if (id === "jf:voice_hello") return onVoiceHello();
+    const players = world.getAllPlayers();
+    // Commands from the voice helper normally run as you; if not, use whoever asked to talk.
+    const player =
+      players.find((p) => p.id === sourceEntity?.id) ??
+      players.find((p) => p.id === voiceHelper.lastListener) ??
+      players[0];
     if (!player) return;
+    if (id === "jf:voice") return onVoice(player, message, false);
+    if (id === "jf:voice_heard") return onVoice(player, message, true);
+    if (id === "jf:voice_status") return onVoiceStatus(player, message);
     if (id === "jf:status") player.sendMessage(`§6[Jerry & Friends]§f Friendship: ${friendshipBar(player)} §7(${getNum(player, PROP.friendship)}/100)`);
     else if (id === "jf:reset") resetPets(player);
     else if (id === "jf:boost") addFriendship(player, 25);
@@ -779,7 +850,7 @@ world.beforeEvents.playerInteractWithEntity?.subscribe((event) => {
     const talk = player.isSneaking;
     system.run(() => {
       if (!isValid(player) || !isValid(target) || !target.hasTag(ownerTag(player))) return;
-      if (talk) openTalk(player);
+      if (talk) startTalking(player);
       else petJerry(player, target);
     });
     return;

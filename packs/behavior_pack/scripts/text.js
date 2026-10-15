@@ -138,6 +138,13 @@ export const VOICE = [
     replies: ["§bJerry§7 barks hello and wags his whole body.", "§bJerry§7 barks hello right back!"] },
 ];
 
+// The Jerry Voice phone helper (real microphone).
+export const VOICE_CONNECTED = "§a[Jerry Voice]§f Connected! Use §fTalk to Jerry§f (or sneak + tap him) and just talk.";
+export const VOICE_GET_READY = "§eGet ready to talk to Jerry...";
+export const VOICE_LISTENING = "§a>> Listening... talk to Jerry now! <<";
+export const VOICE_NOTHING = "§7Jerry didn't catch that. Try again!";
+export const VOICE_LOST = "§7[Jerry Voice] The voice helper isn't answering, so here's the text box. (Is Termux still running? Run /connect 127.0.0.1:3000 again.)";
+
 export const VOICE_MOCHI = ["§dMochi§f: Mrrp! §7(That means hi.)", "§dMochi§7 meows back at you and slow-blinks."];
 export const CANT_HEAR = "§7Jerry's too far away to hear you. Try the whistle!";
 export const VOICE_NO_CAT = "§bJerry§7 tilts his head. A cat? Where? He'd love a friend someday.";

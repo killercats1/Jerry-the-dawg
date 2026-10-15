@@ -32,6 +32,14 @@ You also get five items:
 You can give a few commands at once (*"sit, then roll over, then speak"*), and Jerry understands
 common voice-typing mistakes like "role over", "set" or "Gerry".
 
+### 🎙️ Real voice, no typing (Android, no PC)
+
+Install the free **Jerry Voice** helper on your phone and you can just *talk*: press Talk to Jerry
+(or turn on always-listening) and speak, with no keyboard. It runs in Termux on the same phone and
+connects with `/connect 127.0.0.1:3000`, the same trick the Verity add-on uses, but with no Beta APIs
+and no API key. **Setup guide: [voice-helper/README.md](voice-helper/README.md)**
+(download `dist/jerry_voice.py`).
+
 | Say something like... | Jerry... |
 |---|---|
 | "good boy", "love you" | wags and wiggles (+ a little friendship) |
@@ -92,7 +100,8 @@ packs/behavior_pack/      scripts/main.js (pet logic), scripts/text.js (all mess
 packs/resource_pack/      Jerry's model (vanilla wolf shape), animations (sit / roll over / head tilt / speaker icon)
 tools/make_jerry.py       regenerates Jerry's model (based on Mojang's vanilla wolf) and the speaker icon
 tools/make_textures.py    regenerates the item and pack icons
-tools/build.py            validates JSON and builds dist/JerryAndFriends.mcaddon
+tools/build.py            validates JSON and builds dist/JerryAndFriends.mcaddon (+ copies the voice helper)
+voice-helper/             Jerry Voice: the phone helper for real microphone voice (Termux)
 tools/tsconfig.json       CI type-checks the scripts against the real Minecraft API
 ```
 

@@ -38,6 +38,9 @@ def build():
                     info.compress_type = zipfile.ZIP_DEFLATED
                     zf.writestr(info, path.read_bytes())
     print(f"Built {OUT.relative_to(ROOT)} ({OUT.stat().st_size} bytes)")
+    helper = ROOT / "voice-helper" / "jerry_voice.py"
+    (OUT.parent / helper.name).write_bytes(helper.read_bytes())
+    print(f"Copied {helper.name} to dist/ (the phone voice helper)")
 
 
 if __name__ == "__main__":
