@@ -45,7 +45,12 @@ Install the free **Jerry Voice** helper on your phone and you can just *talk*: p
 (or turn on always-listening) and speak, with no keyboard. It runs in Termux on the same phone and
 connects with `/connect 127.0.0.1:3000`, the same trick the Verity add-on uses, but with no Beta APIs
 and no API key. **Setup guide: [voice-helper/README.md](voice-helper/README.md)**
-(download `dist/jerry_voice.py`).
+
+Get the helper with one line in Termux:
+
+```
+pkg update -y && pkg install -y python termux-api curl && curl -fLo ~/jerry_voice.py https://raw.githubusercontent.com/killercats1/Jerry-the-dawg/MAIN/dist/jerry_voice.py
+```
 
 | Say something like... | Jerry... |
 |---|---|

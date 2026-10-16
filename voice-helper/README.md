@@ -18,14 +18,27 @@ You only do steps 1-4 once. After that it's just step 5 each time you play.
 
 ## 2. Install the helper (once)
 
+Open **Termux** and paste this one line (it installs what's needed and downloads the helper):
+
+```
+pkg update -y && pkg install -y python termux-api curl && curl -fLo ~/jerry_voice.py https://raw.githubusercontent.com/killercats1/Jerry-the-dawg/MAIN/dist/jerry_voice.py
+```
+
+Run the same line again any time to update the helper to the newest version.
+
+<details>
+<summary>Or copy it over by hand</summary>
+
 1. Download `jerry_voice.py` into your phone's **Download** folder.
-2. Open **Termux** and run these (tap **Allow** when it asks for storage):
+2. In **Termux** run (tap **Allow** when it asks for storage):
 
 ```
 termux-setup-storage
 pkg update -y && pkg install -y python termux-api
 cp ~/storage/downloads/jerry_voice.py ~/
 ```
+
+</details>
 
 ## 3. Minecraft settings (once)
 
