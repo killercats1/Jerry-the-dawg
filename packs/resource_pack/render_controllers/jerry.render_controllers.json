@@ -28,6 +28,9 @@
         },
         {
           "mouth_bone": "query.property('jf:bone')"
+        },
+        {
+          "mouth_ball": "query.property('jf:ball')"
         }
       ]
     },

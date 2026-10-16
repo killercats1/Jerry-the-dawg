@@ -58,6 +58,8 @@ EXTRAS_BONES = [
         cube([-4.5, 8, -12], [1, 2, 2], [20, 0]),
         cube([3.5, 8, -12], [1, 2, 2], [20, 4]),
     ]),
+    # The tennis ball he brings back when playing fetch. Shown when jf:ball is on.
+    ("mouth_ball", "head", [0, 9, -12.5], None, [cube([-1, 7.5, -13.5], [2, 2, 2], [20, 8])]),
 ]
 
 # The expression overlay: a flat plane just in front of the top 6x4 pixels of the face
@@ -70,7 +72,8 @@ FACE_BONES = [
     ]),
 ]
 
-PALETTE.update({"O": (236, 230, 214, 255), "Q": (196, 188, 170, 255)})  # bone colours
+PALETTE.update({"O": (236, 230, 214, 255), "Q": (196, 188, 170, 255),  # bone colours
+                "v": (212, 225, 87, 255), "V": (158, 157, 36, 255)})      # tennis ball
 
 SPEAKER_ICON = [
     "....kk....",
@@ -121,6 +124,10 @@ def extras_texture():
         for y in range(y0, y0 + h):
             for x in range(x0, x0 + w):
                 grid[y][x] = "Q" if y == y0 + h - 1 else "O"
+    # Tennis ball: 2x2x2 at (20, 8) -> 8x4, yellow-green with a white seam row.
+    for y in range(8, 12):
+        for x in range(20, 28):
+            grid[y][x] = "w" if y == 10 else ("V" if y == 11 else "v")
     return ["".join(row) for row in grid]
 
 

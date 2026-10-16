@@ -34,6 +34,11 @@
           "type": "bool",
           "default": false,
           "client_sync": true
+        },
+        "jf:ball": {
+          "type": "bool",
+          "default": false,
+          "client_sync": true
         }
       }
     },

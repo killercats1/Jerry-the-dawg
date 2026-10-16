@@ -17,14 +17,29 @@ You also get five items:
 |---|---|
 | 🍪 **Dog Treats** | Use on your dog: hearts, happy barks, more friendship |
 | 🪮 **Pet Brush** | Use on Jerry: sparkles and a very fluffy dog |
-| 🎾 **Tennis Ball** | Use anywhere near your dog: zoomies! |
-| 📯 **Dog Whistle** | Calls your pets to you from anywhere, and shows your friendship. **Sneak + use** it to rename your pets |
+| 🎾 **Tennis Ball** | Throw it and he plays fetch! |
+| 📯 **Dog Whistle** | Calls your pets to you from anywhere. **Sneak + use** it for his status screen (and renaming) |
 | 💬 **Talk to Your Dog** | Say something and he reacts (see below) |
+
+## A smart, living dog 🧠
+
+- **Needs and moods.** He gets **hungry**, **sleepy** and **bored** over time. Treats fill him up,
+  naps (sitting or lying down) recharge him, and fetch keeps him happy. His mood shows on his face and
+  in what he does: begging when hungry, napping at night when tired, bringing you his bone when bored.
+  A happy dog makes friends twice as fast. Nothing bad ever happens to him.
+- **Practice makes perfect.** New tricks are a bit sloppy at first; sometimes he does a spin instead
+  of a roll over. Every good try teaches him, and after 5 he **masters** the trick.
+- **Real fetch.** The **Tennis Ball** gets thrown: he runs after it, grabs it in his mouth and brings it back.
+- **Guard dog.** He growls and warns you when a monster sneaks up.
+- **He cares.** He rushes over if you get hurt, begs with puppy eyes while you eat, does zoomies when
+  you come back after a while, and curls up by your bed when you sleep.
+- **Status screen.** **Sneak + use the Dog Whistle** to see his mood, needs, friendship and trick
+  stars (and to rename your pets).
 
 ## Naming your pets 🏷️
 
 When you first get your dog, a box asks **what you want to name him**. You can rename him (or the
-cat) any time with a vanilla **name tag**, or by **sneaking and using the Dog Whistle**. All the
+cat) any time with a vanilla **name tag**, or from the status screen (**sneak + use the Dog Whistle**). All the
 messages use your pets' real names, and voice commands listen for his name too
 (*"Biscuit, roll over!"*). Below, "Jerry" just means your dog.
 
@@ -80,7 +95,8 @@ pkg update -y && pkg install -y python termux-api curl && curl -fLo ~/jerry_voic
 | "spin", "turn around" | does a spin |
 | "speak", "bark" | barks |
 | "jump", "hop" | jumps |
-| "fetch", "play" | zoomies! |
+| "fetch", "ball" | plays fetch (throws where you look) |
+| "play", "zoomies" | zoomies! |
 | "treat", "hungry" | gets excited |
 | "sleep", "tired" | yawns |
 | "bone" | shows off his bone (in his mouth) |

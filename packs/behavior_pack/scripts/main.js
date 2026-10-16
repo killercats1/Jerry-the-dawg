@@ -1,5 +1,5 @@
 import { world, system, ItemStack } from "@minecraft/server";
-import { ModalFormData } from "@minecraft/server-ui";
+import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 import * as T from "./text.js";
 
 // ---------------------------------------------------------------------------
@@ -25,6 +25,8 @@ const PROP = {
   cat: "jf:cat_id",
   hasCat: "jf:has_cat",
   keepTalking: "jf:keep_talking",
+  needs: "jf:needs",
+  skills: "jf:skills",
   dogName: "jf:dog_name",
   catName: "jf:cat_name",
 };
@@ -56,6 +58,9 @@ const pendingIntro = new Set();
 const pendingCat = new Set();
 const poseTimers = new Map(); // dog id -> latest trick, so an older timer doesn't cut a newer trick short
 const propTimers = new Map(); // "dogId:property" -> latest timed change
+const fetching = new Map(); // dog id -> the running fetch game
+const reactedAt = new Map(); // "playerId:reaction" -> seconds, so reactions don't spam
+const awaySince = new Map(); // player id -> seconds when the dog was last nearby
 // The optional phone voice helper (voice-helper/jerry_voice.py) checks in every few seconds.
 const voiceHelper = { lastSeen: -999, lastListener: undefined };
 const LISTEN_TAG = "jf_listen"; // the helper listens when it sees this tag on a player
@@ -505,6 +510,21 @@ function scheduleCat(player) {
 // ---------------------------------------------------------------- every second
 
 function playMoment(player, dog, cat) {
+  // A dog that needs something lets you know about it.
+  const mood = moodOf(getNeeds(player));
+  if (mood !== "happy" && Math.random() < 0.6) {
+    const moment = pick(T.MOOD_MOMENTS[mood]);
+    sound(dog.dimension, moment.sound, dog.location);
+    if (moment.action === "tilt") tiltHead(dog);
+    if (moment.action === "hop") hop(dog);
+    if (moment.action === "bone") holdBone(dog, 80);
+    if (moment.action === "nap") {
+      if (isSitting(dog)) return; // already resting
+      sit(dog, POSE.lie);
+    }
+    showFace(dog, moment.face, moment.action === "nap" ? 400 : 70);
+    return actionbar(player, moment.text);
+  }
   const options = [...T.MOMENTS];
   if (isNight()) options.push(...T.NIGHT_MOMENTS);
   if (isNear(cat, player, 16)) options.push(...T.CAT_MOMENTS);
@@ -555,8 +575,13 @@ function tick(player) {
   const cat = findCat(player);
   if (cat && cat.nameTag && cat.nameTag !== catName(player)) namePet(player, "cat", cat.nameTag);
 
+  if (dog) reactToSurroundings(player, dog);
   if (!isNear(dog, player, 16)) return;
-  if (seconds % 60 === 0) addFriendship(player, GAIN.together);
+  if (seconds % 60 === 0) {
+    updateNeeds(player, dog);
+    // A happy dog makes friends faster.
+    addFriendship(player, moodOf(getNeeds(player)) === "happy" ? GAIN.together * 2 : GAIN.together);
+  }
 
   if (levelOf(friendship) >= GIFT_LEVEL) {
     if (!nextGift.has(player.id)) nextGift.set(player.id, seconds + 120);
@@ -617,6 +642,7 @@ function giveTreat(player, target) {
   }
   sound(target.dimension, "mob.wolf.bark", target.location);
   showFace(target, "love", 60);
+  changeNeeds(player, { hunger: 30, fun: 2 });
   const earned = earn(player, "treat");
   actionbar(player, `${pick(T.TREAT)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
 }
@@ -631,6 +657,7 @@ function brush(player, target) {
   }
   sound(target.dimension, "mob.wolf.panting", target.location);
   showFace(target, "happy", 60);
+  changeNeeds(player, { fun: 5 });
   const earned = earn(player, "brush");
   actionbar(player, `${pick(T.BRUSH)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
 }
@@ -665,9 +692,9 @@ function useItem(player, itemId, target) {
   if (now - (lastUse.get(player.id) ?? -100) < 8) return;
   lastUse.set(player.id, now);
 
-  if (itemId === ITEMS.whistle) return player.isSneaking ? openNaming(player) : whistle(player);
+  if (itemId === ITEMS.whistle) return player.isSneaking ? openStatus(player) : whistle(player);
   if (itemId === ITEMS.talk) return startTalking(player);
-  if (itemId === ITEMS.ball) return play(player);
+  if (itemId === ITEMS.ball) return throwBall(player);
   target = isValid(target) ? target : lookTarget(player);
   if (itemId === ITEMS.treat) return giveTreat(player, target);
   if (itemId === ITEMS.brush) return brush(player, target);
@@ -678,8 +705,347 @@ function petJerry(player, dog) {
   sound(dog.dimension, "mob.wolf.panting", dog.location);
   tiltHead(dog);
   showFace(dog, "happy", 50);
+  changeNeeds(player, { fun: 5 });
   const earned = earn(player, "pet");
   actionbar(player, `${pick(T.PET)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
+}
+
+// ---------------------------------------------------------------- needs & mood
+// Hunger, energy and fun slowly go down. Treats, naps and play bring them back. His mood
+// (the lowest need) changes his face and what he does. Nothing bad ever happens to him.
+
+const NEEDS_START = { hunger: 80, energy: 80, fun: 80 };
+
+function getNeeds(player) {
+  try {
+    const raw = player.getDynamicProperty(PROP.needs);
+    if (typeof raw === "string") return { ...NEEDS_START, ...JSON.parse(raw) };
+  } catch {}
+  return { ...NEEDS_START };
+}
+
+function changeNeeds(player, delta) {
+  const needs = getNeeds(player);
+  for (const key of Object.keys(delta)) needs[key] = Math.max(0, Math.min(100, Math.round(needs[key] + delta[key])));
+  player.setDynamicProperty(PROP.needs, JSON.stringify(needs));
+  return needs;
+}
+
+function moodOf(needs) {
+  if (needs.hunger < 30) return "hungry";
+  if (needs.energy < 25) return "tired";
+  if (needs.fun < 30) return "bored";
+  return "happy";
+}
+
+// Once a minute while he's with you. Resting (sitting or lying down) recharges him.
+function updateNeeds(player, dog) {
+  const resting = isSitting(dog);
+  changeNeeds(player, {
+    hunger: -3,
+    fun: resting ? -1 : -3,
+    energy: resting ? 8 : isNight() ? -4 : -2,
+  });
+}
+
+// ---------------------------------------------------------------- practice makes perfect
+
+const PRACTICE = new Set(["paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin", "lie", "hop"]);
+const MASTER_AT = 5; // successful tries to master a trick
+
+function getSkills(player) {
+  try {
+    const raw = player.getDynamicProperty(PROP.skills);
+    if (typeof raw === "string") return JSON.parse(raw);
+  } catch {}
+  return {};
+}
+
+// Returns true if he pulls the trick off. Early on he sometimes does something else instead.
+function attemptTrick(player, dog, action) {
+  const skills = getSkills(player);
+  const done = skills[action] ?? 0;
+  if (done >= MASTER_AT) return true;
+  const trickName = T.TRICK_NAMES[action] ?? action;
+  if (Math.random() > 0.6 + done * 0.08) {
+    const oops = pick(T.OOPS);
+    if (oops.action === "spin") spin(dog);
+    else if (oops.action === "tilt") tiltHead(dog);
+    else if (oops.action === "sit") sit(dog);
+    else hop(dog, 0.45);
+    showFace(dog, "puppy", 50);
+    sound(dog.dimension, "mob.wolf.whine", dog.location);
+    tell(player, oops.text.replace("{trick}", trickName));
+    return false;
+  }
+  skills[action] = done + 1;
+  player.setDynamicProperty(PROP.skills, JSON.stringify(skills));
+  if (skills[action] === MASTER_AT) {
+    system.runTimeout(() => {
+      if (!isValid(player)) return;
+      tell(player, T.MASTERED.replace("{trick}", trickName));
+      sound(player.dimension, "random.levelup", player.location);
+      if (isValid(dog)) showFace(dog, "love", 60);
+      addFriendship(player, 3);
+    }, 30);
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------- fetch
+// The Tennis Ball really gets thrown: he runs after it, picks it up and brings it back.
+
+function runToward(dog, target, speed = 0.32) {
+  const p = dog.location;
+  const dx = target.x - p.x;
+  const dz = target.z - p.z;
+  const d = Math.hypot(dx, dz);
+  if (d < 0.05) return d;
+  const v = dog.getVelocity();
+  // Hop up single blocks in the way.
+  let jump = 0;
+  try {
+    const ahead = dog.dimension.getBlock({ x: Math.floor(p.x + (dx / d) * 0.8), y: Math.floor(p.y), z: Math.floor(p.z + (dz / d) * 0.8) });
+    if (ahead && !ahead.isAir && !ahead.isLiquid && dog.isOnGround) jump = 0.42;
+  } catch {}
+  dog.applyImpulse({ x: (dx / d) * speed - v.x, y: jump, z: (dz / d) * speed - v.z });
+  try {
+    dog.setRotation({ x: 0, y: (Math.atan2(-dx, dz) * 180) / Math.PI });
+  } catch {}
+  return d;
+}
+
+function setBall(dog, on) {
+  try {
+    dog.setProperty("jf:ball", on);
+  } catch {}
+}
+
+// You only ever keep one ball, even if you grab the thrown one yourself.
+function keepOneBall(player) {
+  const inv = inventory(player);
+  if (!inv) return;
+  let seen = false;
+  for (let i = 0; i < inv.size; i++) {
+    if (inv.getItem(i)?.typeId !== ITEMS.ball) continue;
+    if (seen) inv.setItem(i, undefined);
+    seen = true;
+  }
+}
+
+function throwBall(player) {
+  const dog = findDog(player);
+  if (!isNear(dog, player, 24)) return actionbar(player, T.TOO_FAR);
+  if (fetching.has(dog.id)) return actionbar(player, T.FETCH_BUSY);
+
+  const head = player.getHeadLocation();
+  const dir = player.getViewDirection();
+  let ball;
+  try {
+    ball = player.dimension.spawnItem(new ItemStack(ITEMS.ball, 1), { x: head.x + dir.x, y: head.y + dir.y, z: head.z + dir.z });
+    ball.applyImpulse({ x: dir.x * 1.1, y: dir.y * 1.1 + 0.3, z: dir.z * 1.1 });
+  } catch {
+    return play(player); // couldn't throw it; just play instead
+  }
+  if (isSitting(dog)) stand(dog);
+  try {
+    dog.triggerEvent("jf:sit"); // pause his follow/wander brain while we steer him
+  } catch {}
+  showFace(dog, "happy", 200);
+  sound(dog.dimension, "mob.wolf.bark", dog.location);
+  actionbar(player, T.FETCH_THROW);
+
+  const game = { phase: "chase", ticks: 0 };
+  const finish = (ok) => {
+    system.clearRun(game.run);
+    fetching.delete(dog.id);
+    if (isValid(ball)) ball.remove();
+    if (!isValid(dog)) return;
+    setBall(dog, false);
+    try {
+      if (!isSitting(dog)) dog.triggerEvent("jf:stand");
+    } catch {}
+    if (!isValid(player)) return;
+    keepOneBall(player);
+    if (!ok) return actionbar(player, T.FETCH_LOST);
+    sparkle(dog);
+    showFace(dog, "love", 60);
+    sound(dog.dimension, "mob.wolf.bark", dog.location);
+    changeNeeds(player, { fun: 30, energy: -6 });
+    const earned = earn(player, "ball");
+    actionbar(player, `${pick(T.FETCH_DONE)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
+  };
+  game.run = system.runInterval(() => {
+    try {
+      if (!isValid(dog) || !isValid(player)) return finish(false);
+      game.ticks++;
+      if (game.phase === "chase") {
+        if (!isValid(ball)) return finish(false); // someone picked it up
+        if (game.ticks < 8) return; // let it fly a moment first
+        const d = runToward(dog, ball.location, 0.34);
+        if (d < 1.3 || game.ticks > 200) {
+          if (game.ticks > 200) dog.teleport(ball.location);
+          ball.remove();
+          setBall(dog, true);
+          sound(dog.dimension, "random.pop", dog.location);
+          actionbar(player, T.FETCH_GOT_IT);
+          game.phase = "return";
+          game.ticks = 0;
+        }
+      } else {
+        if (dog.dimension.id !== player.dimension.id) return finish(false);
+        const d = runToward(dog, player.location, 0.32);
+        if (d < 2.2 || game.ticks > 200) {
+          if (game.ticks > 200) dog.teleport(player.location);
+          finish(true);
+        }
+      }
+    } catch (error) {
+      console.warn(`[jf] fetch: ${error}`);
+      finish(false);
+    }
+  }, 1);
+  fetching.set(dog.id, game);
+}
+
+// ---------------------------------------------------------------- smart reactions
+
+function canReact(player, kind, cooldown) {
+  const key = `${player.id}:${kind}`;
+  if (seconds - (reactedAt.get(key) ?? -9999) < cooldown) return false;
+  reactedAt.set(key, seconds);
+  return true;
+}
+
+const prettyMob = (typeId) => typeId.replace("minecraft:", "").replace(/_/g, " ");
+
+function reactToSurroundings(player, dog) {
+  const near = isNear(dog, player, 24);
+  // Welcome home: you were apart for a while and now you're back together.
+  if (near) {
+    const since = awaySince.get(player.id);
+    awaySince.delete(player.id);
+    if (since !== undefined && seconds - since >= 90 && !fetching.has(dog.id)) {
+      play(player);
+      return actionbar(player, T.WELCOME_HOME);
+    }
+  } else if (!awaySince.has(player.id)) {
+    awaySince.set(player.id, seconds);
+  }
+  if (!near || fetching.has(dog.id)) return;
+
+  // Bedtime: he naps by your bed (and it recharges him).
+  try {
+    if (player.isSleeping && canReact(player, "bed", 300)) {
+      sit(dog, POSE.lie);
+      showFace(dog, "sleepy", 400);
+      changeNeeds(player, { energy: 40 });
+      return actionbar(player, T.BEDTIME);
+    }
+  } catch {}
+
+  // Guard dog: warns you about monsters sneaking up.
+  if (seconds % 3 === 0) {
+    let monster;
+    try {
+      monster = player.dimension.getEntities({ location: player.location, maxDistance: 12, families: ["monster"] })[0];
+    } catch {}
+    if (monster && canReact(player, "guard", 30)) {
+      showFace(dog, "shocked", 50);
+      sound(dog.dimension, "mob.wolf.growl", dog.location);
+      system.runTimeout(() => isValid(dog) && sound(dog.dimension, "mob.wolf.bark", dog.location), 10);
+      try {
+        const m = monster.location;
+        dog.setRotation({ x: 0, y: (Math.atan2(-(m.x - dog.location.x), m.z - dog.location.z) * 180) / Math.PI });
+      } catch {}
+      actionbar(player, T.GUARD.replace("{mob}", prettyMob(monster.typeId)));
+    }
+  }
+}
+
+world.afterEvents.entityHurt.subscribe(
+  ({ hurtEntity }) => {
+    const player = world.getAllPlayers().find((p) => p.id === hurtEntity.id);
+    if (!player || !player.getDynamicProperty(PROP.started)) return;
+    const dog = findDog(player);
+    if (!isNear(dog, player, 32) || fetching.has(dog.id) || !canReact(player, "hurt", 15)) return;
+    if (!isSitting(dog) && !isNear(dog, player, 4)) bring(dog, player);
+    showFace(dog, "puppy", 80);
+    tiltHead(dog);
+    sound(dog.dimension, "mob.wolf.whine", dog.location);
+    actionbar(player, T.WORRIED);
+  },
+  { entityTypes: ["minecraft:player"] }
+);
+
+world.afterEvents.itemCompleteUse.subscribe(({ source, itemStack }) => {
+  if (source?.typeId !== "minecraft:player" || !itemStack || itemStack.typeId.includes("potion")) return;
+  const player = world.getAllPlayers().find((p) => p.id === source.id);
+  if (!player) return;
+  const dog = findDog(player);
+  if (!isNear(dog, player, 16) || !canReact(player, "food", 60)) return;
+  tiltHead(dog);
+  showFace(dog, "puppy", 80);
+  sound(dog.dimension, "mob.wolf.whine", dog.location);
+  actionbar(player, T.BEG_FOOD);
+});
+
+// ---------------------------------------------------------------- the status screen (sneak + Dog Whistle)
+
+function meter(value) {
+  const filled = Math.round(value / 10);
+  return `${value >= 50 ? "§a" : value >= 25 ? "§e" : "§c"}${"|".repeat(filled)}§8${"|".repeat(10 - filled)}`;
+}
+
+function openStatus(player, retries = 3) {
+  const needs = getNeeds(player);
+  const skills = getSkills(player);
+  const mastered = [...PRACTICE].filter((a) => (skills[a] ?? 0) >= MASTER_AT).length;
+  const body = [
+    `§fMood: ${T.MOOD_LABEL[moodOf(needs)]}`,
+    `§fFull:     ${meter(needs.hunger)}`,
+    `§fEnergy: ${meter(needs.energy)}`,
+    `§fFun:      ${meter(needs.fun)}`,
+    `§fFriendship: ${friendshipBar(player)}`,
+    `§fTricks mastered: §e${mastered}/${PRACTICE.size}`,
+  ].join("\n");
+  new ActionFormData()
+    .title(personalize(player, T.STATUS_TITLE))
+    .body(personalize(player, body))
+    .button(T.STATUS_TRICKS)
+    .button(T.STATUS_RENAME)
+    .button(T.STATUS_CLOSE)
+    .show(player)
+    .then((response) => {
+      if (response.canceled) {
+        if (response.cancelationReason === "UserBusy" && retries > 0) {
+          system.runTimeout(() => isValid(player) && openStatus(player, retries - 1), 10);
+        }
+        return;
+      }
+      if (response.selection === 0) openTricks(player);
+      else if (response.selection === 1) openNaming(player);
+    })
+    .catch((error) => console.warn(`[jf] status screen failed: ${error}`));
+}
+
+function openTricks(player) {
+  const skills = getSkills(player);
+  const lines = [...PRACTICE].map((action) => {
+    const done = Math.min(MASTER_AT, skills[action] ?? 0);
+    const stars = `§e${"*".repeat(done)}§8${"*".repeat(MASTER_AT - done)}`;
+    return `${stars} §f${T.TRICK_NAMES[action]}${done >= MASTER_AT ? " §a(mastered!)" : ""}`;
+  });
+  lines.push("", "§7Plus: sit, come, speak, fetch, bone, play... always perfect.");
+  new ActionFormData()
+    .title(personalize(player, T.TRICKS_TITLE))
+    .body(lines.join("\n"))
+    .button(T.TRICKS_BACK)
+    .show(player)
+    .then((response) => {
+      if (!response.canceled) openStatus(player);
+    })
+    .catch(() => {});
 }
 
 // ---------------------------------------------------------------- talking
@@ -884,6 +1250,18 @@ function respond(player, dog, entry) {
     return tell(player, pick(T.VOICE_UNKNOWN));
   }
   if (entry.action === "play") return play(player);
+  if (entry.action === "fetch") return throwBall(player);
+  if (PRACTICE.has(entry.action)) {
+    changeNeeds(player, { fun: 3, energy: -1 });
+    // Too sleepy? Sometimes he'd rather nap.
+    if (getNeeds(player).energy < 15 && Math.random() < 0.5) {
+      sit(dog, POSE.lie);
+      showFace(dog, "sleepy", 200);
+      sound(dog.dimension, "mob.wolf.panting", dog.location);
+      return tell(player, T.TOO_SLEEPY);
+    }
+    if (!attemptTrick(player, dog, entry.action)) return;
+  }
   talkAction(player, dog, entry.action);
   if (entry.face) showFace(dog, entry.face, actionTicks(entry) + 20);
   let reply = entry.replies ? pick(entry.replies) : "";

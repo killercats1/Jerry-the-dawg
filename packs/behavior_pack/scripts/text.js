@@ -156,7 +156,8 @@ export const VOICE = [
     replies: ["§bJerry§7 jumps! Boing!", "§bJerry§7 hops like a bunny. A big fluffy bunny."] },
   { words: ["bone", "your bone", "get your bone"], face: "happy", action: "bone",
     replies: ["§bJerry§7 proudly shows off his bone.", "§bJerry§7 found his favourite bone. He will not be sharing."] },
-  { words: ["fetch", "play", "ball", "zoomies"], action: "play" },
+  { words: ["fetch", "ball", "go get it", "get the ball"], action: "fetch" },
+  { words: ["play", "zoomies"], action: "play" },
   { words: ["boo", "surprise", "guess what", "oh no", "whoa", "wow"], face: "shocked", action: "shock",
     replies: ["§bJerry§7 jumps! His eyes go HUGE.", "§bJerry§7 is shocked. Absolutely shocked."] },
   { words: ["treat", "hungry", "food", "snack", "dinner", "eat"], face: "puppy", action: "excited",
@@ -191,3 +192,68 @@ export const VOICE_UNKNOWN = [
   "§bJerry§7 tilts his head. He doesn't know that one yet... but he loves hearing your voice.",
   "§bJerry§7 listens very carefully, then wags his tail anyway.",
 ];
+
+// ---------------------------------------------------------------- needs & moods
+// Hunger/energy/fun go down slowly. Treats, naps and play bring them back. Nothing bad ever happens.
+
+export const MOOD_LABEL = {
+  happy: "§aHappy",
+  hungry: "§6Hungry §7(give him a treat)",
+  tired: "§9Sleepy §7(let him lie down for a nap)",
+  bored: "§eBored §7(play fetch with him)",
+};
+export const MOOD_MOMENTS = {
+  hungry: [
+    { sound: "mob.wolf.whine", face: "puppy", action: "tilt", text: "§bJerry§7's tummy rumbles. Treat, please?" },
+    { sound: "mob.wolf.whine", face: "puppy", text: "§bJerry§7 stares at your pocket. He knows the treats are in there." },
+  ],
+  tired: [
+    { sound: "mob.wolf.panting", face: "sleepy", action: "nap", text: "§bJerry§7 lies down for a nap. (Say §f\"come\"§7 to wake him.)" },
+    { sound: "mob.wolf.panting", face: "sleepy", text: "§bJerry§7 does a big yawn. Someone needs a nap." },
+  ],
+  bored: [
+    { sound: "mob.wolf.whine", face: "puppy", action: "bone", text: "§bJerry§7 drops his bone at your feet. Play fetch?" },
+    { sound: "mob.wolf.bark", face: "puppy", action: "hop", text: "§bJerry§7 bounces around you. He's SO bored. Throw the ball!" },
+  ],
+};
+export const TOO_SLEEPY = "§bJerry§7 is too sleepy for tricks... *yawn* He lies down instead.";
+
+// ---------------------------------------------------------------- practice makes perfect
+// Tricks get better with practice: early on he sometimes messes up, then he masters them.
+export const TRICK_NAMES = {
+  paw: "shake", highfive: "high five", wave: "wave", beg: "beg", roll: "roll over", dead: "play dead",
+  bow: "bow", dance: "dance", backflip: "backflip", howl: "howl", chase: "chase his tail", spin: "spin",
+  lie: "lie down", hop: "jump",
+};
+export const OOPS = [
+  { action: "spin", text: "§bJerry§7 tried to §f{trick}§7... and did a spin instead. Close enough!" },
+  { action: "tilt", text: "§bJerry§7 tried to §f{trick}§7, got confused and tilted his head. He's still learning!" },
+  { action: "sit", text: "§bJerry§7 tried to §f{trick}§7... and just sat down. Practice makes perfect!" },
+  { action: "hop", text: "§bJerry§7 got so excited about §f{trick}§7 that he just jumped around." },
+];
+export const MASTERED = "§e* * * §bJerry§e mastered §f{trick}§e! * * *";
+
+// ---------------------------------------------------------------- fetch
+export const FETCH_THROW = "§7You throw the ball! §bJerry§7 takes off after it...";
+export const FETCH_GOT_IT = "§bJerry§7 got it!";
+export const FETCH_DONE = [
+  "§bJerry§7 drops the ball at your feet. Again! Again!",
+  "§bJerry§7 brings the ball back, tail wagging like crazy.",
+];
+export const FETCH_BUSY = "§7Jerry's already chasing the ball!";
+export const FETCH_LOST = "§7The ball's gone... §bJerry§7 looks around, confused.";
+
+// ---------------------------------------------------------------- smart reactions
+export const GUARD = "§bJerry§c growls! §7There's a §f{mob}§7 nearby, watch out!";
+export const WORRIED = "§bJerry§7 rushes over to check on you. You okay?";
+export const BEG_FOOD = "§bJerry§7 watches you eat with HUGE puppy eyes...";
+export const WELCOME_HOME = "§bJerry§7 is SO happy you're back! Zoomies!";
+export const BEDTIME = "§bJerry§7 curls up at the foot of your bed. Goodnight!";
+
+// ---------------------------------------------------------------- the status screen (sneak + Dog Whistle)
+export const STATUS_TITLE = "Jerry";
+export const STATUS_TRICKS = "Tricks";
+export const STATUS_RENAME = "Rename";
+export const STATUS_CLOSE = "Close";
+export const TRICKS_TITLE = "Jerry's tricks";
+export const TRICKS_BACK = "Back";
