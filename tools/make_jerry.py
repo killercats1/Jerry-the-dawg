@@ -10,12 +10,14 @@ vanilla wolf model (Mojang/bedrock-samples, models/entity/wolf.geo.json) so it c
 wolf texture. Differences from vanilla, needed for Jerry's tricks:
   - everything hangs off a "root" bone, so the whole dog can roll over
   - the resting pose that vanilla sets in animation.wolf.setup is baked into the bones
-geometry.jf_jerry_extras holds the speaker icon. It shares bone names with the main model, so it
-follows the same animations (head tilt, roll over).
+geometry.jf_jerry_extras holds the speaker icon and the bone Jerry can carry in his mouth, and
+geometry.jf_jerry_face holds his expressions (textures drawn by make_faces.py). They share bone
+names with the main model, so they follow the same animations (head tilt, roll over).
 """
 import json
 from pathlib import Path
 
+import make_faces
 from make_textures import PALETTE, write_png
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,7 +52,25 @@ EXTRAS_BONES = [
     ("head", "root", [-1, 10.5, -7], None, []),
     # The "I heard you!" speaker icon. Hidden unless the jf:speaking property is on.
     ("speaker", "head", [0, 22, -7], None, [cube([-5, 17, -7], [10, 10, 0], [0, 0])]),
+    # A bone held across the mouth, sticking out both sides. Shown when jf:bone is on.
+    ("mouth_bone", "head", [0, 9, -11], None, [
+        cube([-3.5, 8.5, -11.5], [7, 1, 1], [0, 11]),
+        cube([-4.5, 8, -12], [1, 2, 2], [20, 0]),
+        cube([3.5, 8, -12], [1, 2, 2], [20, 4]),
+    ]),
 ]
+
+# The expression overlay: a flat plane just in front of the top 6x4 pixels of the face
+# (brows, eyes, top of the muzzle). The snout sits in front of its lower middle, like vanilla.
+FACE_BONES = [
+    ("root", None, [0, 7, 0], None, []),
+    ("head", "root", [-1, 10.5, -7], None, []),
+    ("face", "head", [0, 11.5, -9], None, [
+        {"origin": [-3, 9.5, -9.05], "size": [6, 4, 0], "uv": {"north": {"uv": [0, 0], "uv_size": [6, 4]}}},
+    ]),
+]
+
+PALETTE.update({"O": (236, 230, 214, 255), "Q": (196, 188, 170, 255)})  # bone colours
 
 SPEAKER_ICON = [
     "....kk....",
@@ -91,13 +111,17 @@ def geometry(identifier, bones, tex_w, tex_h):
 
 
 def extras_texture():
-    # Box UV for a 10x10x0 plane: front face at (0, 0), back face (mirrored) at (10, 0).
-    rows = []
-    for y in range(16):
-        icon = SPEAKER_ICON[y] if y < 10 else "." * 10
-        back = icon[::-1]
-        rows.append((icon + back).ljust(32, "."))
-    return rows
+    grid = [["."] * 32 for _ in range(16)]
+    # Speaker: box UV for a 10x10x0 plane puts the front at (0, 0) and the back (mirrored) at (10, 0).
+    for y, row in enumerate(SPEAKER_ICON):
+        for x, ch in enumerate(row + row[::-1]):
+            grid[y][x] = ch
+    # Bone: shaft (7x1x1 at 0,11 -> 16x2) and two knobs (1x2x2 at 20,0 and 20,4 -> 6x4 each).
+    for x0, y0, w, h in ((0, 11, 16, 2), (20, 0, 6, 4), (20, 4, 6, 4)):
+        for y in range(y0, y0 + h):
+            for x in range(x0, x0 + w):
+                grid[y][x] = "Q" if y == y0 + h - 1 else "O"
+    return ["".join(row) for row in grid]
 
 
 def main():
@@ -106,6 +130,7 @@ def main():
         "minecraft:geometry": [
             geometry("geometry.jf_jerry", WOLF_BONES, 64, 32),
             geometry("geometry.jf_jerry_extras", EXTRAS_BONES, 32, 16),
+            geometry("geometry.jf_jerry_face", FACE_BONES, 6, 4),  # textures are 8x (48x32)
         ],
     }
     path = ROOT / "packs/resource_pack/models/entity/jerry.geo.json"
@@ -113,7 +138,8 @@ def main():
     path.write_text(json.dumps(geo, indent=2) + "\n")
     assert all(ch in PALETTE for row in extras_texture() for ch in row)
     write_png(ROOT / "packs/resource_pack/textures/entity/jf_jerry_extras.png", extras_texture())
-    print("Jerry's models and speaker texture written.")
+    make_faces.main()
+    print("Jerry's models, speaker/bone texture and faces written.")
 
 
 if __name__ == "__main__":

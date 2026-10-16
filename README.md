@@ -20,6 +20,13 @@ You also get five items:
 | 📯 **Jerry's Whistle** | Calls your pets to you from anywhere, and shows your friendship |
 | 💬 **Talk to Jerry** | Say something and Jerry reacts (see below) |
 
+## Jerry's faces 🐶
+
+Jerry makes faces like in the video: **happy** (^ ^) when you pet, brush or play with him,
+**heart eyes** for treats and "good boy", **big puppy eyes** when he's listening or confused,
+**shocked** cartoon eyes when you say "boo!", and **sleepy** eyes at night. He also carries a
+**bone in his mouth** when you play fetch, say "bone", or when he brings you a bone as a gift.
+
 ## Talking to Jerry 🎤
 
 1. Use **Talk to Jerry**, or **sneak and tap Jerry** with an empty hand.
@@ -52,6 +59,8 @@ and no API key. **Setup guide: [voice-helper/README.md](voice-helper/README.md)*
 | "fetch", "play" | zoomies! |
 | "treat", "hungry" | gets excited |
 | "sleep", "tired" | yawns |
+| "bone" | shows off his bone (in his mouth) |
+| "boo!", "surprise!", "whoa" | shocked face and a jump |
 | "Mochi", "kitty" | Mochi says hi |
 | anything he doesn't know | tilts his head, confused but happy |
 
@@ -98,7 +107,8 @@ No experimental toggles are needed. Requires Minecraft Bedrock **1.21.40 or newe
 ```
 packs/behavior_pack/      scripts/main.js (pet logic), scripts/text.js (all messages), items/, entities/jerry.json
 packs/resource_pack/      Jerry's model (vanilla wolf shape), animations (sit / roll over / head tilt / speaker icon)
-tools/make_jerry.py       regenerates Jerry's model (based on Mojang's vanilla wolf) and the speaker icon
+tools/make_jerry.py       regenerates Jerry's model (based on Mojang's vanilla wolf), speaker icon and bone
+tools/make_faces.py       draws Jerry's face expressions (happy, puppy, shocked, love, sleepy)
 tools/make_textures.py    regenerates the item and pack icons
 tools/build.py            validates JSON and builds dist/JerryAndFriends.mcaddon (+ copies the voice helper)
 voice-helper/             Jerry Voice: the phone helper for real microphone voice (Termux)

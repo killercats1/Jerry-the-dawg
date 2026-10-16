@@ -361,6 +361,133 @@
               ]
             }
           ]
+        },
+        {
+          "name": "mouth_bone",
+          "pivot": [
+            0,
+            9,
+            -11
+          ],
+          "parent": "head",
+          "cubes": [
+            {
+              "origin": [
+                -3.5,
+                8.5,
+                -11.5
+              ],
+              "size": [
+                7,
+                1,
+                1
+              ],
+              "uv": [
+                0,
+                11
+              ]
+            },
+            {
+              "origin": [
+                -4.5,
+                8,
+                -12
+              ],
+              "size": [
+                1,
+                2,
+                2
+              ],
+              "uv": [
+                20,
+                0
+              ]
+            },
+            {
+              "origin": [
+                3.5,
+                8,
+                -12
+              ],
+              "size": [
+                1,
+                2,
+                2
+              ],
+              "uv": [
+                20,
+                4
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": {
+        "identifier": "geometry.jf_jerry_face",
+        "texture_width": 6,
+        "texture_height": 4,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2.5,
+        "visible_bounds_offset": [
+          0,
+          1,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            7,
+            0
+          ]
+        },
+        {
+          "name": "head",
+          "pivot": [
+            -1,
+            10.5,
+            -7
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "face",
+          "pivot": [
+            0,
+            11.5,
+            -9
+          ],
+          "parent": "head",
+          "cubes": [
+            {
+              "origin": [
+                -3,
+                9.5,
+                -9.05
+              ],
+              "size": [
+                6,
+                4,
+                0
+              ],
+              "uv": {
+                "north": {
+                  "uv": [
+                    0,
+                    0
+                  ],
+                  "uv_size": [
+                    6,
+                    4
+                  ]
+                }
+              }
+            }
+          ]
         }
       ]
     }

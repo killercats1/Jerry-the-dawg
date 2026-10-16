@@ -25,6 +25,37 @@
       "part_visibility": [
         {
           "speaker": "query.property('jf:speaking')"
+        },
+        {
+          "mouth_bone": "query.property('jf:bone')"
+        }
+      ]
+    },
+    "controller.render.jf_jerry_face": {
+      "arrays": {
+        "textures": {
+          "Array.faces": [
+            "Texture.face_happy",
+            "Texture.face_happy",
+            "Texture.face_puppy",
+            "Texture.face_shocked",
+            "Texture.face_love",
+            "Texture.face_sleepy"
+          ]
+        }
+      },
+      "geometry": "Geometry.face",
+      "materials": [
+        {
+          "*": "Material.face"
+        }
+      ],
+      "textures": [
+        "Array.faces[query.property('jf:face')]"
+      ],
+      "part_visibility": [
+        {
+          "face": "query.property('jf:face') > 0"
         }
       ]
     }

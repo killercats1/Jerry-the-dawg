@@ -47,7 +47,7 @@ const lastUse = new Map();
 const pendingIntro = new Set();
 const pendingCat = new Set();
 const poseTimers = new Map(); // dog id -> latest trick, so an older timer doesn't cut a newer trick short
-const speakerTimers = new Map();
+const propTimers = new Map(); // "dogId:property" -> latest timed change
 // The optional phone voice helper (voice-helper/jerry_voice.py) checks in every few seconds.
 const voiceHelper = { lastSeen: -999, lastListener: undefined };
 const LISTEN_TAG = "jf_listen"; // the helper listens when it sees this tag on a player
@@ -168,6 +168,8 @@ function addFriendship(player, amount) {
   player.setDynamicProperty(PROP.friendship, after);
   const level = levelOf(after);
   if (level > levelOf(before)) {
+    const dog = findDog(player);
+    if (dog) showFace(dog, "love", 100);
     title(player, "§aFriendship up!", `§fJerry is now your §e${T.LEVELS[level]}`);
     sound(player.dimension, "random.levelup", player.location);
     system.runTimeout(() => {
@@ -312,20 +314,31 @@ function trick(dog, pose, ticks) {
 const rollOver = (dog) => trick(dog, POSE.roll, 50);
 const tiltHead = (dog) => trick(dog, POSE.tilt, 36);
 
-// The speaker icon that pops up over Jerry's head when he hears you.
-function showSpeaker(dog, ticks) {
-  const token = (speakerTimers.get(dog.id) ?? 0) + 1;
-  speakerTimers.set(dog.id, token);
+// Sets one of Jerry's properties for a while, then puts it back. A newer call wins, so an
+// older timer never cuts a newer expression short.
+function setFor(dog, key, value, resetTo, ticks) {
+  const id = `${dog.id}:${key}`;
+  const token = (propTimers.get(id) ?? 0) + 1;
+  propTimers.set(id, token);
   try {
-    dog.setProperty("jf:speaking", true);
+    dog.setProperty(key, value);
   } catch {}
   system.runTimeout(() => {
-    if (!isValid(dog) || speakerTimers.get(dog.id) !== token) return;
+    if (!isValid(dog) || propTimers.get(id) !== token) return;
     try {
-      dog.setProperty("jf:speaking", false);
+      dog.setProperty(key, resetTo);
     } catch {}
   }, ticks);
 }
+
+// The speaker icon that pops up over Jerry's head when he hears you.
+const showSpeaker = (dog, ticks) => setFor(dog, "jf:speaking", true, false, ticks);
+
+// Jerry's expressions (face overlays in the resource pack), matching the jf:face property.
+const FACE = { normal: 0, happy: 1, puppy: 2, shocked: 3, love: 4, sleepy: 5 };
+const showFace = (dog, face, ticks = 60) => setFor(dog, "jf:face", FACE[face] ?? FACE.normal, FACE.normal, ticks);
+// The bone he carries in his mouth.
+const holdBone = (dog, ticks = 60) => setFor(dog, "jf:bone", true, false, ticks);
 
 function removeAllPets(player) {
   for (const dimId of DIMENSIONS) {
@@ -383,6 +396,11 @@ function scheduleCat(player) {
     if (!isValid(player) || player.getDynamicProperty(PROP.hasCat)) return;
     player.setDynamicProperty(PROP.hasCat, true);
     const mochi = spawnMochi(player);
+    const dog = findDog(player);
+    if (dog) {
+      showFace(dog, "shocked", 40); // a cat?!
+      system.runTimeout(() => isValid(dog) && showFace(dog, "happy", 80), 40);
+    }
     sound(player.dimension, "mob.cat.meow", player.location);
     sparkle(mochi);
     title(player, "§dA new friend!", "§fMeet Mochi");
@@ -402,14 +420,22 @@ function playMoment(player, dog, cat) {
   if (moment.action === "hop") hop(dog);
   if (moment.action === "roll" && !isSitting(dog)) rollOver(dog);
   if (moment.action === "tilt") tiltHead(dog);
+  if (moment.face) showFace(dog, moment.face, 70);
   actionbar(player, moment.text);
 }
 
 function bringGift(player, dog) {
   const gift = pick(T.GIFTS);
-  try {
-    dog.dimension.spawnItem(new ItemStack(gift.item, 1), dog.location);
-  } catch {}
+  showFace(dog, "happy", 80);
+  // A bone gets carried over in his mouth first, like in the video.
+  const carry = gift.item === "minecraft:bone" ? 40 : 0;
+  if (carry) holdBone(dog, carry);
+  system.runTimeout(() => {
+    if (!isValid(dog)) return;
+    try {
+      dog.dimension.spawnItem(new ItemStack(gift.item, 1), dog.location);
+    } catch {}
+  }, carry);
   sound(dog.dimension, "mob.wolf.bark", dog.location);
   sparkle(dog, "minecraft:villager_happy", 6);
   player.sendMessage(`§bJerry§7 brought you a gift: §f${gift.name}§7! He's very proud.`);
@@ -491,6 +517,7 @@ function giveTreat(player, target) {
     return actionbar(player, T.TREAT_CAT);
   }
   sound(target.dimension, "mob.wolf.bark", target.location);
+  showFace(target, "love", 60);
   const earned = earn(player, "treat");
   actionbar(player, `${pick(T.TREAT)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
 }
@@ -504,6 +531,7 @@ function brush(player, target) {
     return actionbar(player, T.BRUSH_CAT);
   }
   sound(target.dimension, "mob.wolf.panting", target.location);
+  showFace(target, "happy", 60);
   const earned = earn(player, "brush");
   actionbar(player, `${pick(T.BRUSH)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
 }
@@ -519,6 +547,8 @@ function play(player) {
     }, i * 12);
   }
   spin(dog);
+  holdBone(dog, 70);
+  showFace(dog, "happy", 70);
   let text = pick(T.PLAY);
   const cat = findCat(player);
   if (isNear(cat, player, 16)) {
@@ -548,6 +578,7 @@ function petJerry(player, dog) {
   sparkle(dog);
   sound(dog.dimension, "mob.wolf.panting", dog.location);
   tiltHead(dog);
+  showFace(dog, "happy", 50);
   const earned = earn(player, "pet");
   actionbar(player, `${pick(T.PET)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
 }
@@ -596,7 +627,10 @@ function onVoiceStatus(player, status) {
     // Keep the hint up while the microphone is open.
     for (let i = 0; i < 3; i++) system.runTimeout(() => isValid(player) && actionbar(player, T.VOICE_LISTENING), i * 40);
     const dog = findDog(player);
-    if (dog && isNear(dog, player, 24)) tiltHead(dog); // ears up, he's listening
+    if (dog && isNear(dog, player, 24)) {
+      tiltHead(dog); // ears up, big eyes: he's listening
+      showFace(dog, "puppy", 90);
+    }
   } else if (status === "nothing") {
     actionbar(player, T.VOICE_NOTHING);
   }
@@ -729,10 +763,12 @@ function respond(player, dog, entry) {
   if (!entry) {
     sound(dog.dimension, "mob.wolf.whine", dog.location);
     tiltHead(dog);
+    showFace(dog, "puppy", 50);
     return player.sendMessage(pick(T.VOICE_UNKNOWN));
   }
   if (entry.action === "play") return play(player);
   talkAction(player, dog, entry.action);
+  if (entry.face) showFace(dog, entry.face, actionTicks(entry) + 20);
   let reply = entry.replies ? pick(entry.replies) : "";
   if (entry.action === "mochi") {
     const cat = findCat(player);
@@ -780,6 +816,12 @@ function talkAction(player, dog, action) {
       hop(dog, 0.35);
       return sound(dim, "mob.wolf.whine", dog.location);
     case "yawn":
+      return sound(dim, "mob.wolf.panting", dog.location);
+    case "shock":
+      hop(dog, 0.4);
+      return sound(dim, "mob.wolf.whine", dog.location);
+    case "bone":
+      holdBone(dog, 100);
       return sound(dim, "mob.wolf.panting", dog.location);
   }
 }

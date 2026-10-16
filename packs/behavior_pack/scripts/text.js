@@ -21,27 +21,29 @@ export const LEVEL_UP = [
   "§bJerry§7 and you are §fInseparable§7. This is the best friendship in the whole world.",
 ];
 
+// face: which expression Jerry makes (happy, puppy, shocked, love, sleepy).
 export const MOMENTS = [
-  { sound: "mob.wolf.bark", text: "§bJerry§7 barks proudly at absolutely nothing." },
-  { sound: "mob.wolf.panting", text: "§bJerry§7 is panting happily. Good boy." },
-  { sound: "mob.wolf.bark", action: "hop", text: "§bJerry§7 does a happy little hop!" },
-  { sound: "mob.wolf.whine", text: "§bJerry§7 wants belly rubs. Obviously." },
-  { sound: "mob.wolf.shake", text: "§bJerry§7 shakes off. You are now slightly damp." },
-  { sound: "mob.wolf.panting", text: "§bJerry§7 sniffs a flower. He approves of this flower." },
-  { sound: "mob.wolf.bark", text: "§bJerry§7 looks at you like you're his favourite person. You are." },
-  { sound: "mob.wolf.panting", action: "roll", text: "§bJerry§7 rolls onto his back for belly rubs!" },
-  { sound: "mob.wolf.whine", action: "tilt", text: "§bJerry§7 tilts his head at you. So curious." },
+  { sound: "mob.wolf.bark", face: "happy", text: "§bJerry§7 barks proudly at absolutely nothing." },
+  { sound: "mob.wolf.panting", face: "happy", text: "§bJerry§7 is panting happily. Good boy." },
+  { sound: "mob.wolf.bark", face: "happy", action: "hop", text: "§bJerry§7 does a happy little hop!" },
+  { sound: "mob.wolf.whine", face: "puppy", text: "§bJerry§7 wants belly rubs. Obviously." },
+  { sound: "mob.wolf.shake", face: "happy", text: "§bJerry§7 shakes off. You are now slightly damp." },
+  { sound: "mob.wolf.panting", face: "love", text: "§bJerry§7 sniffs a flower. He approves of this flower." },
+  { sound: "mob.wolf.bark", face: "love", text: "§bJerry§7 looks at you like you're his favourite person. You are." },
+  { sound: "mob.wolf.panting", face: "happy", action: "roll", text: "§bJerry§7 rolls onto his back for belly rubs!" },
+  { sound: "mob.wolf.whine", face: "puppy", action: "tilt", text: "§bJerry§7 tilts his head at you. So curious." },
+  { sound: "mob.wolf.whine", face: "shocked", action: "hop", text: "§bJerry§7 saw a bee. He is SHOOK." },
 ];
 
 export const NIGHT_MOMENTS = [
-  { sound: "mob.wolf.panting", text: "§bJerry§7 yawns a big sleepy yawn." },
-  { sound: "mob.wolf.whine", text: "§bJerry§7 is looking at the stars. Or maybe the moon. Hard to say." },
+  { sound: "mob.wolf.panting", face: "sleepy", text: "§bJerry§7 yawns a big sleepy yawn." },
+  { sound: "mob.wolf.whine", face: "sleepy", text: "§bJerry§7 is looking at the stars. Or maybe the moon. Hard to say." },
 ];
 
 export const CAT_MOMENTS = [
-  { sound: "mob.cat.purr", text: "§dMochi§7 curls up next to §bJerry§7. Adorable." },
-  { sound: "mob.cat.meow", text: "§dMochi§7 bats at Jerry's tail. Jerry pretends not to notice." },
-  { sound: "mob.cat.purreow", text: "§dMochi§7 and §bJerry§7 are having a staring contest. Jerry blinked first." },
+  { sound: "mob.cat.purr", face: "happy", text: "§dMochi§7 curls up next to §bJerry§7. Adorable." },
+  { sound: "mob.cat.meow", face: "shocked", text: "§dMochi§7 bats at Jerry's tail. Jerry pretends not to notice." },
+  { sound: "mob.cat.purreow", face: "shocked", text: "§dMochi§7 and §bJerry§7 are having a staring contest. Jerry blinked first." },
 ];
 
 export const TREAT = [
@@ -95,7 +97,7 @@ export const CAT_ARRIVES = [
 // Used by the "Talk to Jerry" item. On phones, tap the microphone on the keyboard to say it out loud.
 
 export const TALK_TITLE = "Talk to Jerry";
-export const TALK_LABEL = "Say something to Jerry!\n§7Tap the §fmicrophone§7 on your keyboard and say it out loud.\nTry: sit, come, roll over, good boy, speak, spin, fetch, Mochi\nOr a few at once: \"sit, then roll over, then speak\"";
+export const TALK_LABEL = "Say something to Jerry!\n§7Tap the §fmicrophone§7 on your keyboard and say it out loud.\nTry: sit, come, roll over, good boy, speak, spin, fetch, bone, boo!, Mochi\nOr a few at once: \"sit, then roll over, then speak\"";
 export const TALK_PLACEHOLDER = "Good boy, Jerry!";
 export const TALK_KEEP_GOING = "Keep talking (this box pops back up after Jerry answers)";
 
@@ -114,27 +116,31 @@ export const FUZZY_WORDS = ["speak", "fetch", "mochi", "jerry", "belly", "zoomie
 // The first entry whose words appear in what you said wins, so more specific phrases go first.
 // action: what Jerry does (see talkAction in main.js). praise: also earns a little friendship.
 export const VOICE = [
-  { words: ["good boy", "good dog", "love you", "best boy", "good job", "well done", "cute"], action: "love", praise: true,
+  { words: ["good boy", "good dog", "love you", "best boy", "good job", "well done", "cute"], face: "love", action: "love", praise: true,
     replies: ["§bJerry§7's tail is wagging so fast it's basically a propeller.", "§bJerry§7 knows. He's very aware. *happy wiggle*"] },
-  { words: ["roll over", "roll", "play dead", "belly rub", "belly rubs", "belly"], action: "roll",
+  { words: ["roll over", "roll", "play dead", "belly rub", "belly rubs", "belly"], face: "happy", action: "roll",
     replies: ["§bJerry§7 rolls over onto his back! Belly rubs, please.", "§bJerry§7 flops over with his paws in the air."] },
-  { words: ["sit", "stay", "wait", "stop", "freeze", "down"], action: "sit",
+  { words: ["sit", "stay", "wait", "stop", "freeze", "down"], face: "happy", action: "sit",
     replies: ["§bJerry§7 sits down and waits patiently. Say §f\"come\"§7 to call him.", "§bJerry§7 sits like a very good boy. Say §f\"come\"§7 when you're ready."] },
-  { words: ["come", "here", "let's go", "lets go", "follow", "okay", "release", "free", "stand"], action: "come",
+  { words: ["come", "here", "let's go", "lets go", "follow", "okay", "release", "free", "stand"], face: "happy", action: "come",
     replies: ["§bJerry§7 comes trotting over!", "§bJerry§7 zooms right to you."] },
-  { words: ["speak", "bark", "woof", "talk", "say something"], action: "bark",
+  { words: ["speak", "bark", "woof", "talk", "say something"], face: "happy", action: "bark",
     replies: ["§bJerry§f: WOOF! WOOF!", "§bJerry§f: Woof! §7(He said it with feeling.)"] },
-  { words: ["spin", "dance", "twirl", "trick"], action: "spin",
+  { words: ["spin", "dance", "twirl", "trick"], face: "happy", action: "spin",
     replies: ["§bJerry§7 does a spin! Ta-da!", "§bJerry§7 shows off his best dance move."] },
-  { words: ["jump", "hop", "up"], action: "hop",
+  { words: ["jump", "hop", "up"], face: "happy", action: "hop",
     replies: ["§bJerry§7 jumps! Boing!", "§bJerry§7 hops like a bunny. A big fluffy bunny."] },
+  { words: ["bone", "your bone", "get your bone"], face: "happy", action: "bone",
+    replies: ["§bJerry§7 proudly shows off his bone.", "§bJerry§7 found his favourite bone. He will not be sharing."] },
   { words: ["fetch", "play", "ball", "zoomies"], action: "play" },
-  { words: ["treat", "hungry", "food", "snack", "dinner", "eat"], action: "excited",
+  { words: ["boo", "surprise", "guess what", "oh no", "whoa", "wow"], face: "shocked", action: "shock",
+    replies: ["§bJerry§7 jumps! His eyes go HUGE.", "§bJerry§7 is shocked. Absolutely shocked."] },
+  { words: ["treat", "hungry", "food", "snack", "dinner", "eat"], face: "puppy", action: "excited",
     replies: ["§bJerry§7's ears perk up at the word \"treat\". Better give him one!", "§bJerry§7 is drooling a tiny bit."] },
-  { words: ["sleep", "tired", "night", "nap", "bed"], action: "yawn",
+  { words: ["sleep", "tired", "night", "nap", "bed"], face: "sleepy", action: "yawn",
     replies: ["§bJerry§7 does a big sleepy yawn.", "§bJerry§7 curls up for a little snooze."] },
-  { words: ["mochi", "kitty", "cat"], action: "mochi" },
-  { words: ["hello", "hi", "hey", "morning", "jerry"], action: "greet",
+  { words: ["mochi", "kitty", "cat"], face: "happy", action: "mochi" },
+  { words: ["hello", "hi", "hey", "morning", "jerry"], face: "puppy", action: "greet",
     replies: ["§bJerry§7 barks hello and wags his whole body.", "§bJerry§7 barks hello right back!"] },
 ];
 

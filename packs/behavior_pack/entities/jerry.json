@@ -20,6 +20,20 @@
           "type": "bool",
           "default": false,
           "client_sync": true
+        },
+        "jf:face": {
+          "type": "int",
+          "range": [
+            0,
+            5
+          ],
+          "default": 0,
+          "client_sync": true
+        },
+        "jf:bone": {
+          "type": "bool",
+          "default": false,
+          "client_sync": true
         }
       }
     },

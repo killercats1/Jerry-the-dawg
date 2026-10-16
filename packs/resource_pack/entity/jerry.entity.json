@@ -5,15 +5,22 @@
       "identifier": "jf:jerry",
       "materials": {
         "default": "wolf",
-        "extras": "entity_alphatest"
+        "extras": "entity_alphatest",
+        "face": "entity_alphatest"
       },
       "textures": {
         "default": "textures/entity/wolf/wolf_tame",
-        "extras": "textures/entity/jf_jerry_extras"
+        "extras": "textures/entity/jf_jerry_extras",
+        "face_happy": "textures/entity/jf_jerry_face_happy",
+        "face_puppy": "textures/entity/jf_jerry_face_puppy",
+        "face_shocked": "textures/entity/jf_jerry_face_shocked",
+        "face_love": "textures/entity/jf_jerry_face_love",
+        "face_sleepy": "textures/entity/jf_jerry_face_sleepy"
       },
       "geometry": {
         "default": "geometry.jf_jerry",
-        "extras": "geometry.jf_jerry_extras"
+        "extras": "geometry.jf_jerry_extras",
+        "face": "geometry.jf_jerry_face"
       },
       "animations": {
         "look_at_target": "animation.common.look_at_target",
@@ -39,7 +46,10 @@
       },
       "render_controllers": [
         "controller.render.jf_jerry",
-        "controller.render.jf_jerry_extras"
+        "controller.render.jf_jerry_extras",
+        {
+          "controller.render.jf_jerry_face": "query.property('jf:face') > 0"
+        }
       ]
     }
   }
