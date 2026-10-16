@@ -12,7 +12,11 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'org.spigotmc:spigot-api:1.8.8-R0.1-SNAPSHOT'
+    compileOnly('org.spigotmc:spigot-api:1.8.8-R0.1-SNAPSHOT') {
+        // The 1.8-era chat library was only ever published to a repository that no longer
+        // exists. The plugin doesn't use it (chat components came later), so leave it out.
+        exclude group: 'net.md-5', module: 'bungeecord-chat'
+    }
 }
 
 // Minecraft 1.8.8 servers usually run on Java 8, so build Java 8 bytecode.
