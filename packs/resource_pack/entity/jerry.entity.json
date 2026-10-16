@@ -31,7 +31,16 @@
         "head_tilt": "animation.jf_jerry.head_tilt",
         "speaker_pop": "animation.jf_jerry.speaker_pop",
         "pose": "controller.animation.jf_jerry.pose",
-        "speaker": "controller.animation.jf_jerry.speaker"
+        "speaker": "controller.animation.jf_jerry.speaker",
+        "paw": "animation.jf_jerry.paw",
+        "wave": "animation.jf_jerry.wave",
+        "beg": "animation.jf_jerry.beg",
+        "dance": "animation.jf_jerry.dance",
+        "play_dead": "animation.jf_jerry.play_dead",
+        "lie": "animation.jf_jerry.lie",
+        "bow": "animation.jf_jerry.bow",
+        "backflip": "animation.jf_jerry.backflip",
+        "howl": "animation.jf_jerry.howl"
       },
       "scripts": {
         "animate": [

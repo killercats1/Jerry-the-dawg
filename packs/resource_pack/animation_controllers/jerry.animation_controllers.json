@@ -6,23 +6,175 @@
       "states": {
         "default": {
           "transitions": [
-            { "sit": "query.property('jf:pose') == 1" },
-            { "roll": "query.property('jf:pose') == 2" },
-            { "tilt": "query.property('jf:pose') == 3" }
+            {
+              "sit": "query.property('jf:pose') == 1"
+            },
+            {
+              "roll": "query.property('jf:pose') == 2"
+            },
+            {
+              "tilt": "query.property('jf:pose') == 3"
+            },
+            {
+              "paw": "query.property('jf:pose') == 4"
+            },
+            {
+              "wave": "query.property('jf:pose') == 5"
+            },
+            {
+              "beg": "query.property('jf:pose') == 6"
+            },
+            {
+              "play_dead": "query.property('jf:pose') == 7"
+            },
+            {
+              "lie": "query.property('jf:pose') == 8"
+            },
+            {
+              "bow": "query.property('jf:pose') == 9"
+            },
+            {
+              "dance": "query.property('jf:pose') == 10"
+            },
+            {
+              "backflip": "query.property('jf:pose') == 11"
+            },
+            {
+              "howl": "query.property('jf:pose') == 12"
+            }
           ]
         },
         "sit": {
-          "animations": ["sit"],
-          "blend_transition": 0.25,
-          "transitions": [{ "default": "query.property('jf:pose') != 1" }]
+          "animations": [
+            "sit"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 1"
+            }
+          ]
         },
         "roll": {
-          "animations": ["roll_over"],
-          "transitions": [{ "default": "query.property('jf:pose') != 2" }]
+          "animations": [
+            "roll_over"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 2"
+            }
+          ]
         },
         "tilt": {
-          "animations": ["head_tilt"],
-          "transitions": [{ "default": "query.property('jf:pose') != 3" }]
+          "animations": [
+            "head_tilt"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 3"
+            }
+          ]
+        },
+        "paw": {
+          "animations": [
+            "paw"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 4"
+            }
+          ]
+        },
+        "wave": {
+          "animations": [
+            "wave"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 5"
+            }
+          ]
+        },
+        "beg": {
+          "animations": [
+            "beg"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 6"
+            }
+          ]
+        },
+        "play_dead": {
+          "animations": [
+            "play_dead"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 7"
+            }
+          ]
+        },
+        "lie": {
+          "animations": [
+            "lie"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 8"
+            }
+          ]
+        },
+        "bow": {
+          "animations": [
+            "bow"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 9"
+            }
+          ]
+        },
+        "dance": {
+          "animations": [
+            "dance"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 10"
+            }
+          ]
+        },
+        "backflip": {
+          "animations": [
+            "backflip"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 11"
+            }
+          ]
+        },
+        "howl": {
+          "animations": [
+            "howl"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 12"
+            }
+          ]
         }
       }
     },
@@ -30,11 +182,21 @@
       "initial_state": "hidden",
       "states": {
         "hidden": {
-          "transitions": [{ "shown": "query.property('jf:speaking')" }]
+          "transitions": [
+            {
+              "shown": "query.property('jf:speaking')"
+            }
+          ]
         },
         "shown": {
-          "animations": ["speaker_pop"],
-          "transitions": [{ "hidden": "!query.property('jf:speaking')" }]
+          "animations": [
+            "speaker_pop"
+          ],
+          "transitions": [
+            {
+              "hidden": "!query.property('jf:speaking')"
+            }
+          ]
         }
       }
     }

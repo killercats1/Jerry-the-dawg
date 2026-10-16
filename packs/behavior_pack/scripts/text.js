@@ -1,13 +1,15 @@
 // All the add-on's text lives here so it is easy to tweak without touching the logic.
 // "§" codes are Minecraft colours: §b aqua, §6 gold, §e yellow, §7 grey, §f white, §a green, §d pink.
+// "Jerry" and "Mochi" are swapped for whatever you named your dog and cat before anything is shown.
 
 export const TITLE = "§6Jerry & Friends";
 
 export const INTRO = [
   "§6[Jerry & Friends]§f Meet §bJerry§f, the goodest boy in the whole Overworld!",
   "§7Give him §fTreats§7, use the §fPet Brush§7, and throw the §fTennis Ball§7 to play.",
-  "§7Use §fTalk to Jerry§7 and say something! (On a phone, tap the keyboard microphone to say it out loud.)",
-  "§7The more time you spend together, the better friends you'll be. Lost him? Use §fJerry's Whistle§7.",
+  "§7Use §fTalk to Your Dog§7 and say something! He knows lots of tricks: sit, shake, roll over, play dead, dance, backflip...",
+  "§7The more time you spend together, the better friends you'll be. Lost him? Use the §fDog Whistle§7.",
+  "§7Want a different name? Use a §fname tag§7 on him, or §fsneak + use the Dog Whistle§7.",
 ];
 
 export const WELCOME_BACK = "§6[Jerry & Friends]§7 Jerry missed you! *tail wag*";
@@ -94,10 +96,10 @@ export const CAT_ARRIVES = [
 ];
 
 // ---------------------------------------------------------------- talking to Jerry
-// Used by the "Talk to Jerry" item. On phones, tap the microphone on the keyboard to say it out loud.
+// Used by the "Talk to Your Dog" item. On phones, tap the microphone on the keyboard to say it out loud.
 
 export const TALK_TITLE = "Talk to Jerry";
-export const TALK_LABEL = "Say something to Jerry!\n§7Tap the §fmicrophone§7 on your keyboard and say it out loud.\nTry: sit, come, roll over, good boy, speak, spin, fetch, bone, boo!, Mochi\nOr a few at once: \"sit, then roll over, then speak\"";
+export const TALK_LABEL = "Say something to Jerry!\n§7Tap the §fmicrophone§7 on your keyboard and say it out loud.\nTricks: sit, lie down, shake, high five, wave, beg, roll over, play dead, bow, spin, dance, backflip, howl, chase your tail, speak, fetch\nOr a few at once: \"sit, then shake, then roll over\"";
 export const TALK_PLACEHOLDER = "Good boy, Jerry!";
 export const TALK_KEEP_GOING = "Keep talking (this box pops back up after Jerry answers)";
 
@@ -111,22 +113,44 @@ export const MISHEARD = {
   comeon: "come", kom: "come",
 };
 // Distinctive words that still count when one letter is off, like "speek" or "fetchh".
-export const FUZZY_WORDS = ["speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello"];
+export const FUZZY_WORDS = ["speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello", "backflip"];
 
 // The first entry whose words appear in what you said wins, so more specific phrases go first.
 // action: what Jerry does (see talkAction in main.js). praise: also earns a little friendship.
 export const VOICE = [
   { words: ["good boy", "good dog", "love you", "best boy", "good job", "well done", "cute"], face: "love", action: "love", praise: true,
     replies: ["§bJerry§7's tail is wagging so fast it's basically a propeller.", "§bJerry§7 knows. He's very aware. *happy wiggle*"] },
-  { words: ["roll over", "roll", "play dead", "belly rub", "belly rubs", "belly"], face: "happy", action: "roll",
+  { words: ["play dead", "bang", "you're dead", "youre dead"], face: "sleepy", action: "dead",
+    replies: ["§bJerry§7 flops over dramatically. Award-winning performance.", "§bJerry§7 plays dead... but his tail is still wagging."] },
+  { words: ["roll over", "roll", "belly rub", "belly rubs", "belly"], face: "happy", action: "roll",
     replies: ["§bJerry§7 rolls over onto his back! Belly rubs, please.", "§bJerry§7 flops over with his paws in the air."] },
-  { words: ["sit", "stay", "wait", "stop", "freeze", "down"], face: "happy", action: "sit",
+  { words: ["sit pretty", "beg", "pretty please"], face: "puppy", action: "beg",
+    replies: ["§bJerry§7 sits up and begs with his best puppy eyes.", "§bJerry§7 sits pretty. How could you say no to that face?"] },
+  { words: ["sit down", "sit", "stay", "wait", "stop", "freeze"], face: "happy", action: "sit",
     replies: ["§bJerry§7 sits down and waits patiently. Say §f\"come\"§7 to call him.", "§bJerry§7 sits like a very good boy. Say §f\"come\"§7 when you're ready."] },
+  { words: ["lie down", "lay down", "down", "lie", "lay"], face: "happy", action: "lie",
+    replies: ["§bJerry§7 lies down and gets comfy. Say §f\"come\"§7 to call him.", "§bJerry§7 flops down on his belly. Comfy."] },
+  { words: ["high five", "high fives", "hi five", "high"], face: "happy", action: "highfive",
+    replies: ["§bJerry§7 gives you a high five! *boop*", "§bJerry§7 slaps your hand with his paw. Nailed it."] },
+  { words: ["shake", "paw", "give me your paw", "gimme paw", "shake hands"], face: "happy", action: "paw",
+    replies: ["§bJerry§7 offers you his paw. What a gentleman.", "§bJerry§7 shakes your hand very politely."] },
+  { words: ["wave", "say bye", "bye", "goodbye", "bye bye", "say hi"], face: "happy", action: "wave",
+    replies: ["§bJerry§7 waves his paw at you!", "§bJerry§7 waves bye-bye. (He's not going anywhere.)"] },
+  { words: ["bow", "take a bow", "stretch"], face: "happy", action: "bow",
+    replies: ["§bJerry§7 takes a bow. Thank you, thank you.", "§bJerry§7 does a big play bow. He wants to play!"] },
+  { words: ["dance", "boogie", "party", "dance party"], face: "happy", action: "dance",
+    replies: ["§bJerry§7 stands up on his back legs and DANCES!", "§bJerry§7 has moves. Serious moves."] },
+  { words: ["backflip", "back flip", "flip", "do a flip"], face: "happy", action: "backflip",
+    replies: ["§bJerry§7 does a BACKFLIP! How?!", "§bJerry§7 flips and sticks the landing. 10/10."] },
+  { words: ["howl", "sing", "awoo", "awooo", "wolf"], face: "sleepy", action: "howl",
+    replies: ["§bJerry§f: Awoooooo! §7(He's a wolf at heart.)", "§bJerry§7 howls a little song for you."] },
+  { words: ["chase your tail", "chase his tail", "chase", "tail"], face: "happy", action: "chase",
+    replies: ["§bJerry§7 chases his tail around and around and around...", "§bJerry§7 almost caught his tail! Almost."] },
   { words: ["come", "here", "let's go", "lets go", "follow", "okay", "release", "free", "stand"], face: "happy", action: "come",
     replies: ["§bJerry§7 comes trotting over!", "§bJerry§7 zooms right to you."] },
   { words: ["speak", "bark", "woof", "talk", "say something"], face: "happy", action: "bark",
     replies: ["§bJerry§f: WOOF! WOOF!", "§bJerry§f: Woof! §7(He said it with feeling.)"] },
-  { words: ["spin", "dance", "twirl", "trick"], face: "happy", action: "spin",
+  { words: ["spin", "twirl", "trick", "turn around"], face: "happy", action: "spin",
     replies: ["§bJerry§7 does a spin! Ta-da!", "§bJerry§7 shows off his best dance move."] },
   { words: ["jump", "hop", "up"], face: "happy", action: "hop",
     replies: ["§bJerry§7 jumps! Boing!", "§bJerry§7 hops like a bunny. A big fluffy bunny."] },
@@ -145,11 +169,20 @@ export const VOICE = [
 ];
 
 // The Jerry Voice phone helper (real microphone).
-export const VOICE_CONNECTED = "§a[Jerry Voice]§f Connected! Use §fTalk to Jerry§f (or sneak + tap him) and just talk.";
+export const VOICE_CONNECTED = "§a[Voice]§f Connected! Use §fTalk to Your Dog§f (or sneak + tap Jerry) and just talk.";
 export const VOICE_GET_READY = "§eGet ready to talk to Jerry...";
 export const VOICE_LISTENING = "§a>> Listening... talk to Jerry now! <<";
 export const VOICE_NOTHING = "§7Jerry didn't catch that. Try again!";
-export const VOICE_LOST = "§7[Jerry Voice] The voice helper isn't answering, so here's the text box. (Is Termux still running? Run /connect 127.0.0.1:3000 again.)";
+export const VOICE_LOST = "§7[Voice] The voice helper isn't answering, so here's the text box. (Is Termux still running? Run /connect 127.0.0.1:3000 again.)";
+
+// Naming your pets.
+export const NAME_TITLE_NEW = "Meet your new dog!";
+export const NAME_NEW_DOG = "What do you want to name your dog?\n§7(You can change it later with a name tag, or sneak + use the Dog Whistle.)";
+export const NAME_TITLE = "Name your pets";
+export const NAME_DOG = "Your dog's name";
+export const NAME_CAT = "Your cat's name";
+export const DOG_RENAMED = "§aYour dog is now called §bJerry§a! He loves it.";
+export const CAT_RENAMED = "§aYour cat is now called §dMochi§a! Purrr.";
 
 export const VOICE_MOCHI = ["§dMochi§f: Mrrp! §7(That means hi.)", "§dMochi§7 meows back at you and slow-blinks."];
 export const CANT_HEAR = "§7Jerry's too far away to hear you. Try the whistle!";

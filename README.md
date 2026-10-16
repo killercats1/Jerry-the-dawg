@@ -1,7 +1,8 @@
 # Jerry & Friends: Cozy Pets 🐶🐱
 
-A chill **Minecraft Bedrock add-on** about hanging out with your dog, Jerry. No horror, no scares,
-just a very good boy (and eventually a cat).
+A chill **Minecraft Bedrock add-on** about hanging out with your dog. No horror, no scares,
+just a very good boy (and eventually a cat). His name is Jerry by default, but **you can name him
+(and the cat) anything you like**.
 
 > Bedrock doesn't use Java-style "plugins". This is an **add-on** (a behavior pack + a resource pack)
 > that uses Minecraft's official Script API. It works on phones, tablets, Windows, consoles and Realms.
@@ -14,11 +15,18 @@ You also get five items:
 
 | Item | What it does |
 |---|---|
-| 🍪 **Jerry's Treats** | Use on Jerry: hearts, happy barks, more friendship |
+| 🍪 **Dog Treats** | Use on your dog: hearts, happy barks, more friendship |
 | 🪮 **Pet Brush** | Use on Jerry: sparkles and a very fluffy dog |
-| 🎾 **Tennis Ball** | Use anywhere near Jerry: zoomies! |
-| 📯 **Jerry's Whistle** | Calls your pets to you from anywhere, and shows your friendship |
-| 💬 **Talk to Jerry** | Say something and Jerry reacts (see below) |
+| 🎾 **Tennis Ball** | Use anywhere near your dog: zoomies! |
+| 📯 **Dog Whistle** | Calls your pets to you from anywhere, and shows your friendship. **Sneak + use** it to rename your pets |
+| 💬 **Talk to Your Dog** | Say something and he reacts (see below) |
+
+## Naming your pets 🏷️
+
+When you first get your dog, a box asks **what you want to name him**. You can rename him (or the
+cat) any time with a vanilla **name tag**, or by **sneaking and using the Dog Whistle**. All the
+messages use your pets' real names, and voice commands listen for his name too
+(*"Biscuit, roll over!"*). Below, "Jerry" just means your dog.
 
 ## Jerry's faces 🐶
 
@@ -29,7 +37,7 @@ Jerry makes faces like in the video: **happy** (^ ^) when you pet, brush or play
 
 ## Talking to Jerry 🎤
 
-1. Use **Talk to Jerry**, or **sneak and tap Jerry** with an empty hand.
+1. Use **Talk to Your Dog**, or **sneak and tap him** with an empty hand.
 2. Tap the **microphone button on your keyboard** and say it out loud. Your phone's voice typing
    turns it into text. (On Windows, press **Win + H**. Or just type.)
 3. Just like in the video, a **speaker icon pops up over Jerry's head** when he hears you, and he reacts.
@@ -41,7 +49,7 @@ common voice-typing mistakes like "role over", "set" or "Gerry".
 
 ### 🎙️ Real voice, no typing (Android, no PC)
 
-Install the free **Jerry Voice** helper on your phone and you can just *talk*: press Talk to Jerry
+Install the free **Jerry Voice** helper on your phone and you can just *talk*: press Talk to Your Dog
 (or turn on always-listening) and speak, with no keyboard. It runs in Termux on the same phone and
 connects with `/connect 127.0.0.1:3000`, the same trick the Verity add-on uses, but with no Beta APIs
 and no API key. **Setup guide: [voice-helper/README.md](voice-helper/README.md)**
@@ -55,11 +63,22 @@ pkg update -y && pkg install -y python termux-api curl && curl -fLo ~/jerry_voic
 | Say something like... | Jerry... |
 |---|---|
 | "good boy", "love you" | wags and wiggles (+ a little friendship) |
-| "roll over", "play dead", "belly rubs" | rolls onto his back, paws in the air |
-| "sit", "stay", "down" | sits and stays until you say "come" |
-| "come", "here", "let's go" | comes to you, even from far away |
+| "sit", "stay" | sits and stays until you say "come" |
+| "lie down", "down" | lies down on his belly and stays |
+| "come", "here", "let's go" | comes to you, even from far away (and gets up) |
+| "shake", "paw" | sits and gives you his paw |
+| "high five" | high fives you |
+| "wave", "say bye" | waves his paw |
+| "beg", "sit pretty" | sits up and begs with puppy eyes |
+| "roll over", "belly rubs" | rolls onto his back, paws in the air |
+| "play dead", "bang" | flops onto his side (eyes closed, tail still wagging) |
+| "bow", "take a bow" | play bow: front down, bum up |
+| "dance", "party" | stands on his back legs and dances to a little tune |
+| "backflip", "flip" | does a backflip! |
+| "howl", "sing" | sits and howls at the sky |
+| "chase your tail" | spins around chasing his tail |
+| "spin", "turn around" | does a spin |
 | "speak", "bark" | barks |
-| "spin", "dance" | does a spin |
 | "jump", "hop" | jumps |
 | "fetch", "play" | zoomies! |
 | "treat", "hungry" | gets excited |

@@ -25,11 +25,19 @@ const PROP = {
   cat: "jf:cat_id",
   hasCat: "jf:has_cat",
   keepTalking: "jf:keep_talking",
+  dogName: "jf:dog_name",
+  catName: "jf:cat_name",
 };
 const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat" };
 const DIMENSIONS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
 const JERRY = "jf:jerry";
-const POSE = { stand: 0, sit: 1, roll: 2, tilt: 3 }; // matches the jf:pose property in entities/jerry.json
+// Matches the jf:pose property in entities/jerry.json and the pose animation controller.
+const POSE = {
+  stand: 0, sit: 1, roll: 2, tilt: 3, paw: 4, wave: 5, beg: 6,
+  playDead: 7, lie: 8, bow: 9, dance: 10, backflip: 11, howl: 12,
+};
+const DEFAULT_DOG_NAME = "Jerry";
+const DEFAULT_CAT_NAME = "Mochi";
 
 // Friendship goes 0-100. Level thresholds line up with T.LEVELS.
 const MAX_FRIENDSHIP = 100;
@@ -83,12 +91,12 @@ function particle(dim, id, location) {
   } catch {}
 }
 
-function sound(dim, id, location) {
+function sound(dim, id, location, options) {
   try {
-    dim.playSound(id, location);
+    dim.playSound(id, location, options);
   } catch {
     try {
-      world.playSound(id, location);
+      world.playSound(id, location, options);
     } catch {}
   }
 }
@@ -100,22 +108,44 @@ function sparkle(pet, id = "minecraft:heart_particle", count = 5) {
   }
 }
 
+// Your pets can have any names. All text is written with "Jerry" and "Mochi" and swapped for
+// the real names right before it's shown.
+const dogName = (player) => player.getDynamicProperty(PROP.dogName) || DEFAULT_DOG_NAME;
+const catName = (player) => player.getDynamicProperty(PROP.catName) || DEFAULT_CAT_NAME;
+
+function personalize(player, text) {
+  return String(text)
+    .replace(/Jerry/g, () => dogName(player)) // no \b: colour codes like "§bJerry" sit right against the name
+    .replace(/Mochi/g, () => catName(player));
+}
+
+function tell(player, text) {
+  try {
+    player.sendMessage(personalize(player, text));
+  } catch {}
+}
+
 function actionbar(player, text) {
   try {
-    player.onScreenDisplay.setActionBar(text);
+    player.onScreenDisplay.setActionBar(personalize(player, text));
   } catch {}
 }
 
 function title(player, main, subtitle) {
   try {
-    player.onScreenDisplay.setTitle(main, { subtitle, fadeInDuration: 10, stayDuration: 70, fadeOutDuration: 20 });
+    player.onScreenDisplay.setTitle(personalize(player, main), {
+      subtitle: subtitle && personalize(player, subtitle),
+      fadeInDuration: 10,
+      stayDuration: 70,
+      fadeOutDuration: 20,
+    });
   } catch {}
 }
 
 function say(player, lines, gap = 70) {
   lines.forEach((line, i) =>
     system.runTimeout(() => {
-      if (isValid(player)) player.sendMessage(line);
+      if (isValid(player)) tell(player, line);
     }, i * gap)
   );
 }
@@ -173,7 +203,7 @@ function addFriendship(player, amount) {
     title(player, "§aFriendship up!", `§fJerry is now your §e${T.LEVELS[level]}`);
     sound(player.dimension, "random.levelup", player.location);
     system.runTimeout(() => {
-      if (isValid(player)) player.sendMessage(T.LEVEL_UP[level]);
+      if (isValid(player)) tell(player, T.LEVEL_UP[level]);
     }, 40);
   }
 }
@@ -253,8 +283,8 @@ function spawnPet(player, typeId, role, name, prop, at = { dimension: player.dim
   return pet;
 }
 
-const spawnJerry = (player, at) => spawnPet(player, JERRY, TAG.dog, "Jerry", PROP.dog, at);
-const spawnMochi = (player) => spawnPet(player, "minecraft:cat", TAG.cat, "Mochi", PROP.cat);
+const spawnJerry = (player, at) => spawnPet(player, JERRY, TAG.dog, dogName(player), PROP.dog, at);
+const spawnMochi = (player) => spawnPet(player, "minecraft:cat", TAG.cat, catName(player), PROP.cat);
 
 function bring(pet, player) {
   try {
@@ -271,30 +301,38 @@ function setPose(dog, pose) {
   } catch {}
 }
 
-const isSitting = (dog) => dog.getDynamicProperty("jf:sitting") === true;
+// Resting poses (sit, lie down) last until he's called; tricks go back to them afterwards.
+function restPose(dog) {
+  const rest = dog.getDynamicProperty("jf:rest");
+  if (typeof rest === "number") return rest;
+  return dog.getDynamicProperty("jf:sitting") === true ? POSE.sit : undefined; // saved by older versions
+}
 
-function sit(dog) {
+const isSitting = (dog) => restPose(dog) !== undefined;
+
+function sit(dog, pose = POSE.sit) {
   try {
     dog.triggerEvent("jf:sit"); // stops following and wandering
   } catch {}
-  dog.setDynamicProperty("jf:sitting", true);
-  setPose(dog, POSE.sit);
+  dog.setDynamicProperty("jf:rest", pose);
+  setPose(dog, pose);
 }
 
 function stand(dog) {
   try {
     dog.triggerEvent("jf:stand");
   } catch {}
+  dog.setDynamicProperty("jf:rest", undefined);
   dog.setDynamicProperty("jf:sitting", undefined);
   setPose(dog, POSE.stand);
 }
 
-// A short trick (roll over, head tilt), then back to sitting or standing.
-function trick(dog, pose, ticks) {
+// A short trick, then back to resting or standing. Most tricks keep him in place while he does them.
+function trick(dog, pose, ticks, holdStill = true) {
   const token = (poseTimers.get(dog.id) ?? 0) + 1;
   poseTimers.set(dog.id, token);
-  const holdStill = pose === POSE.roll && !isSitting(dog);
-  if (holdStill) {
+  const freeze = holdStill && !isSitting(dog);
+  if (freeze) {
     try {
       dog.triggerEvent("jf:sit");
     } catch {}
@@ -302,17 +340,17 @@ function trick(dog, pose, ticks) {
   setPose(dog, pose);
   system.runTimeout(() => {
     if (!isValid(dog) || poseTimers.get(dog.id) !== token) return;
-    if (holdStill && !isSitting(dog)) {
+    if (freeze && !isSitting(dog)) {
       try {
         dog.triggerEvent("jf:stand");
       } catch {}
     }
-    setPose(dog, isSitting(dog) ? POSE.sit : POSE.stand);
+    setPose(dog, restPose(dog) ?? POSE.stand);
   }, ticks);
 }
 
 const rollOver = (dog) => trick(dog, POSE.roll, 50);
-const tiltHead = (dog) => trick(dog, POSE.tilt, 36);
+const tiltHead = (dog) => trick(dog, POSE.tilt, 36, false);
 
 // Sets one of Jerry's properties for a while, then puts it back. A newer call wins, so an
 // older timer never cuts a newer expression short.
@@ -366,6 +404,61 @@ function spin(pet) {
   }
 }
 
+// ---------------------------------------------------------------- names
+
+function cleanName(raw) {
+  return String(raw ?? "")
+    .replace(/§./g, "")
+    .replace(/[^\p{L}\p{N} '\-]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 20);
+}
+
+// Gives a pet a new name (from the naming box, a name tag or /scriptevent jf:name).
+function namePet(player, kind, raw, quiet = false) {
+  const isCat = kind === "cat";
+  const current = isCat ? catName(player) : dogName(player);
+  const pet = isCat ? findCat(player) : findDog(player);
+  const name = cleanName(raw);
+  if (!name || name === current) {
+    if (pet && pet.nameTag !== current) pet.nameTag = current; // keep the tag in sync
+    return false;
+  }
+  player.setDynamicProperty(isCat ? PROP.catName : PROP.dogName, name);
+  if (pet) {
+    pet.nameTag = name;
+    sparkle(pet);
+    if (!isCat) showFace(pet, "love", 60);
+  }
+  if (!quiet) tell(player, isCat ? T.CAT_RENAMED : T.DOG_RENAMED);
+  return true;
+}
+
+// The naming box: shown when you first get your dog, and on sneak + Dog Whistle.
+function openNaming(player, intro = false, retries = 3, done) {
+  const hasCat = !intro && !!player.getDynamicProperty(PROP.hasCat);
+  const form = new ModalFormData()
+    .title(personalize(player, intro ? T.NAME_TITLE_NEW : T.NAME_TITLE))
+    .textField(intro ? T.NAME_NEW_DOG : T.NAME_DOG, DEFAULT_DOG_NAME, dogName(player));
+  if (hasCat) form.textField(T.NAME_CAT, DEFAULT_CAT_NAME, catName(player));
+  form
+    .show(player)
+    .then((response) => {
+      if (response.canceled) {
+        if (response.cancelationReason === "UserBusy" && retries > 0) {
+          system.runTimeout(() => isValid(player) && openNaming(player, intro, retries - 1, done), 20);
+          return;
+        }
+      } else {
+        namePet(player, "dog", response.formValues?.[0], intro);
+        if (hasCat) namePet(player, "cat", response.formValues?.[1]);
+      }
+      done?.();
+    })
+    .catch(() => done?.());
+}
+
 // ---------------------------------------------------------------- start & cat
 
 function scheduleIntro(player, delay) {
@@ -384,7 +477,8 @@ function startIntro(player) {
   for (const id of Object.values(ITEMS)) give(player, id);
   title(player, T.TITLE, "§fYour very good dog");
   sound(player.dimension, "mob.wolf.bark", player.location);
-  say(player, T.INTRO, 80);
+  // First thing: pick a name (it can be changed any time). Then the welcome messages.
+  openNaming(player, true, 10, () => isValid(player) && say(player, T.INTRO, 80));
   nextMoment.set(player.id, seconds + 30);
 }
 
@@ -438,7 +532,7 @@ function bringGift(player, dog) {
   }, carry);
   sound(dog.dimension, "mob.wolf.bark", dog.location);
   sparkle(dog, "minecraft:villager_happy", 6);
-  player.sendMessage(`§bJerry§7 brought you a gift: §f${gift.name}§7! He's very proud.`);
+  tell(player, `§bJerry§7 brought you a gift: §f${gift.name}§7! He's very proud.`);
 }
 
 function protectAll(player) {
@@ -456,6 +550,11 @@ function tick(player) {
   if (levelOf(friendship) >= CAT_LEVEL && !player.getDynamicProperty(PROP.hasCat)) scheduleCat(player);
 
   const dog = findDog(player);
+  // Renamed with a name tag?
+  if (dog && dog.nameTag && dog.nameTag !== dogName(player)) namePet(player, "dog", dog.nameTag);
+  const cat = findCat(player);
+  if (cat && cat.nameTag && cat.nameTag !== catName(player)) namePet(player, "cat", cat.nameTag);
+
   if (!isNear(dog, player, 16)) return;
   if (seconds % 60 === 0) addFriendship(player, GAIN.together);
 
@@ -566,7 +665,7 @@ function useItem(player, itemId, target) {
   if (now - (lastUse.get(player.id) ?? -100) < 8) return;
   lastUse.set(player.id, now);
 
-  if (itemId === ITEMS.whistle) return whistle(player);
+  if (itemId === ITEMS.whistle) return player.isSneaking ? openNaming(player) : whistle(player);
   if (itemId === ITEMS.talk) return startTalking(player);
   if (itemId === ITEMS.ball) return play(player);
   target = isValid(target) ? target : lookTarget(player);
@@ -603,7 +702,7 @@ function startTalking(player) {
     if (!isValid(player) || !player.hasTag(LISTEN_TAG)) return;
     player.removeTag(LISTEN_TAG);
     voiceHelper.lastSeen = -999;
-    player.sendMessage(T.VOICE_LOST);
+    tell(player, T.VOICE_LOST);
     openTalk(player);
   }, 50);
 }
@@ -613,7 +712,7 @@ function onVoiceHello() {
   voiceHelper.lastSeen = seconds;
   if (wasConnected) return;
   for (const player of world.getAllPlayers()) {
-    player.sendMessage(T.VOICE_CONNECTED);
+    tell(player, T.VOICE_CONNECTED);
     const dog = findDog(player);
     if (dog && isNear(dog, player, 24)) {
       showSpeaker(dog, 50);
@@ -641,9 +740,9 @@ function onVoiceStatus(player, status) {
 function onVoice(player, text, alwaysOn) {
   if (!text) return;
   if (alwaysOn) {
-    const words = cleanWords(text.toLowerCase().replace(/[^a-z' ]+/g, " "));
+    const words = cleanWords(normalizeNames(text.toLowerCase().replace(/[^a-z' ]+/g, " "), player));
     const saidName = /\bjerry\b/.test(words);
-    const shortCommand = words.split(" ").filter(Boolean).length <= 3 && parseCommands(text).length > 0;
+    const shortCommand = words.split(" ").filter(Boolean).length <= 3 && parseCommands(text, player).length > 0;
     if (!saidName && !shortCommand) return;
   }
   hearSpeech(player, text);
@@ -705,13 +804,27 @@ function cleanWords(text) {
     .join(" ");
 }
 
+// Your dog's and cat's own names (or something one letter off) count as "jerry" / "mochi".
+function normalizeNames(text, player) {
+  let out = ` ${text} `;
+  for (const [name, token] of [[dogName(player), "jerry"], [catName(player), "mochi"]]) {
+    const n = name.toLowerCase().replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ").trim();
+    if (n.length < 2 || n === token) continue;
+    out = out.split(` ${n} `).join(` ${token} `);
+    if (!n.includes(" ") && n.length >= 4) {
+      out = out.split(" ").map((word) => (word && levenshtein(word, n) <= 1 ? token : word)).join(" ");
+    }
+  }
+  return out.trim();
+}
+
 function matchVoice(part) {
   const text = ` ${cleanWords(part)} `;
   return T.VOICE.find((entry) => entry.words.some((word) => text.includes(` ${word} `)));
 }
 
 // "sit, then roll over and speak" -> [sit, roll, bark]
-function parseCommands(said) {
+function parseCommands(said, player) {
   const parts = said
     .toLowerCase()
     .replace(/-/g, " ")
@@ -719,6 +832,7 @@ function parseCommands(said) {
     .replace(/\b(and then|then|after that|and)\b/g, " | ")
     .split("|")
     .map((part) => part.replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ").trim())
+    .map((part) => (player ? normalizeNames(part, player) : part))
     .filter(Boolean);
   const entries = [];
   for (const part of parts) {
@@ -729,18 +843,21 @@ function parseCommands(said) {
 }
 
 // How long each reaction takes, so the next command (or the talk box) waits for it.
-const ACTION_TICKS = { roll: 56, spin: 34, play: 50, greet: 40 };
+const ACTION_TICKS = {
+  roll: 56, spin: 34, play: 50, greet: 40, paw: 50, highfive: 50, wave: 50, beg: 50,
+  dead: 75, lie: 25, bow: 45, dance: 75, backflip: 30, howl: 55, chase: 75,
+};
 const actionTicks = (entry) => ACTION_TICKS[entry.action] ?? 30;
 
 // Returns how many ticks Jerry will be busy reacting (0 if he couldn't hear you).
 function hearSpeech(player, said) {
-  player.sendMessage(`§7You: §f"${said.slice(0, 80)}"`);
+  player.sendMessage(`§7You: §f"${said.slice(0, 80)}"`); // your own words, unchanged
   const dog = findDog(player);
-  const commands = parseCommands(said);
+  const commands = parseCommands(said, player);
   // "come" works from anywhere, like the whistle; everything else needs Jerry in earshot.
   const calledHim = commands.some((entry) => entry.action === "come");
   if (!dog || (!calledHim && !isNear(dog, player, 24))) {
-    player.sendMessage(T.CANT_HEAR);
+    tell(player, T.CANT_HEAR);
     return 0;
   }
   // Like in the video: a speaker icon pops up over Jerry when he hears you, then he reacts.
@@ -764,7 +881,7 @@ function respond(player, dog, entry) {
     sound(dog.dimension, "mob.wolf.whine", dog.location);
     tiltHead(dog);
     showFace(dog, "puppy", 50);
-    return player.sendMessage(pick(T.VOICE_UNKNOWN));
+    return tell(player, pick(T.VOICE_UNKNOWN));
   }
   if (entry.action === "play") return play(player);
   talkAction(player, dog, entry.action);
@@ -779,7 +896,7 @@ function respond(player, dog, entry) {
     }
   }
   if (entry.praise && earn(player, "talk")) reply += `  ${friendshipBar(player)}`;
-  player.sendMessage(reply);
+  tell(player, reply);
 }
 
 function talkAction(player, dog, action) {
@@ -823,6 +940,52 @@ function talkAction(player, dog, action) {
     case "bone":
       holdBone(dog, 100);
       return sound(dim, "mob.wolf.panting", dog.location);
+    case "paw":
+      sound(dim, "mob.wolf.panting", dog.location);
+      return trick(dog, POSE.paw, 50);
+    case "highfive":
+      trick(dog, POSE.paw, 50);
+      system.runTimeout(() => {
+        if (!isValid(dog)) return;
+        sparkle(dog, "minecraft:villager_happy", 8);
+        sound(dog.dimension, "random.orb", dog.location, { pitch: 1.4 });
+      }, 10);
+      return;
+    case "wave":
+      sound(dim, "mob.wolf.bark", dog.location);
+      return trick(dog, POSE.wave, 50);
+    case "beg":
+      sound(dim, "mob.wolf.whine", dog.location);
+      return trick(dog, POSE.beg, 50);
+    case "dead":
+      sound(dim, "mob.wolf.whine", dog.location, { pitch: 0.7 });
+      return trick(dog, POSE.playDead, 75);
+    case "lie":
+      sound(dim, "mob.wolf.panting", dog.location);
+      return sit(dog, POSE.lie);
+    case "bow":
+      sound(dim, "mob.wolf.bark", dog.location);
+      return trick(dog, POSE.bow, 45);
+    case "dance":
+      trick(dog, POSE.dance, 75);
+      // a little tune to dance to
+      [1, 1.26, 1.5, 1.26, 1.68, 1.5].forEach((pitch, i) =>
+        system.runTimeout(() => isValid(dog) && sound(dog.dimension, "note.harp", dog.location, { pitch }), i * 10)
+      );
+      return;
+    case "backflip":
+      hop(dog, 0.6);
+      sparkle(dog, "minecraft:villager_happy", 6);
+      return trick(dog, POSE.backflip, 26, false);
+    case "howl":
+      trick(dog, POSE.howl, 55);
+      [0.6, 0.75, 0.6].forEach((pitch, i) =>
+        system.runTimeout(() => isValid(dog) && sound(dog.dimension, "mob.wolf.whine", dog.location, { pitch }), 6 + i * 14)
+      );
+      return;
+    case "chase":
+      for (let i = 0; i < 3; i++) system.runTimeout(() => isValid(dog) && spin(dog), i * 24);
+      return sound(dim, "mob.wolf.bark", dog.location);
   }
 }
 
@@ -848,9 +1011,11 @@ system.afterEvents.scriptEventReceive.subscribe(
     if (id === "jf:voice") return onVoice(player, message, false);
     if (id === "jf:voice_heard") return onVoice(player, message, true);
     if (id === "jf:voice_status") return onVoiceStatus(player, message);
-    if (id === "jf:status") player.sendMessage(`§6[Jerry & Friends]§f Friendship: ${friendshipBar(player)} §7(${getNum(player, PROP.friendship)}/100)`);
+    if (id === "jf:status") tell(player, `§6[Jerry & Friends]§f Friendship: ${friendshipBar(player)} §7(${getNum(player, PROP.friendship)}/100)`);
     else if (id === "jf:reset") resetPets(player);
     else if (id === "jf:boost") addFriendship(player, 25);
+    else if (id === "jf:name") namePet(player, "dog", message);
+    else if (id === "jf:cat_name") namePet(player, "cat", message);
   },
   { namespaces: ["jf"] }
 );
@@ -873,7 +1038,7 @@ world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
   if (!player.getDynamicProperty(PROP.started)) return scheduleIntro(player, 100);
   system.runTimeout(() => {
     if (!isValid(player)) return;
-    player.sendMessage(T.WELCOME_BACK);
+    tell(player, T.WELCOME_BACK);
     give(player, ITEMS.talk); // players from before "Talk to Jerry" existed
   }, 100);
 });
