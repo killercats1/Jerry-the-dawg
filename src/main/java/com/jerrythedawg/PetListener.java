@@ -90,6 +90,9 @@ final class PetListener implements Listener {
         if (!(event.getEntity() instanceof Wolf || event.getEntity() instanceof Ocelot) || !pets.isPet(event.getEntity())) {
             return;
         }
+        if (event.getTarget() == null) {
+            return; // the fight is over (target died or got away): always let him stop
+        }
         EntityTargetEvent.TargetReason reason = event.getReason();
         boolean defending = reason == EntityTargetEvent.TargetReason.TARGET_ATTACKED_OWNER
             || reason == EntityTargetEvent.TargetReason.CUSTOM; // CUSTOM = set by defend()

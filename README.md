@@ -16,8 +16,8 @@ Friendship unlocks **Mochi the cat** and **gifts**.
   Nothing bad ever happens to him.
 - **Practice makes perfect.** New tricks are sloppy at first (sometimes a spin instead of a roll over).
   After 5 good tries he **masters** them. `/dog tricks` shows his progress.
-- **Real fetch.** Right-click with the **Tennis Ball** to throw it: he runs to it, carries it back on
-  his back and drops it at your feet.
+- **Real fetch.** Right-click with the **Tennis Ball** to throw it: he runs to it, carries it back (the ball
+  bobs along over his head) and drops it at your feet.
 - **Guard dog.** He growls and warns you when a monster sneaks up.
 - **Protects you.** If something attacks you, he goes after it (he can't get hurt). Creepers excepted,
   for everyone's sake. He doesn't pick fights on his own, and the cat just hisses.

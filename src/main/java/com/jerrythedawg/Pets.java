@@ -350,7 +350,7 @@ final class Pets {
             catArrives(player);
         }
         if (dog != null) {
-            keepClose(player, dog, dog.isSitting());
+            keepClose(player, dog, dog.isSitting()); // (skips while he's fighting or fetching)
             reactToSurroundings(player, dog);
         }
         if (cat != null) {
@@ -588,7 +588,9 @@ final class Pets {
         Location eye = player.getEyeLocation();
         final Item ball = player.getWorld().dropItem(eye.clone().add(eye.getDirection()), Items.BALL.create());
         ball.setPickupDelay(6000); // nobody grabs it but him
-        ball.setVelocity(eye.getDirection().multiply(1.1).add(new Vector(0, 0.25, 0)));
+        // A gentle throw keeps the ball inside the 10 blocks where vanilla "follow owner" kicks in,
+        // so that habit doesn't tug him back to you halfway there.
+        ball.setVelocity(eye.getDirection().multiply(0.8).add(new Vector(0, 0.2, 0)));
         dog.setSitting(false);
         busy.add(dog.getUniqueId());
         sound(dog, Sound.WOLF_BARK, 1f);
@@ -609,7 +611,7 @@ final class Pets {
                     if (ticks < 10) {
                         return; // let it fly first
                     }
-                    if (ticks % 10 == 0) {
+                    if (ticks % 5 == 0) {
                         walkTo(dog, ball.getLocation(), 1.6);
                     }
                     boolean reached = dog.getWorld().equals(ball.getWorld()) && dog.getLocation().distance(ball.getLocation()) < 1.6;
@@ -617,14 +619,16 @@ final class Pets {
                         if (!reached) {
                             dog.teleport(ball.getLocation());
                         }
-                        dog.setPassenger(ball); // carries it (it rides on him)
-                        carrying = true;
+                        carrying = true; // the ball now follows just above his head (see below)
                         ticks = 0;
                         dog.getWorld().playSound(dog.getLocation(), Sound.ITEM_PICKUP, 1f, 1f);
                         tell(player, Text.FETCH_GOT_IT);
                     }
                 } else {
-                    if (ticks % 10 == 1) {
+                    // Carry the ball: keep it floating at his head. (Making it ride him would stop him walking.)
+                    ball.teleport(dog.getLocation().add(0, 0.95, 0));
+                    ball.setVelocity(new Vector(0, 0, 0));
+                    if (ticks % 5 == 1) {
                         walkTo(dog, player.getLocation(), 1.5);
                     }
                     boolean back = dog.getWorld().equals(player.getWorld()) && dog.getLocation().distance(player.getLocation()) < 2.5;
@@ -711,9 +715,17 @@ final class Pets {
         if (!(pet instanceof Creature)) {
             return false;
         }
-        LivingEntity target = ((Creature) pet).getTarget();
-        return target != null && target.isValid() && !target.isDead() && target.getWorld().equals(player.getWorld())
-            && target.getLocation().distance(player.getLocation()) < 24;
+        Creature creature = (Creature) pet;
+        LivingEntity target = creature.getTarget();
+        if (target == null) {
+            return false;
+        }
+        boolean stillThere = target.isValid() && !target.isDead() && target.getWorld().equals(pet.getWorld())
+            && target.getLocation().distance(pet.getLocation()) < 32;
+        if (!stillThere) {
+            creature.setTarget(null); // it's gone: stop chasing a ghost
+        }
+        return stillThere;
     }
 
     /** Something attacked you: your dog goes after it (he can't get hurt). The cat hisses at it. */
@@ -740,7 +752,8 @@ final class Pets {
     /** You got hurt: he rushes over to check on you. */
     void onOwnerHurt(Player player) {
         Wolf dog = findDog(player);
-        if (!isNear(dog, player, 32) || busy.contains(dog.getUniqueId()) || !canReact(player, "hurt", 15)) {
+        if (!isNear(dog, player, 32) || busy.contains(dog.getUniqueId()) || isFighting(dog, player)
+            || !canReact(player, "hurt", 15)) {
             return;
         }
         if (!dog.isSitting()) {
