@@ -1,4 +1,4 @@
-# Jerry & Friends: Cozy Pets 🐶🐱
+# Jerry the dawg: Cozy Pets 🐶🐱
 
 A chill **Minecraft Bedrock add-on** about hanging out with your dog, Jerry. No horror, no scares,
 just a very good boy (and eventually a cat).
