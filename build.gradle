@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.jerrythedawg'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+    // Spigot's own repository hosts the 1.8.8 API (and the chat library it depends on).
+    maven { url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+}
+
+dependencies {
+    compileOnly 'org.spigotmc:spigot-api:1.8.8-R0.1-SNAPSHOT'
+}
+
+// Minecraft 1.8.8 servers usually run on Java 8, so build Java 8 bytecode.
+tasks.withType(JavaCompile).configureEach {
+    options.release = 8
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:-options']
+}
+
+processResources {
+    filesMatching('plugin.yml') {
+        expand(version: project.version)
+    }
+}
+
+jar {
+    archiveFileName = "JerryTheDawg-${project.version}.jar"
+}

@@ -1,0 +1,10 @@
+name: JerryTheDawg
+version: ${version}
+main: com.jerrythedawg.JerryPlugin
+description: A chill pet dog that knows tricks. Name him anything!
+author: killercats1
+commands:
+  dog:
+    description: Your dog. Try /dog help
+    usage: /dog help
+    aliases: [jerry, pet]
