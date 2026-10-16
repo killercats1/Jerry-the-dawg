@@ -964,11 +964,20 @@ function reactToSurroundings(player, dog) {
 }
 
 world.afterEvents.entityHurt.subscribe(
-  ({ hurtEntity }) => {
+  ({ hurtEntity, damageSource }) => {
     const player = world.getAllPlayers().find((p) => p.id === hurtEntity.id);
     if (!player || !player.getDynamicProperty(PROP.started)) return;
     const dog = findDog(player);
-    if (!isNear(dog, player, 32) || fetching.has(dog.id) || !canReact(player, "hurt", 15)) return;
+    if (!isNear(dog, player, 32) || fetching.has(dog.id)) return;
+    // Something attacked you: he goes after it (his "owner hurt" behavior does the chasing).
+    const attacker = damageSource?.damagingEntity;
+    if (attacker && attacker.id !== dog.id && attacker.id !== player.id && !isSitting(dog)) {
+      showFace(dog, "shocked", 40);
+      sound(dog.dimension, "mob.wolf.growl", dog.location);
+      if (canReact(player, "defend", 10)) actionbar(player, T.DEFEND.replace("{mob}", prettyMob(attacker.typeId)));
+      return;
+    }
+    if (!canReact(player, "hurt", 15)) return;
     if (!isSitting(dog) && !isNear(dog, player, 4)) bring(dog, player);
     showFace(dog, "puppy", 80);
     tiltHead(dog);

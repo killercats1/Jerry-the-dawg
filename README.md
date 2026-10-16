@@ -31,6 +31,8 @@ You also get five items:
   of a roll over. Every good try teaches him, and after 5 he **masters** the trick.
 - **Real fetch.** The **Tennis Ball** gets thrown: he runs after it, grabs it in his mouth and brings it back.
 - **Guard dog.** He growls and warns you when a monster sneaks up.
+- **Protects you.** If something attacks you, he goes after it (he can't get hurt). He doesn't pick
+  fights on his own, and he won't fight while he's sitting or lying down.
 - **He cares.** He rushes over if you get hurt, begs with puppy eyes while you eat, does zoomies when
   you come back after a while, and curls up by your bed when you sleep.
 - **Status screen.** **Sneak + use the Dog Whistle** to see his mood, needs, friendship and trick

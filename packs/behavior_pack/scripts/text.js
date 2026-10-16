@@ -245,6 +245,7 @@ export const FETCH_LOST = "§7The ball's gone... §bJerry§7 looks around, confu
 
 // ---------------------------------------------------------------- smart reactions
 export const GUARD = "§bJerry§c growls! §7There's a §f{mob}§7 nearby, watch out!";
+export const DEFEND = "§bJerry§c jumps in to protect you from the §f{mob}§c!";
 export const WORRIED = "§bJerry§7 rushes over to check on you. You okay?";
 export const BEG_FOOD = "§bJerry§7 watches you eat with HUGE puppy eyes...";
 export const WELCOME_HOME = "§bJerry§7 is SO happy you're back! Zoomies!";
