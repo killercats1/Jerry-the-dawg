@@ -10,6 +10,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.player.PlayerBedEnterEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -47,12 +50,32 @@ final class PetListener implements Listener {
         });
     }
 
-    /** Your pets can't get hurt, so you never lose them. */
+    /** Your pets can't get hurt, so you never lose them. And if you get hurt, he comes to check on you. */
     @EventHandler(ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
         if ((event.getEntity() instanceof Wolf || event.getEntity() instanceof Ocelot) && pets.isPet(event.getEntity())) {
             event.setCancelled(true);
+        } else if (event.getEntity() instanceof Player) {
+            pets.onOwnerHurt((Player) event.getEntity());
         }
+    }
+
+    /** Chill pets: they don't run off to fight things (that's why vanilla tamed wolves wander away). */
+    @EventHandler(ignoreCancelled = true)
+    public void onTarget(EntityTargetEvent event) {
+        if ((event.getEntity() instanceof Wolf || event.getEntity() instanceof Ocelot) && pets.isPet(event.getEntity())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onEat(PlayerItemConsumeEvent event) {
+        pets.onOwnerEat(event.getPlayer());
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBed(PlayerBedEnterEvent event) {
+        pets.onBedtime(event.getPlayer());
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -71,7 +94,9 @@ final class PetListener implements Listener {
             } else if (item == Items.BRUSH) {
                 pets.brush(player, target);
             } else if (item == Items.BALL) {
-                pets.play(player);
+                pets.throwBall(player);
+            } else if (player.isSneaking()) {
+                pets.showStatus(player);
             } else {
                 pets.whistle(player);
             }
@@ -96,9 +121,13 @@ final class PetListener implements Listener {
         event.setCancelled(true);
         Player player = event.getPlayer();
         if (item == Items.WHISTLE) {
-            pets.whistle(player);
+            if (player.isSneaking()) {
+                pets.showStatus(player); // sneak + whistle = how's he doing?
+            } else {
+                pets.whistle(player);
+            }
         } else if (item == Items.BALL) {
-            pets.play(player);
+            pets.throwBall(player);
         } else {
             pets.tell(player, Text.USE_ON_DOG);
         }

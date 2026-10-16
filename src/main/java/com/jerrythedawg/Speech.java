@@ -70,10 +70,24 @@ final class Speech {
     }
 
     private void respond(Player player, Wolf dog, Text.Voice entry) {
-        pets.trick(player, dog, entry.action);
-        if ("play".equals(entry.action)) {
-            return; // play() already said something
+        if ("play".equals(entry.action) || "fetch".equals(entry.action)) {
+            pets.trick(player, dog, entry.action); // these say their own thing
+            return;
         }
+        if (Pets.PRACTICE.contains(entry.action)) {
+            PetData data = plugin.data(player);
+            pets.changeNeeds(data, 3, -1, 0);
+            // Too sleepy? Sometimes he'd rather nap.
+            if (data.energy < 15 && random.nextBoolean()) {
+                dog.setSitting(true);
+                pets.tell(player, Text.TOO_SLEEPY);
+                return;
+            }
+            if (!pets.attemptTrick(player, dog, entry.action)) {
+                return;
+            }
+        }
+        pets.trick(player, dog, entry.action);
         String reply;
         if ("mochi".equals(entry.action)) {
             reply = plugin.data(player).hasCat ? pets.pick(Text.MOCHI_HI) : Text.NO_CAT;

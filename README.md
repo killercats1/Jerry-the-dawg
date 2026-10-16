@@ -6,6 +6,23 @@ It's separate from the Bedrock add-on (that's on the `MAIN` branch): different c
 Every player gets a tamed wolf they can **name anything**, teach **tricks**, feed, brush and play with.
 Friendship unlocks **Mochi the cat** and **gifts**.
 
+## A smart, living dog 🧠
+
+- **Stays with you.** Vanilla 1.8.8 pets only loosely follow you and run off to fight things. Here
+  they stay close: if they drift more than 6 blocks, they **walk back using Minecraft's real
+  pathfinding**, and they don't run off to attack stuff. "Come" makes him walk (or run) over.
+- **Needs and moods.** He gets **hungry**, **sleepy** and **bored** over time. Treats fill him up,
+  sitting recharges him, and fetch keeps him happy. A happy dog makes friends twice as fast.
+  Nothing bad ever happens to him.
+- **Practice makes perfect.** New tricks are sloppy at first (sometimes a spin instead of a roll over).
+  After 5 good tries he **masters** them. `/dog tricks` shows his progress.
+- **Real fetch.** Right-click with the **Tennis Ball** to throw it: he runs to it, carries it back on
+  his back and drops it at your feet.
+- **Guard dog.** He growls and warns you when a monster sneaks up.
+- **He cares.** He rushes over if you get hurt, begs while you eat, does zoomies when you come back,
+  and curls up by your bed when you sleep.
+- **Status:** `/dog status` or **sneak + use the Dog Whistle** shows his mood, needs and friendship.
+
 ## What's different from the Bedrock version
 
 Java 1.8.8 can't add custom models or animations, so this version uses vanilla wolf moves, sounds and
@@ -54,7 +71,8 @@ Say his name and a trick in chat, or use `/dog <trick>`:
 | "dance" | hops and spins to a little tune |
 | "backflip" | jumps and flips |
 | "howl" | a real wolf howl |
-| "chase your tail", "spin", "jump", "speak", "fetch", "bow" | exactly what it sounds like |
+| "fetch" | throws the ball where you look |
+| "chase your tail", "spin", "jump", "speak", "bow" | exactly what it sounds like |
 | "good boy" | wags (+ friendship) |
 
 Chain them: *"Jerry, sit then shake then roll over"*. Short commands on their own ("sit") work too.
@@ -65,8 +83,8 @@ Chain them: *"Jerry, sit then shake then roll over"*. Short commands on their ow
 |---|---|
 | 🍪 **Dog Treats** (cookie) | right-click your dog: hearts and friendship |
 | 🪶 **Pet Brush** (feather) | right-click your dog: sparkles and friendship |
-| 🟢 **Tennis Ball** (slime ball) | right-click: zoomies! |
-| 🟡 **Dog Whistle** (gold nugget) | calls your pets to you from anywhere |
+| 🟢 **Tennis Ball** (slime ball) | right-click to throw it: he plays fetch! |
+| 🟡 **Dog Whistle** (gold nugget) | calls your pets to you from anywhere (sneak + use: his status) |
 
 **Sneak + right-click** your dog with an empty hand to pet him. A normal right-click sits him down,
 like any tamed wolf.
@@ -80,7 +98,7 @@ like any tamed wolf.
 | `/dog name <name>` | rename your dog (a name tag works too) |
 | `/dog catname <name>` | rename your cat |
 | `/dog call` | call your pets |
-| `/dog status` | friendship |
+| `/dog status` | mood, needs and friendship |
 | `/dog items` | get the pet items again |
 | `/dog quiet` | turn his random chat messages off/on |
 | `/dog reset` | start over with a new dog |

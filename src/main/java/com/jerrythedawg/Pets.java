@@ -1,8 +1,11 @@
 package com.jerrythedawg;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -14,7 +17,9 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Ocelot;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Wolf;
@@ -37,7 +42,16 @@ final class Pets {
     private final Map<String, Long> cooldowns = new HashMap<String, Long>();
     private final Map<UUID, Long> nextMoment = new HashMap<UUID, Long>();
     private final Map<UUID, Long> nextGift = new HashMap<UUID, Long>();
+    private final Map<String, Long> reactedAt = new HashMap<String, Long>();
+    private final Map<UUID, Long> awaySince = new HashMap<UUID, Long>();
+    /** Pets in the middle of something (like fetch) that the follow brain should leave alone. */
+    private final Set<UUID> busy = new HashSet<UUID>();
     private long seconds;
+
+    /** Tricks that need practice before he's perfect at them. */
+    static final Set<String> PRACTICE = new HashSet<String>(Arrays.asList(
+        "paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin", "lie", "hop", "shakeoff"));
+    static final int MASTER_AT = 5;
 
     Pets(JerryPlugin plugin) {
         this.plugin = plugin;
@@ -332,11 +346,19 @@ final class Pets {
         if (levelOf(data.friendship) >= CAT_LEVEL && !data.hasCat) {
             catArrives(player);
         }
+        if (dog != null) {
+            keepClose(player, dog, dog.isSitting());
+            reactToSurroundings(player, dog);
+        }
+        if (cat != null) {
+            keepClose(player, cat, cat.isSitting());
+        }
         if (!isNear(dog, player, 16)) {
             return;
         }
         if (seconds % 60 == 0) {
-            addFriendship(player, 1);
+            updateNeeds(data, dog.isSitting(), isNight(player.getWorld()));
+            addFriendship(player, "happy".equals(moodOf(data)) ? 2 : 1); // a happy dog makes friends faster
         }
         UUID id = player.getUniqueId();
         if (levelOf(data.friendship) >= GIFT_LEVEL) {
@@ -354,6 +376,11 @@ final class Pets {
             nextMoment.put(id, seconds + 45);
         } else if (seconds >= next) {
             nextMoment.put(id, seconds + 45 + random.nextInt(30));
+            String mood = moodOf(data);
+            if (!"happy".equals(mood) && random.nextInt(10) < 6) {
+                moodMoment(player, dog, mood);
+                return;
+            }
             boolean catMoment = isNear(cat, player, 16) && random.nextInt(3) == 0;
             sound(dog, random.nextBoolean() ? Sound.WOLF_PANT : Sound.WOLF_BARK, 1f);
             if (random.nextInt(4) == 0) {
@@ -381,6 +408,333 @@ final class Pets {
         sound(dog, Sound.WOLF_BARK, 1f);
         particles(dog.getLocation(), Effect.HAPPY_VILLAGER, 6);
         tell(player, "§bJerry§7 brought you a gift: §f" + Text.GIFT_NAMES[i] + "§7! He's very proud.");
+    }
+
+    // ------------------------------------------------------------------ staying close (pathfinding)
+
+    void walkTo(LivingEntity pet, Location target, double speed) {
+        Nav.walkTo(pet, target, speed, plugin.getLogger());
+    }
+
+    /**
+     * Vanilla 1.8.8 pets only loosely follow you (and run off to fight). This keeps them close:
+     * past 6 blocks they walk back to you with real pathfinding, past 24 they catch up instantly.
+     */
+    private void keepClose(Player player, LivingEntity pet, boolean sitting) {
+        if (sitting || busy.contains(pet.getUniqueId()) || player.isFlying()) {
+            return;
+        }
+        if (!pet.getWorld().equals(player.getWorld())) {
+            pet.teleport(player.getLocation());
+            return;
+        }
+        double d = pet.getLocation().distance(player.getLocation());
+        if (d > 24) {
+            pet.teleport(player.getLocation());
+        } else if (d > 6) {
+            walkTo(pet, player.getLocation(), d > 12 ? 1.5 : 1.2);
+        }
+    }
+
+    // ------------------------------------------------------------------ needs & mood
+
+    static boolean isNight(World world) {
+        long time = world.getTime();
+        return time >= 13000 && time <= 23000;
+    }
+
+    static int clamp(int value) {
+        return Math.max(0, Math.min(100, value));
+    }
+
+    void changeNeeds(PetData data, int fun, int energy, int hunger) {
+        data.fun = clamp(data.fun + fun);
+        data.energy = clamp(data.energy + energy);
+        data.hunger = clamp(data.hunger + hunger);
+        plugin.markDirty();
+    }
+
+    static String moodOf(PetData data) {
+        if (data.hunger < 30) {
+            return "hungry";
+        }
+        if (data.energy < 25) {
+            return "tired";
+        }
+        if (data.fun < 30) {
+            return "bored";
+        }
+        return "happy";
+    }
+
+    /** Once a minute while he's with you. Resting (sitting) recharges him. */
+    private void updateNeeds(PetData data, boolean resting, boolean night) {
+        changeNeeds(data, resting ? -1 : -3, resting ? 8 : (night ? -4 : -2), -3);
+    }
+
+    private void moodMoment(Player player, Wolf dog, String mood) {
+        PetData data = plugin.data(player);
+        if ("hungry".equals(mood)) {
+            sound(dog, Sound.WOLF_WHINE, 1f);
+            particles(dog.getLocation().add(0, 0.8, 0), Effect.NOTE, 1);
+            tell(player, pick(Text.HUNGRY));
+        } else if ("tired".equals(mood)) {
+            sound(dog, Sound.WOLF_PANT, 0.8f);
+            if (isNight(dog.getWorld()) && !dog.isSitting()) {
+                dog.setSitting(true);
+                tell(player, Text.NAP);
+            } else if (!data.quiet) {
+                tell(player, pick(Text.TIRED));
+            }
+        } else {
+            sound(dog, Sound.WOLF_WHINE, 1.2f);
+            hop(dog, 0.4);
+            tell(player, pick(Text.BORED));
+        }
+    }
+
+    String meter(int value) {
+        int filled = Math.round(value / 10f);
+        StringBuilder bar = new StringBuilder(value >= 50 ? "§a" : value >= 25 ? "§e" : "§c");
+        for (int i = 0; i < 10; i++) {
+            if (i == filled) {
+                bar.append("§8");
+            }
+            bar.append('|');
+        }
+        return bar.toString();
+    }
+
+    void showStatus(Player player) {
+        PetData data = plugin.data(player);
+        int mastered = 0;
+        for (String trick : PRACTICE) {
+            if (skill(data, trick) >= MASTER_AT) {
+                mastered++;
+            }
+        }
+        tell(player, Text.PREFIX + "§f§lJerry");
+        tell(player, "§fMood: " + Text.MOOD_LABEL.get(moodOf(data)));
+        tell(player, "§fFull: " + meter(data.hunger) + "  §fEnergy: " + meter(data.energy) + "  §fFun: " + meter(data.fun));
+        tell(player, "§fFriendship: " + friendshipBar(data));
+        tell(player, "§fTricks mastered: §e" + mastered + "/" + PRACTICE.size() + " §7(/dog tricks to see them)");
+    }
+
+    // ------------------------------------------------------------------ practice makes perfect
+
+    static int skill(PetData data, String trick) {
+        Integer done = data.skills.get(trick);
+        return done == null ? 0 : done;
+    }
+
+    /** Returns true if he pulls the trick off. Early on he sometimes does something else instead. */
+    boolean attemptTrick(final Player player, final Wolf dog, String action) {
+        final PetData data = plugin.data(player);
+        int done = skill(data, action);
+        if (done >= MASTER_AT) {
+            return true;
+        }
+        final String name = Text.TRICK_NAMES.containsKey(action) ? Text.TRICK_NAMES.get(action) : action;
+        if (random.nextDouble() > 0.6 + done * 0.08) {
+            int oops = random.nextInt(Text.OOPS.length);
+            if (oops == 0) {
+                spin(dog, 1);
+            } else if (oops == 2) {
+                dog.setSitting(true);
+            } else {
+                hop(dog, 0.45);
+            }
+            sound(dog, Sound.WOLF_WHINE, 1f);
+            tell(player, Text.OOPS[oops].replace("{trick}", name));
+            return false;
+        }
+        data.skills.put(action, done + 1);
+        plugin.markDirty();
+        if (done + 1 == MASTER_AT) {
+            later(30, new Runnable() {
+                @Override
+                public void run() {
+                    if (!player.isOnline()) {
+                        return;
+                    }
+                    tell(player, Text.MASTERED.replace("{trick}", name));
+                    player.playSound(player.getLocation(), Sound.LEVEL_UP, 1f, 1.2f);
+                    if (dog.isValid()) {
+                        hearts(dog);
+                    }
+                    addFriendship(player, 3);
+                }
+            });
+        }
+        return true;
+    }
+
+    // ------------------------------------------------------------------ fetch
+
+    /** Throws the Tennis Ball. He runs to it (pathfinding), carries it back and drops it at your feet. */
+    void throwBall(final Player player) {
+        final Wolf dog = findDog(player);
+        if (!isNear(dog, player, 24)) {
+            tell(player, Text.TOO_FAR);
+            return;
+        }
+        if (busy.contains(dog.getUniqueId())) {
+            tell(player, Text.FETCH_BUSY);
+            return;
+        }
+        Location eye = player.getEyeLocation();
+        final Item ball = player.getWorld().dropItem(eye.clone().add(eye.getDirection()), Items.BALL.create());
+        ball.setPickupDelay(6000); // nobody grabs it but him
+        ball.setVelocity(eye.getDirection().multiply(1.1).add(new Vector(0, 0.25, 0)));
+        dog.setSitting(false);
+        busy.add(dog.getUniqueId());
+        sound(dog, Sound.WOLF_BARK, 1f);
+        tell(player, Text.FETCH_THROW);
+
+        new BukkitRunnable() {
+            private int ticks;
+            private boolean carrying;
+
+            @Override
+            public void run() {
+                ticks++;
+                if (!dog.isValid() || !player.isOnline() || !ball.isValid()) {
+                    finish(false);
+                    return;
+                }
+                if (!carrying) {
+                    if (ticks < 10) {
+                        return; // let it fly first
+                    }
+                    if (ticks % 10 == 0) {
+                        walkTo(dog, ball.getLocation(), 1.6);
+                    }
+                    boolean reached = dog.getWorld().equals(ball.getWorld()) && dog.getLocation().distance(ball.getLocation()) < 1.6;
+                    if (reached || ticks > 240) {
+                        if (!reached) {
+                            dog.teleport(ball.getLocation());
+                        }
+                        dog.setPassenger(ball); // carries it (it rides on him)
+                        carrying = true;
+                        ticks = 0;
+                        dog.getWorld().playSound(dog.getLocation(), Sound.ITEM_PICKUP, 1f, 1f);
+                        tell(player, Text.FETCH_GOT_IT);
+                    }
+                } else {
+                    if (ticks % 10 == 1) {
+                        walkTo(dog, player.getLocation(), 1.5);
+                    }
+                    boolean back = dog.getWorld().equals(player.getWorld()) && dog.getLocation().distance(player.getLocation()) < 2.5;
+                    if (back || ticks > 240) {
+                        if (!back) {
+                            dog.teleport(player.getLocation());
+                        }
+                        finish(true);
+                    }
+                }
+            }
+
+            private void finish(boolean ok) {
+                cancel();
+                busy.remove(dog.getUniqueId());
+                if (ball.isValid()) {
+                    ball.remove();
+                }
+                if (!player.isOnline()) {
+                    return;
+                }
+                if (!ok || !dog.isValid()) {
+                    tell(player, Text.FETCH_LOST);
+                    return;
+                }
+                hearts(dog);
+                sound(dog, Sound.WOLF_BARK, 1f);
+                PetData data = plugin.data(player);
+                changeNeeds(data, 30, -6, 0);
+                boolean earned = earn(player, "ball", 4, 45);
+                tell(player, pick(Text.FETCH_DONE) + (earned ? "" : Text.FULL) + "  " + friendshipBar(data));
+            }
+        }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    // ------------------------------------------------------------------ smart reactions
+
+    private boolean canReact(Player player, String kind, long cooldown) {
+        String key = player.getUniqueId() + ":" + kind;
+        Long last = reactedAt.get(key);
+        if (last != null && seconds - last < cooldown) {
+            return false;
+        }
+        reactedAt.put(key, seconds);
+        return true;
+    }
+
+    private void reactToSurroundings(Player player, Wolf dog) {
+        UUID id = player.getUniqueId();
+        boolean near = isNear(dog, player, 24);
+        // Welcome home: you were apart for a while and now you're back together.
+        if (near) {
+            Long since = awaySince.remove(id);
+            if (since != null && seconds - since >= 90 && !busy.contains(dog.getUniqueId())) {
+                zoomies(dog);
+                tell(player, Text.WELCOME_HOME);
+                return;
+            }
+        } else if (!awaySince.containsKey(id)) {
+            awaySince.put(id, seconds);
+        }
+        // Guard dog: warns you about monsters sneaking up.
+        if (near && seconds % 3 == 0) {
+            for (Entity e : player.getNearbyEntities(12, 6, 12)) {
+                if (e instanceof Monster && canReact(player, "guard", 30)) {
+                    sound(dog, Sound.WOLF_GROWL, 1f);
+                    later(10, new Runnable() {
+                        @Override
+                        public void run() {
+                            if (dog.isValid()) {
+                                sound(dog, Sound.WOLF_BARK, 1f);
+                            }
+                        }
+                    });
+                    tell(player, Text.GUARD.replace("{mob}", e.getType().name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ')));
+                    break;
+                }
+            }
+        }
+    }
+
+    /** You got hurt: he rushes over to check on you. */
+    void onOwnerHurt(Player player) {
+        Wolf dog = findDog(player);
+        if (!isNear(dog, player, 32) || busy.contains(dog.getUniqueId()) || !canReact(player, "hurt", 15)) {
+            return;
+        }
+        if (!dog.isSitting()) {
+            walkTo(dog, player.getLocation(), 1.6);
+        }
+        sound(dog, Sound.WOLF_WHINE, 1f);
+        tell(player, Text.WORRIED);
+    }
+
+    /** You're eating: puppy eyes. */
+    void onOwnerEat(Player player) {
+        Wolf dog = findDog(player);
+        if (!isNear(dog, player, 16) || !canReact(player, "food", 60)) {
+            return;
+        }
+        sound(dog, Sound.WOLF_WHINE, 1.2f);
+        tell(player, Text.BEG_FOOD);
+    }
+
+    /** You went to bed: he curls up next to you (and it recharges him). */
+    void onBedtime(Player player) {
+        Wolf dog = findDog(player);
+        if (!isNear(dog, player, 24) || !canReact(player, "bed", 300)) {
+            return;
+        }
+        dog.setSitting(true);
+        changeNeeds(plugin.data(player), 0, 40, 0);
+        tell(player, Text.BEDTIME);
     }
 
     // ------------------------------------------------------------------ items
@@ -417,6 +771,7 @@ final class Pets {
         Wolf dog = (Wolf) target;
         hearts(dog);
         sound(dog, Sound.WOLF_BARK, 1f);
+        changeNeeds(plugin.data(player), 2, 0, 30);
         boolean earned = earn(player, "treat", 5, 60);
         tell(player, pick(Text.TREAT) + (earned ? "" : Text.FULL) + "  " + friendshipBar(plugin.data(player)));
     }
@@ -429,6 +784,7 @@ final class Pets {
             return;
         }
         sound(target, Sound.WOLF_PANT, 1f);
+        changeNeeds(plugin.data(player), 5, 0, 0);
         boolean earned = earn(player, "brush", 3, 30);
         tell(player, pick(Text.BRUSH) + (earned ? "" : Text.FULL) + "  " + friendshipBar(plugin.data(player)));
     }
@@ -436,6 +792,7 @@ final class Pets {
     void pet(Player player, Wolf dog) {
         hearts(dog);
         sound(dog, Sound.WOLF_PANT, 1f);
+        changeNeeds(plugin.data(player), 5, 0, 0);
         boolean earned = earn(player, "pet", 2, 20);
         tell(player, pick(Text.PET) + (earned ? "" : Text.FULL) + "  " + friendshipBar(plugin.data(player)));
     }
@@ -469,8 +826,10 @@ final class Pets {
             sound(dog, "yawn".equals(action) ? Sound.WOLF_PANT : Sound.WOLF_BARK, 1f);
         } else if ("come".equals(action)) {
             dog.setSitting(false);
-            if (!isNear(dog, player, 6)) {
+            if (!isNear(dog, player, 32)) {
                 dog.teleport(player.getLocation());
+            } else {
+                walkTo(dog, player.getLocation(), 1.4); // he walks (runs!) over instead of teleporting
             }
             sound(dog, Sound.WOLF_BARK, 1f);
         } else if ("roll".equals(action)) {
@@ -547,6 +906,8 @@ final class Pets {
             sound(dog, Sound.WOLF_WHINE, 1f);
         } else if ("play".equals(action)) {
             play(player);
+        } else if ("fetch".equals(action)) {
+            throwBall(player);
         } else if ("mochi".equals(action)) {
             Ocelot cat = findCat(player);
             if (cat != null) {

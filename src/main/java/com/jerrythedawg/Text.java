@@ -81,7 +81,7 @@ final class Text {
         "§f/dog tricks§7 - every trick he knows",
         "§f/dog <trick>§7 - e.g. §f/dog roll over§7 (or just say it in chat with his name)",
         "§f/dog name <name>§7 - rename your dog §8|§f /dog catname <name>§7 - rename your cat",
-        "§f/dog call§7 - call your pets §8|§f /dog status§7 - friendship",
+        "§f/dog call§7 - call your pets §8|§f /dog status§7 - mood, needs, friendship (or sneak + use the whistle)",
         "§f/dog items§7 - get the pet items again §8|§f /dog quiet§7 - no random messages",
     };
 
@@ -146,7 +146,8 @@ final class Text {
             "§bJerry§7 jumps! Boing!", "§bJerry§7 hops like a bunny. A big fluffy bunny."),
         new Voice("bone", false, w("bone", "your bone", "get your bone"),
             "§bJerry§7 proudly shows off his bone.", "§bJerry§7 found his favourite bone. He will not be sharing."),
-        new Voice("play", false, w("fetch", "play", "ball", "zoomies")),
+        new Voice("fetch", false, w("fetch", "ball", "go get it", "get the ball")),
+        new Voice("play", false, w("play", "zoomies")),
         new Voice("shock", false, w("boo", "surprise", "guess what", "oh no", "whoa", "wow"),
             "§bJerry§7 jumps! His eyes go HUGE.", "§bJerry§7 is shocked. Absolutely shocked."),
         new Voice("excited", false, w("treat", "hungry", "food", "snack", "dinner", "eat"),
@@ -162,6 +163,7 @@ final class Text {
         "§6[Jerry the Dawg]§f Tricks §7(say them in chat with his name, or §f/dog <trick>§7):",
         "§fsit, lie down, come, shake, high five, wave, beg, roll over, play dead, bow,",
         "§fdance, backflip, howl, chase your tail, spin, jump, speak, shake off, fetch",
+        "§7New tricks are sloppy at first. Practice them and he'll master them!",
         "§7Chain them: §f\"Jerry, sit then shake then roll over\"",
     };
 
@@ -186,6 +188,72 @@ final class Text {
     // Distinctive words that still count when one letter is off, like "speek" or "fetchh".
     static final List<String> FUZZY_WORDS = Arrays.asList(
         "speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello", "backflip");
+
+    // ------------------------------------------------------------------ needs & moods
+
+    static final Map<String, String> MOOD_LABEL;
+
+    static {
+        Map<String, String> m = new HashMap<String, String>();
+        m.put("happy", "§aHappy");
+        m.put("hungry", "§6Hungry §7(give him a treat)");
+        m.put("tired", "§9Sleepy §7(let him sit or lie down for a nap)");
+        m.put("bored", "§eBored §7(play fetch with him)");
+        MOOD_LABEL = Collections.unmodifiableMap(m);
+    }
+
+    static final String[] HUNGRY = {
+        "§bJerry§7's tummy rumbles. Treat, please?",
+        "§bJerry§7 stares at your pocket. He knows the treats are in there.",
+    };
+    static final String[] TIRED = {"§bJerry§7 does a big yawn. Someone needs a nap."};
+    static final String NAP = "§bJerry§7 lies down for a nap. (Say §f\"come\"§7 to wake him.)";
+    static final String[] BORED = {
+        "§bJerry§7 bounces around you. He's SO bored. Throw the ball!",
+        "§bJerry§7 nudges your hand. Play fetch?",
+    };
+    static final String TOO_SLEEPY = "§bJerry§7 is too sleepy for tricks... *yawn* He lies down instead.";
+
+    // ------------------------------------------------------------------ practice makes perfect
+
+    static final Map<String, String> TRICK_NAMES;
+
+    static {
+        Map<String, String> m = new java.util.LinkedHashMap<String, String>();
+        String[][] names = {
+            {"paw", "shake"}, {"highfive", "high five"}, {"wave", "wave"}, {"beg", "beg"}, {"roll", "roll over"},
+            {"dead", "play dead"}, {"bow", "bow"}, {"dance", "dance"}, {"backflip", "backflip"}, {"howl", "howl"},
+            {"chase", "chase his tail"}, {"spin", "spin"}, {"lie", "lie down"}, {"hop", "jump"}, {"shakeoff", "shake off"},
+        };
+        for (String[] pair : names) {
+            m.put(pair[0], pair[1]);
+        }
+        TRICK_NAMES = Collections.unmodifiableMap(m);
+    }
+
+    static final String[] OOPS = {
+        "§bJerry§7 tried to §f{trick}§7... and did a spin instead. Close enough!",
+        "§bJerry§7 tried to §f{trick}§7, got confused and tilted his head. He's still learning!",
+        "§bJerry§7 tried to §f{trick}§7... and just sat down. Practice makes perfect!",
+        "§bJerry§7 got so excited about §f{trick}§7 that he just jumped around.",
+    };
+    static final String MASTERED = "§e* * * §bJerry§e mastered §f{trick}§e! * * *";
+
+    // ------------------------------------------------------------------ fetch & reactions
+
+    static final String FETCH_THROW = "§7You throw the ball! §bJerry§7 takes off after it...";
+    static final String FETCH_GOT_IT = "§bJerry§7 got it!";
+    static final String[] FETCH_DONE = {
+        "§bJerry§7 drops the ball at your feet. Again! Again!",
+        "§bJerry§7 brings the ball back, tail wagging like crazy.",
+    };
+    static final String FETCH_BUSY = "§7Jerry's already chasing the ball!";
+    static final String FETCH_LOST = "§7The ball's gone... §bJerry§7 looks around, confused.";
+    static final String GUARD = "§bJerry§c growls! §7There's a §f{mob}§7 nearby, watch out!";
+    static final String WORRIED = "§bJerry§7 rushes over to check on you. You okay?";
+    static final String BEG_FOOD = "§bJerry§7 watches you eat with HUGE puppy eyes...";
+    static final String WELCOME_HOME = "§bJerry§7 is SO happy you're back! Zoomies!";
+    static final String BEDTIME = "§bJerry§7 curls up at the foot of your bed. Goodnight!";
 
     static final String[] GIFT_NAMES = {"a stick. The best stick", "a bone", "a poppy", "a dandelion", "a feather", "an emerald?! Where did he find that"};
 }

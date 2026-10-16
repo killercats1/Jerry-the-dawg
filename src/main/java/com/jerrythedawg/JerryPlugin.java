@@ -92,6 +92,15 @@ public final class JerryPlugin extends JavaPlugin {
             d.started = s.getBoolean("started");
             d.hasCat = s.getBoolean("has-cat");
             d.quiet = s.getBoolean("quiet");
+            d.hunger = s.getInt("hunger", 80);
+            d.energy = s.getInt("energy", 80);
+            d.fun = s.getInt("fun", 80);
+            ConfigurationSection skills = s.getConfigurationSection("skills");
+            if (skills != null) {
+                for (String trick : skills.getKeys(false)) {
+                    d.skills.put(trick, skills.getInt(trick));
+                }
+            }
             UUID player = uuid(key);
             if (player != null) {
                 players.put(player, d);
@@ -112,6 +121,12 @@ public final class JerryPlugin extends JavaPlugin {
             yaml.set(k + ".started", d.started);
             yaml.set(k + ".has-cat", d.hasCat);
             yaml.set(k + ".quiet", d.quiet);
+            yaml.set(k + ".hunger", d.hunger);
+            yaml.set(k + ".energy", d.energy);
+            yaml.set(k + ".fun", d.fun);
+            for (Map.Entry<String, Integer> skill : d.skills.entrySet()) {
+                yaml.set(k + ".skills." + skill.getKey(), skill.getValue());
+            }
         }
         try {
             getDataFolder().mkdirs();

@@ -36,6 +36,12 @@ final class DogCommand implements CommandExecutor {
             for (String line : Text.TRICK_LIST) {
                 pets.tell(player, line);
             }
+            StringBuilder stars = new StringBuilder("§7Practice: ");
+            for (java.util.Map.Entry<String, String> trick : Text.TRICK_NAMES.entrySet()) {
+                int done = Math.min(Pets.MASTER_AT, Pets.skill(data, trick.getKey()));
+                stars.append("§f").append(trick.getValue()).append(' ').append(done >= Pets.MASTER_AT ? "§a(mastered) " : "§e" + done + "/" + Pets.MASTER_AT + " ");
+            }
+            pets.tell(player, stars.toString());
         } else if (sub.equals("name") || sub.equals("rename")) {
             if (rest.isEmpty()) {
                 pets.tell(player, "§7Your dog is called §bJerry§7. Rename him with §f/dog name <name>");
@@ -53,7 +59,7 @@ final class DogCommand implements CommandExecutor {
         } else if (sub.equals("call") || sub.equals("whistle")) {
             pets.whistle(player);
         } else if (sub.equals("status")) {
-            pets.tell(player, Text.PREFIX + "§fFriendship with §bJerry§f: " + pets.friendshipBar(data));
+            pets.showStatus(player);
         } else if (sub.equals("items")) {
             Items.giveAll(player);
             pets.tell(player, "§7Here are your pet items!");
