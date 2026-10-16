@@ -250,6 +250,7 @@ final class Text {
     static final String FETCH_BUSY = "§7Jerry's already chasing the ball!";
     static final String FETCH_LOST = "§7The ball's gone... §bJerry§7 looks around, confused.";
     static final String GUARD = "§bJerry§c growls! §7There's a §f{mob}§7 nearby, watch out!";
+    static final String DEFEND = "§bJerry§c jumps in to protect you from the §f{mob}§c!";
     static final String WORRIED = "§bJerry§7 rushes over to check on you. You okay?";
     static final String BEG_FOOD = "§bJerry§7 watches you eat with HUGE puppy eyes...";
     static final String WELCOME_HOME = "§bJerry§7 is SO happy you're back! Zoomies!";

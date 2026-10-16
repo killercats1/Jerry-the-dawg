@@ -19,6 +19,8 @@ Friendship unlocks **Mochi the cat** and **gifts**.
 - **Real fetch.** Right-click with the **Tennis Ball** to throw it: he runs to it, carries it back on
   his back and drops it at your feet.
 - **Guard dog.** He growls and warns you when a monster sneaks up.
+- **Protects you.** If something attacks you, he goes after it (he can't get hurt). Creepers excepted,
+  for everyone's sake. He doesn't pick fights on his own, and the cat just hisses.
 - **He cares.** He rushes over if you get hurt, begs while you eat, does zoomies when you come back,
   and curls up by your bed when you sleep.
 - **Status:** `/dog status` or **sneak + use the Dog Whistle** shows his mood, needs and friendship.

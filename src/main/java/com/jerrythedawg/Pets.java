@@ -16,7 +16,10 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.entity.Creature;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Ghast;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
@@ -421,7 +424,7 @@ final class Pets {
      * past 6 blocks they walk back to you with real pathfinding, past 24 they catch up instantly.
      */
     private void keepClose(Player player, LivingEntity pet, boolean sitting) {
-        if (sitting || busy.contains(pet.getUniqueId()) || player.isFlying()) {
+        if (sitting || busy.contains(pet.getUniqueId()) || player.isFlying() || isFighting(pet, player)) {
             return;
         }
         if (!pet.getWorld().equals(player.getWorld())) {
@@ -700,6 +703,37 @@ final class Pets {
                     break;
                 }
             }
+        }
+    }
+
+    /** True while he's fighting off something that attacked you (don't pull him away mid-fight). */
+    private boolean isFighting(LivingEntity pet, Player player) {
+        if (!(pet instanceof Creature)) {
+            return false;
+        }
+        LivingEntity target = ((Creature) pet).getTarget();
+        return target != null && target.isValid() && !target.isDead() && target.getWorld().equals(player.getWorld())
+            && target.getLocation().distance(player.getLocation()) < 24;
+    }
+
+    /** Something attacked you: your dog goes after it (he can't get hurt). The cat hisses at it. */
+    void defend(Player player, LivingEntity attacker) {
+        Wolf dog = findDog(player);
+        if (dog != null && isNear(dog, player, 24) && !dog.isSitting() && !busy.contains(dog.getUniqueId())
+            && !(attacker instanceof Creeper) && !(attacker instanceof Ghast)) {
+            dog.setTarget(attacker);
+            sound(dog, Sound.WOLF_GROWL, 1f);
+            if (canReact(player, "defend", 10)) {
+                String name = attacker instanceof Player ? ((Player) attacker).getName()
+                    : attacker.getType().name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+                tell(player, Text.DEFEND.replace("{mob}", name));
+            }
+        } else {
+            onOwnerHurt(player);
+        }
+        Ocelot cat = findCat(player);
+        if (isNear(cat, player, 16)) {
+            sound(cat, Sound.CAT_HISS, 1f);
         }
     }
 

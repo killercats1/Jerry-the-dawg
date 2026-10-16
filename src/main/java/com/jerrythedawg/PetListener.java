@@ -9,6 +9,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Projectile;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerBedEnterEvent;
@@ -56,14 +59,41 @@ final class PetListener implements Listener {
         if ((event.getEntity() instanceof Wolf || event.getEntity() instanceof Ocelot) && pets.isPet(event.getEntity())) {
             event.setCancelled(true);
         } else if (event.getEntity() instanceof Player) {
-            pets.onOwnerHurt((Player) event.getEntity());
+            Player player = (Player) event.getEntity();
+            LivingEntity attacker = attackerOf(event);
+            if (attacker != null && attacker != player && !pets.isPet(attacker)) {
+                pets.defend(player, attacker); // something hit you: he goes after it
+            } else {
+                pets.onOwnerHurt(player);
+            }
         }
     }
 
-    /** Chill pets: they don't run off to fight things (that's why vanilla tamed wolves wander away). */
+    /** Who hit you (the shooter, for arrows and other projectiles), or null. */
+    private static LivingEntity attackerOf(EntityDamageEvent event) {
+        if (!(event instanceof EntityDamageByEntityEvent)) {
+            return null;
+        }
+        Entity damager = ((EntityDamageByEntityEvent) event).getDamager();
+        if (damager instanceof Projectile && ((Projectile) damager).getShooter() instanceof LivingEntity) {
+            return (LivingEntity) ((Projectile) damager).getShooter();
+        }
+        return damager instanceof LivingEntity ? (LivingEntity) damager : null;
+    }
+
+    /**
+     * Pets don't run off to fight random things (that's why vanilla tamed wolves wander away)...
+     * but anything that attacks you is fair game.
+     */
     @EventHandler(ignoreCancelled = true)
     public void onTarget(EntityTargetEvent event) {
-        if ((event.getEntity() instanceof Wolf || event.getEntity() instanceof Ocelot) && pets.isPet(event.getEntity())) {
+        if (!(event.getEntity() instanceof Wolf || event.getEntity() instanceof Ocelot) || !pets.isPet(event.getEntity())) {
+            return;
+        }
+        EntityTargetEvent.TargetReason reason = event.getReason();
+        boolean defending = reason == EntityTargetEvent.TargetReason.TARGET_ATTACKED_OWNER
+            || reason == EntityTargetEvent.TargetReason.CUSTOM; // CUSTOM = set by defend()
+        if (!defending) {
             event.setCancelled(true);
         }
     }
