@@ -21,9 +21,22 @@ particles:
 
 1. Download `JerryTheDawg-x.x.x.jar` from this repo's
    [Releases](../../releases) (the newest **"Jerry the Dawg for Java 1.8.8"** build).
-2. Put it in your **1.8.8 Spigot or Paper server's** `plugins` folder and restart the server.
+2. Put it in your **1.8.8 Spigot or Paper server's** `plugins` folder (Eaglercraft servers too, see below) and restart the server.
    (Any server or host where you can upload your own plugins works.)
 3. Join! Your dog shows up a few seconds later, along with your pet items.
+
+### Eaglercraft servers 🦅
+
+Eaglercraft is browser Minecraft 1.8.8, and its servers are normal **1.8.8 Spigot/Paper** servers with
+an Eaglercraft bridge plugin (EaglerXBungee on a BungeeCord proxy, or EaglerXServer). This plugin
+works on them:
+
+- **With a BungeeCord proxy:** put `JerryTheDawg-x.x.x.jar` in the **Spigot/Paper (backend) server's**
+  `plugins` folder, **not** the BungeeCord proxy's `plugins` folder.
+- **Single server with EaglerXServer:** put it in that server's `plugins` folder, next to EaglerXServer.
+- It only uses vanilla 1.8.8 things (chat, wolf sounds, hearts and particles, named items), so
+  Eaglercraft players see everything normally. Built for Java 8, which most Eaglercraft setups run.
+- Eaglercraft **singleplayer** (in the browser) can't load plugins; it has to be a server.
 
 ## Talking to your dog
 
