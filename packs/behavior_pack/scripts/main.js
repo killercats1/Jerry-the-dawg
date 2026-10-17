@@ -39,7 +39,7 @@ const FETCH_SLOTS = 8; // matches the jf:fetch_chase_0..7 behaviors in entities/
 // Matches the jf:pose property in entities/jerry.json and the pose animation controller.
 const POSE = {
   stand: 0, sit: 1, roll: 2, tilt: 3, paw: 4, wave: 5, beg: 6,
-  playDead: 7, lie: 8, bow: 9, dance: 10, backflip: 11, howl: 12,
+  playDead: 7, lie: 8, bow: 9, dance: 10, backflip: 11, howl: 12, sniff: 13, shy: 14, stretch: 15,
 };
 const DEFAULT_DOG_NAME = "Jerry";
 const DEFAULT_CAT_NAME = "Mochi";
@@ -484,13 +484,14 @@ function hop(pet, strength = 0.45) {
   } catch {}
 }
 
-function spin(pet) {
+// dir 1 turns right (clockwise seen from above), -1 turns left.
+function spin(pet, dir = 1) {
   for (let i = 1; i <= 12; i++) {
     system.runTimeout(() => {
       if (!isValid(pet)) return;
       try {
         const rotation = pet.getRotation();
-        pet.teleport(pet.location, { rotation: { x: rotation.x, y: rotation.y + 30 } });
+        pet.teleport(pet.location, { rotation: { x: rotation.x, y: rotation.y + 30 * dir } });
       } catch {}
     }, i * 2);
   }
@@ -842,7 +843,10 @@ function updateNeeds(player, dog) {
 
 // ---------------------------------------------------------------- practice makes perfect
 
-const PRACTICE = new Set(["paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin", "lie", "hop"]);
+const PRACTICE = new Set([
+  "paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin", "lie", "hop",
+  "find", "shy", "stretch",
+]);
 const MASTER_AT = 5; // successful tries to master a trick
 
 function getSkills(player) {
@@ -1396,6 +1400,7 @@ function parseCommands(said, player) {
 const ACTION_TICKS = {
   roll: 56, spin: 34, play: 50, greet: 40, paw: 50, highfive: 50, wave: 50, beg: 50,
   dead: 75, lie: 25, bow: 45, dance: 75, backflip: 30, howl: 55, chase: 75,
+  find: 110, shy: 65, stretch: 55, spinleft: 34, spinright: 34,
 };
 const actionTicks = (entry) => ACTION_TICKS[entry.action] ?? 30;
 
@@ -1548,7 +1553,66 @@ function talkAction(player, dog, action) {
     case "chase":
       for (let i = 0; i < 3; i++) system.runTimeout(() => isValid(dog) && spin(dog), i * 24);
       return sound(dim, "mob.wolf.bark", dog.location);
+    case "spinleft":
+    case "spinright":
+      sparkle(dog, "minecraft:villager_happy", 6);
+      return spin(dog, action === "spinleft" ? -1 : 1);
+    case "find":
+      return findIt(player, dog);
+    case "shy":
+      sound(dim, "mob.wolf.whine", dog.location, { pitch: 1.3 });
+      trick(dog, POSE.shy, 60);
+      // ...then he peeks out from behind his paw.
+      return system.runTimeout(() => {
+        if (!isValid(dog)) return;
+        sparkle(dog, "minecraft:heart_particle", 3);
+        showFace(dog, "love", 30);
+      }, 45);
+    case "stretch":
+      sound(dim, "mob.wolf.panting", dog.location, { pitch: 0.8 });
+      trick(dog, POSE.stretch, 50);
+      return changeNeeds(player, { energy: 2 });
   }
+}
+
+// "Find it!": he sniffs around a few spots near you, nose to the ground, and finds a treat.
+function findIt(player, dog) {
+  if (isSitting(dog)) stand(dog);
+  const token = (poseTimers.get(dog.id) ?? 0) + 1;
+  poseTimers.set(dog.id, token); // a trick started meanwhile takes over the pose
+  try {
+    dog.triggerEvent("jf:sit"); // pause his follow brain while he snuffles around
+  } catch {}
+  setPose(dog, POSE.sniff);
+  const home = player.location;
+  const spots = [0, 1, 2].map(() => {
+    const angle = rand(0, Math.PI * 2);
+    const r = rand(2, 4.5);
+    return { x: home.x + Math.cos(angle) * r, y: home.y, z: home.z + Math.sin(angle) * r };
+  });
+  let ticks = 0;
+  const run = system.runInterval(() => {
+    ticks++;
+    if (!isValid(dog) || fetching.has(dog.id) || isSitting(dog)) return system.clearRun(run);
+    const spot = spots[Math.min(2, Math.floor(ticks / 30))];
+    if (ticks < 90) {
+      runToward(dog, spot, 0.14);
+      if (ticks % 6 === 0) particle(dog.dimension, "minecraft:basic_smoke_particle", { ...dog.location, y: dog.location.y + 0.2 });
+      if (ticks % 15 === 0) sound(dog.dimension, "mob.wolf.panting", dog.location, { pitch: 1.5 });
+      return;
+    }
+    system.clearRun(run);
+    if (poseTimers.get(dog.id) === token) setPose(dog, POSE.stand);
+    try {
+      dog.triggerEvent("jf:stand");
+    } catch {}
+    sparkle(dog);
+    showFace(dog, "love", 60);
+    sound(dog.dimension, "random.pop", dog.location);
+    sound(dog.dimension, "mob.wolf.bark", dog.location);
+    changeNeeds(player, { hunger: 8, fun: 8 });
+    if (isValid(player)) tell(player, pick(T.FOUND_IT));
+  }, 1);
 }
 
 // ---------------------------------------------------------------- commands

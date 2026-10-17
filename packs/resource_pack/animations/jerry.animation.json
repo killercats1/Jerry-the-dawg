@@ -872,6 +872,239 @@
           ]
         }
       }
+    },
+    "animation.jf_jerry.sniff": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "55 + math.sin(query.anim_time * 900.0) * 5",
+            "math.sin(query.anim_time * 300.0) * 14",
+            0
+          ],
+          "position": [
+            0,
+            -4,
+            -0.5
+          ]
+        },
+        "upperBody": {
+          "rotation": [
+            8,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -0.5,
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            -10,
+            "math.sin(query.anim_time * 720.0) * 25",
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_jerry.shy": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            -45,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -4,
+            -2
+          ]
+        },
+        "upperBody": {
+          "rotation": [
+            -18,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -2,
+            0
+          ]
+        },
+        "leg0": {
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6,
+            -5
+          ]
+        },
+        "leg1": {
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6,
+            -5
+          ]
+        },
+        "leg2": {
+          "rotation": [
+            -27,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -1,
+            0
+          ]
+        },
+        "leg3": {
+          "rotation": [
+            "-121 + math.sin(query.anim_time * 360.0) * 2",
+            0,
+            10
+          ],
+          "position": [
+            -0.5,
+            0,
+            -0.5
+          ]
+        },
+        "tail": {
+          "position": [
+            0,
+            -9,
+            -2
+          ],
+          "rotation": [
+            0,
+            "math.sin(query.anim_time * 360.0) * 10",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            8,
+            12,
+            6
+          ],
+          "position": [
+            0,
+            -1,
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_jerry.stretch": {
+      "loop": true,
+      "bones": {
+        "leg2": {
+          "rotation": [
+            -80,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6,
+            -1
+          ]
+        },
+        "leg3": {
+          "rotation": [
+            -80,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6,
+            -1
+          ]
+        },
+        "leg0": {
+          "rotation": [
+            35,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -1,
+            1
+          ]
+        },
+        "leg1": {
+          "rotation": [
+            35,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -1,
+            1
+          ]
+        },
+        "body": {
+          "rotation": [
+            18,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -2,
+            0
+          ]
+        },
+        "upperBody": {
+          "rotation": [
+            10,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -4,
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            -30,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -4.5,
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            -40,
+            "math.sin(query.anim_time * 540.0) * 20",
+            0
+          ]
+        }
+      }
     }
   }
 }

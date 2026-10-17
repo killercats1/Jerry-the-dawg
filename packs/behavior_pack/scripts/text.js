@@ -113,13 +113,19 @@ export const MISHEARD = {
   comeon: "come", kom: "come",
 };
 // Distinctive words that still count when one letter is off, like "speek" or "fetchh".
-export const FUZZY_WORDS = ["speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello", "backflip"];
+export const FUZZY_WORDS = ["speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello", "backflip", "stretch", "peekaboo"];
 
 // The first entry whose words appear in what you said wins, so more specific phrases go first.
 // action: what Jerry does (see talkAction in main.js). praise: also earns a little friendship.
 export const VOICE = [
   { words: ["good boy", "good dog", "love you", "best boy", "good job", "well done", "cute"], face: "love", action: "love", praise: true,
     replies: ["§bJerry§7's tail is wagging so fast it's basically a propeller.", "§bJerry§7 knows. He's very aware. *happy wiggle*"] },
+  { words: ["find it", "find the treat", "go find", "find", "search", "sniff", "seek", "where is it"], face: "puppy", action: "find",
+    replies: ["§bJerry§7 puts his nose to the ground. *sniff sniff*", "§bJerry§7 goes into detective mode."] },
+  { words: ["hide your face", "cover your eyes", "are you shy", "shy", "peekaboo", "peek a boo", "embarrassed", "blush"], face: "puppy", action: "shy",
+    replies: ["§bJerry§7 hides his face behind his paw... then peeks out. So shy!", "§bJerry§7 covers his eyes. Peekaboo!"] },
+  { words: ["big stretch", "stretch", "stretchy", "yoga"], face: "sleepy", action: "stretch",
+    replies: ["§bJerry§7 does a big long streeeetch.", "§bJerry§7 stretches out his front paws and wiggles his bum."] },
   { words: ["play dead", "bang", "you're dead", "youre dead"], face: "sleepy", action: "dead",
     replies: ["§bJerry§7 flops over dramatically. Award-winning performance.", "§bJerry§7 plays dead... but his tail is still wagging."] },
   { words: ["roll over", "roll", "belly rub", "belly rubs", "belly"], face: "happy", action: "roll",
@@ -136,7 +142,7 @@ export const VOICE = [
     replies: ["§bJerry§7 offers you his paw. What a gentleman.", "§bJerry§7 shakes your hand very politely."] },
   { words: ["wave", "say bye", "bye", "goodbye", "bye bye", "say hi"], face: "happy", action: "wave",
     replies: ["§bJerry§7 waves his paw at you!", "§bJerry§7 waves bye-bye. (He's not going anywhere.)"] },
-  { words: ["bow", "take a bow", "stretch"], face: "happy", action: "bow",
+  { words: ["bow", "take a bow"], face: "happy", action: "bow",
     replies: ["§bJerry§7 takes a bow. Thank you, thank you.", "§bJerry§7 does a big play bow. He wants to play!"] },
   { words: ["dance", "boogie", "party", "dance party"], face: "happy", action: "dance",
     replies: ["§bJerry§7 stands up on his back legs and DANCES!", "§bJerry§7 has moves. Serious moves."] },
@@ -150,6 +156,10 @@ export const VOICE = [
     replies: ["§bJerry§7 comes trotting over!", "§bJerry§7 zooms right to you."] },
   { words: ["speak", "bark", "woof", "talk", "say something"], face: "happy", action: "bark",
     replies: ["§bJerry§f: WOOF! WOOF!", "§bJerry§f: Woof! §7(He said it with feeling.)"] },
+  { words: ["spin left", "turn left", "to the left", "go left"], face: "happy", action: "spinleft",
+    replies: ["§bJerry§7 spins to the left!", "§bJerry§7 does a spin the left way. He knows his left!"] },
+  { words: ["spin right", "turn right", "to the right", "go right"], face: "happy", action: "spinright",
+    replies: ["§bJerry§7 spins to the right!", "§bJerry§7 does a spin the right way. Clever boy!"] },
   { words: ["spin", "twirl", "trick", "turn around"], face: "happy", action: "spin",
     replies: ["§bJerry§7 does a spin! Ta-da!", "§bJerry§7 shows off his best dance move."] },
   { words: ["jump", "hop", "up"], face: "happy", action: "hop",
@@ -223,8 +233,13 @@ export const TOO_SLEEPY = "§bJerry§7 is too sleepy for tricks... *yawn* He lie
 export const TRICK_NAMES = {
   paw: "shake", highfive: "high five", wave: "wave", beg: "beg", roll: "roll over", dead: "play dead",
   bow: "bow", dance: "dance", backflip: "backflip", howl: "howl", chase: "chase his tail", spin: "spin",
-  lie: "lie down", hop: "jump",
+  lie: "lie down", hop: "jump", find: "find it", shy: "be shy", stretch: "stretch",
 };
+export const FOUND_IT = [
+  "§bJerry§7 found a treat! *crunch crunch* What a nose!",
+  "§bJerry§7 sniffs out a treat and gobbles it up. Detective Jerry strikes again.",
+  "§bJerry§7 found it! He looks extremely proud of himself.",
+];
 export const OOPS = [
   { action: "spin", text: "§bJerry§7 tried to §f{trick}§7... and did a spin instead. Close enough!" },
   { action: "tilt", text: "§bJerry§7 tried to §f{trick}§7, got confused and tilted his head. He's still learning!" },

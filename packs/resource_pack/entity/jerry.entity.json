@@ -48,7 +48,10 @@
         "lie": "animation.jf_jerry.lie",
         "bow": "animation.jf_jerry.bow",
         "backflip": "animation.jf_jerry.backflip",
-        "howl": "animation.jf_jerry.howl"
+        "howl": "animation.jf_jerry.howl",
+        "sniff": "animation.jf_jerry.sniff",
+        "shy": "animation.jf_jerry.shy",
+        "stretch": "animation.jf_jerry.stretch"
       },
       "scripts": {
         "animate": [

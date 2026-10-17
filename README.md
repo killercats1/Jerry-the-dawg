@@ -103,11 +103,15 @@ pkg update -y && pkg install -y python termux-api curl && curl -fLo ~/jerry_voic
 | "roll over", "belly rubs" | rolls onto his back, paws in the air |
 | "play dead", "bang" | flops onto his side (eyes closed, tail still wagging) |
 | "bow", "take a bow" | play bow: front down, bum up |
+| "stretch", "big stretch" | a big long stretch, front paws out |
+| "find it", "find the treat" | nose to the ground, sniffs around and finds a hidden treat |
+| "shy", "hide your face", "peekaboo" | covers his eyes with his paw, then peeks out |
 | "dance", "party" | stands on his back legs and dances to a little tune |
 | "backflip", "flip" | does a backflip! |
 | "howl", "sing" | sits and howls at the sky |
 | "chase your tail" | spins around chasing his tail |
 | "spin", "turn around" | does a spin |
+| "spin left" / "spin right" | spins that way |
 | "speak", "bark" | barks |
 | "jump", "hop" | jumps |
 | "fetch", "ball" | plays fetch (throws where you look) |
