@@ -54,12 +54,17 @@ def clean_text(text):
 
 
 def listen_android(args):
-    """Android's speech recognizer (Termux:API). Prints partial results; the last line is final."""
+    """Android's speech recognizer (Termux:API). Prints partial results; the last line is final.
+    When it fails it prints an error instead (e.g. "ERROR ERROR NO MATCH"), which is not speech."""
     try:
         out = subprocess.run(["termux-speech-to-text"], capture_output=True, text=True, timeout=args.timeout)
     except subprocess.TimeoutExpired:
         return ""
     lines = [line.strip() for line in out.stdout.splitlines() if line.strip()]
+    errors = [line for line in lines if line.upper().startswith("ERROR")]
+    if errors:
+        args.error = errors[-1]
+        return ""
     return lines[-1] if lines else ""
 
 
@@ -231,10 +236,25 @@ async def hear(game, args, event_id):
     await game.command("scriptevent jf:voice_status listening")
     if shutil.which("termux-vibrate"):
         subprocess.Popen(["termux-vibrate", "-d", "60"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    args.error = None
     text = clean_text(await asyncio.get_running_loop().run_in_executor(None, ENGINES[args.engine], args))
     if text:
+        args.errors_in_a_row = 0
         log(f'Heard: "{text}"')
         await game.command(f"scriptevent {event_id} {text}")
+        return
+    if args.error:
+        args.errors_in_a_row = getattr(args, "errors_in_a_row", 0) + 1
+        log(f"Android's speech recognition failed ({args.error}).")
+        if args.errors_in_a_row in (1, 5):
+            log("  If it keeps failing while Minecraft is open, Android is probably blocking the microphone\n"
+                "  for apps in the background. Try Minecraft and Termux in split screen, check that Termux:API\n"
+                "  has Microphone permission, or use the keyboard's mic button in the talk box instead.\n"
+                "  Test the microphone on its own: in Termux run  termux-speech-to-text  and say something.")
+        if event_id == "jf:voice":
+            await game.command("scriptevent jf:voice_status blocked")
+        else:
+            await asyncio.sleep(min(10, 2 * args.errors_in_a_row))  # always-listening: don't hammer it
     elif event_id == "jf:voice":
         await game.command("scriptevent jf:voice_status nothing")
 

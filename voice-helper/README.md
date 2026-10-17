@@ -79,8 +79,18 @@ Now you don't press anything. Jerry reacts when you **say his name** (*"Jerry, s
 
 ## If Jerry can't hear you
 
-Some phones don't let Android's speech recognition run while a game is open. If you keep seeing
-*"Jerry didn't catch that"*, switch to the **Groq** engine (this is what Verity uses):
+If you see **"ERROR ... NO MATCH"** in Termux (or the talk box keeps opening), Android's speech
+recognition didn't get any sound. Usually that's because Android blocks the microphone for apps in the
+background while a game is open. Try these, in order:
+
+1. **Test the mic on its own**: in Termux run `termux-speech-to-text` and say something. If your words
+   show up, the mic works and it's the background block. If not, give **Termux:API** the
+   **Microphone** permission (long-press its icon → App info → Permissions).
+2. **Split screen**: open Minecraft and Termux side by side (on Samsung: recent apps → the app icon →
+   *Open in split screen view*). Apps on screen are allowed to use the mic.
+3. **Keyboard voice typing** always works: when the talk box opens, tap the keyboard's mic.
+
+Or switch to the **Groq** engine (this is what Verity uses):
 
 1. Get a free API key at <https://console.groq.com/keys>.
 2. Run:
