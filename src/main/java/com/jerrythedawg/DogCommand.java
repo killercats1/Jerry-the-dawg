@@ -45,7 +45,7 @@ final class DogCommand implements CommandExecutor {
         } else if (sub.equals("name") || sub.equals("rename")) {
             if (rest.isEmpty()) {
                 pets.tell(player, "§7Your dog is called §bJerry§7. Rename him with §f/dog name <name>");
-            } else if (!pets.rename(player, false, rest, false)) {
+            } else if (!pets.rename(player, "dog", rest, false)) {
                 pets.tell(player, "§7That name didn't work. Try letters and numbers (up to 20).");
             }
         } else if (sub.equals("catname")) {
@@ -53,7 +53,15 @@ final class DogCommand implements CommandExecutor {
                 pets.tell(player, Text.NO_CAT);
             } else if (rest.isEmpty()) {
                 pets.tell(player, "§7Your cat is called §dMochi§7. Rename her with §f/dog catname <name>");
-            } else if (!pets.rename(player, true, rest, false)) {
+            } else if (!pets.rename(player, "cat", rest, false)) {
+                pets.tell(player, "§7That name didn't work. Try letters and numbers (up to 20).");
+            }
+        } else if (sub.equals("pupname")) {
+            if (!data.hasPup) {
+                pets.tell(player, Text.NO_PUP);
+            } else if (rest.isEmpty()) {
+                pets.tell(player, "§7Your puppy is called §aPip§7. Rename him with §f/dog pupname <name>");
+            } else if (!pets.rename(player, "pup", rest, false)) {
                 pets.tell(player, "§7That name didn't work. Try letters and numbers (up to 20).");
             }
         } else if (sub.equals("call") || sub.equals("whistle")) {
@@ -62,6 +70,7 @@ final class DogCommand implements CommandExecutor {
             pets.showStatus(player);
         } else if (sub.equals("items")) {
             Items.giveAll(player);
+            pets.home().giveFurniture(player); // (a bed or bowl you've already put down stays where it is)
             pets.tell(player, "§7Here are your pet items!");
         } else if (sub.equals("quiet")) {
             data.quiet = !data.quiet;

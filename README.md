@@ -4,7 +4,7 @@ The **"lesser version"** of Jerry the Dawg, as a **Spigot/Paper plugin for Minec
 It's separate from the Bedrock add-on (that's on the `MAIN` branch): different code, different history.
 
 Every player gets a tamed wolf they can **name anything**, teach **tricks**, feed, brush and play with.
-Friendship unlocks **Mochi the cat** and **gifts**.
+Friendship unlocks **Mochi the cat**, **gifts** and finally **a puppy**.
 
 ## A smart, living dog 🧠
 
@@ -17,13 +17,31 @@ Friendship unlocks **Mochi the cat** and **gifts**.
 - **Practice makes perfect.** New tricks are sloppy at first (sometimes a spin instead of a roll over).
   After 5 good tries he **masters** them. `/dog tricks` shows his progress.
 - **Real fetch.** Right-click with the **Tennis Ball** to throw it: he runs to it, carries it back (the ball
-  bobs along over his head) and drops it at your feet.
+  bobs along over his head) and drops it at your feet. The thrown ball can't be picked up, burned,
+  pricked by cactus, sucked into a hopper or despawn mid-game.
+- **Collar colours.** Use any dye on him, like a normal wolf. The colour sticks, even after the whistle.
+- **His own bed and food bowl.** Place the **Dog Bed** and **Food Bowl** somewhere cozy. Fill the bowl with
+  **Dog Treats** or any meat (right-click it): when he's hungry he walks over and eats. When he's sleepy
+  (or it's night) he walks to his bed and naps on it, which recharges him twice as fast.
 - **Guard dog.** He growls and warns you when a monster sneaks up.
 - **Protects you.** If something attacks you, he goes after it (he can't get hurt). Creepers excepted,
   for everyone's sake. He doesn't pick fights on his own, and the cat just hisses.
 - **He cares.** He rushes over if you get hurt, begs while you eat, does zoomies when you come back,
   and curls up by your bed when you sleep.
 - **Status:** `/dog status` or **sneak + use the Dog Whistle** shows his mood, needs and friendship.
+
+## Mochi the cat 🐱
+
+Mochi joins at **Buddy**. She has her own personality: she purrs when you **sneak + right-click** her,
+gets random zoomies, naps at night and **hisses at monsters**. Say her name to talk to her:
+*"Mochi, high five!"* She knows sit, come, paw, high five, roll over, jump, spin, chase her tail and purr
+(and practices them, like Jerry). Ask her for anything else and she'll just lick her paw.
+
+## The puppy 🐾
+
+At **Inseparable** a puppy joins the family: a little wolf pup called **Pip** (rename him with
+`/dog pupname <name>` or a name tag). He follows you, comes with the whistle, never fights, and tries
+to copy whatever trick Jerry does (not always successfully). Talk to him by name: *"Pip, sit"*.
 
 ## What's different from the Bedrock version
 
@@ -74,6 +92,10 @@ Say his name and a trick in chat, or use `/dog <trick>`:
 | "backflip" | jumps and flips |
 | "howl" | a real wolf howl |
 | "fetch" | throws the ball where you look |
+| "find it" | sniffs around a few spots and finds a treat |
+| "are you shy?", "hide your face" | turns away all shy, then peeks back at you |
+| "stretch" | a big stretch and a yawn |
+| "spin left" / "spin right" | spins that way |
 | "chase your tail", "spin", "jump", "speak", "bow" | exactly what it sounds like |
 | "good boy" | wags (+ friendship) |
 
@@ -87,6 +109,8 @@ Chain them: *"Jerry, sit then shake then roll over"*. Short commands on their ow
 | 🪶 **Pet Brush** (feather) | right-click your dog: sparkles and friendship |
 | 🟢 **Tennis Ball** (slime ball) | right-click to throw it: he plays fetch! |
 | 🟡 **Dog Whistle** (gold nugget) | calls your pets to you from anywhere (sneak + use: his status) |
+| 🛏️ **Dog Bed** (red carpet) | place it: he naps on it |
+| 🥣 **Food Bowl** (cauldron) | place it, then fill it with treats or meat |
 
 **Sneak + right-click** your dog with an empty hand to pet him. A normal right-click sits him down,
 like any tamed wolf.
@@ -99,13 +123,14 @@ like any tamed wolf.
 | `/dog tricks` | every trick he knows |
 | `/dog name <name>` | rename your dog (a name tag works too) |
 | `/dog catname <name>` | rename your cat |
+| `/dog pupname <name>` | rename your puppy |
 | `/dog call` | call your pets |
 | `/dog status` | mood, needs and friendship |
-| `/dog items` | get the pet items again |
+| `/dog items` | get the pet items again (and the bed/bowl, if you haven't put them down) |
 | `/dog quiet` | turn his random chat messages off/on |
 | `/dog reset` | start over with a new dog |
 
-Friendship: New Pal → **Buddy** (Mochi the cat joins) → **Best Friend** (he brings you gifts) → Inseparable.
+Friendship: New Pal → **Buddy** (Mochi the cat joins) → **Best Friend** (he brings you gifts) → **Inseparable** (a puppy joins).
 Your pets can't be hurt.
 
 ## Building it yourself

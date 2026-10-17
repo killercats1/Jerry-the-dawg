@@ -13,22 +13,33 @@ enum Items {
     WHISTLE(Material.GOLD_NUGGET, "§eDog Whistle", "§7Calls your pets to you"),
     TREATS(Material.COOKIE, "§6Dog Treats", "§7Right-click your dog to give one"),
     BRUSH(Material.FEATHER, "§fPet Brush", "§7Right-click your dog to brush him"),
-    BALL(Material.SLIME_BALL, "§aTennis Ball", "§7Right-click to play fetch");
+    BALL(Material.SLIME_BALL, "§aTennis Ball", "§7Right-click to play fetch"),
+    // Furniture: placed like normal blocks. He naps on his bed and eats from his bowl.
+    BED(Material.CARPET, 14, "§cDog Bed", "§7Place it: he naps on it when he's sleepy"),
+    BOWL(Material.CAULDRON_ITEM, 0, "§7Food Bowl", "§7Place it, then fill it with treats or meat");
 
     private static final String MARKER = "§8Jerry the Dawg";
+    /** The everyday items (the furniture is handed out separately, since it gets placed). */
+    static final Items[] CARRIED = {WHISTLE, TREATS, BRUSH, BALL};
 
     private final Material material;
+    private final short data;
     private final String name;
     private final String hint;
 
     Items(Material material, String name, String hint) {
+        this(material, 0, name, hint);
+    }
+
+    Items(Material material, int data, String name, String hint) {
         this.material = material;
+        this.data = (short) data;
         this.name = name;
         this.hint = hint;
     }
 
     ItemStack create() {
-        ItemStack stack = new ItemStack(material, 1);
+        ItemStack stack = new ItemStack(material, 1, data);
         ItemMeta meta = stack.getItemMeta();
         meta.setDisplayName(name);
         meta.setLore(java.util.Arrays.asList(hint, MARKER));
@@ -63,14 +74,18 @@ enum Items {
         return false;
     }
 
-    /** Gives any pet items the player doesn't already have. */
+    /** Gives any of the everyday pet items the player doesn't already have. */
     static void giveAll(Player player) {
-        for (Items item : values()) {
+        for (Items item : CARRIED) {
             if (!has(player, item)) {
-                for (ItemStack left : player.getInventory().addItem(item.create()).values()) {
-                    player.getWorld().dropItemNaturally(player.getLocation(), left);
-                }
+                give(player, item);
             }
+        }
+    }
+
+    static void give(Player player, Items item) {
+        for (ItemStack left : player.getInventory().addItem(item.create()).values()) {
+            player.getWorld().dropItemNaturally(player.getLocation(), left);
         }
     }
 }

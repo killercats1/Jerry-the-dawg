@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
+import org.bukkit.entity.Ocelot;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Wolf;
 
@@ -21,23 +22,36 @@ final class Speech {
         this.pets = pets;
     }
 
-    /** A chat message: only react to things meant for him (his name, or a short command on its own). */
+    /** A chat message: only react to things meant for your pets (a name, or a short command on its own). */
     void heardChat(Player player, String message) {
         PetData data = plugin.data(player);
         if (!data.started) {
             return;
         }
-        String words = normalizeNames(cleanWords(simplify(message)), data);
-        boolean saidName = (" " + words + " ").contains(" jerry ");
+        String padded = " " + normalizeNames(cleanWords(simplify(message)), data) + " ";
+        String words = padded.trim();
+        boolean saidName = padded.contains(" jerry ") || (data.hasCat && padded.contains(" mochi "))
+            || (data.hasPup && padded.contains(" pip "));
         boolean shortCommand = words.split(" ").length <= 3 && !parse(message, data).isEmpty();
         if (saidName || shortCommand) {
             hear(player, message);
         }
     }
 
-    /** Reacts to whatever you said (chat or /dog). */
+    /** Reacts to whatever you said (chat or /dog). Say Mochi's or the puppy's name to talk to them instead. */
     void hear(final Player player, String said) {
         PetData data = plugin.data(player);
+        String padded = " " + normalizeNames(cleanWords(simplify(said)), data) + " ";
+        if (!padded.contains(" jerry ")) {
+            if (data.hasCat && padded.contains(" mochi ")) {
+                hearCat(player, said);
+                return;
+            }
+            if (data.hasPup && padded.contains(" pip ")) {
+                hearPup(player, said);
+                return;
+            }
+        }
         final List<Text.Voice> commands = parse(said, data);
         final Wolf dog = pets.findDog(player);
         boolean calledHim = false;
@@ -88,9 +102,12 @@ final class Speech {
             }
         }
         pets.trick(player, dog, entry.action);
+        pets.pupCopies(player, entry.action); // the puppy wants to do it too
         String reply;
         if ("mochi".equals(entry.action)) {
             reply = plugin.data(player).hasCat ? pets.pick(Text.MOCHI_HI) : Text.NO_CAT;
+        } else if ("pupHi".equals(entry.action)) {
+            reply = plugin.data(player).hasPup ? pets.pick(Text.PIP_HI) : Text.NO_PUP;
         } else {
             reply = entry.replies.get(random.nextInt(entry.replies.size()));
         }
@@ -100,9 +117,119 @@ final class Speech {
         pets.tell(player, reply);
     }
 
+    // ------------------------------------------------------------------ talking to Mochi and the puppy
+
+    /** Commands meant for someone other than Jerry (without the "hi Mochi" / "hi Pip" bits). */
+    private List<Text.Voice> commandsFor(String said, PetData data) {
+        List<Text.Voice> out = new ArrayList<Text.Voice>();
+        for (Text.Voice v : parse(said, data)) {
+            if (!"mochi".equals(v.action) && !"pupHi".equals(v.action) && !"greet".equals(v.action)) {
+                out.add(v);
+            }
+        }
+        return out;
+    }
+
+    private void hearCat(final Player player, String said) {
+        PetData data = plugin.data(player);
+        final Ocelot cat = pets.findCat(player);
+        final List<Text.Voice> commands = commandsFor(said, data);
+        boolean called = false;
+        for (Text.Voice v : commands) {
+            called |= "come".equals(v.action);
+        }
+        if (cat == null || (!called && !pets.isNear(cat, player, 24))) {
+            pets.tell(player, Text.CANT_HEAR_CAT);
+            return;
+        }
+        if (commands.isEmpty()) {
+            pets.sound(cat, org.bukkit.Sound.CAT_MEOW, 1f);
+            pets.tell(player, pets.pick(Text.MOCHI_HI));
+            return;
+        }
+        long at = 6;
+        for (final Text.Voice entry : commands) {
+            pets.later(at, new Runnable() {
+                @Override
+                public void run() {
+                    if (player.isOnline() && cat.isValid()) {
+                        respondCat(player, cat, entry);
+                    }
+                }
+            });
+            at += ticksFor(entry.action);
+        }
+    }
+
+    private void respondCat(Player player, Ocelot cat, Text.Voice entry) {
+        String action = entry.action;
+        if (!Pets.CAT_TRICKS.contains(action)) {
+            pets.sound(cat, org.bukkit.Sound.CAT_MEOW, 0.9f);
+            pets.tell(player, Text.CAT_NOPE.replace("{trick}", entry.words.get(0)));
+            return;
+        }
+        if (Pets.CAT_PRACTICE.contains(action) && !pets.attemptCatTrick(player, cat, action)) {
+            return;
+        }
+        pets.catTrick(player, cat, action);
+        String reply = pets.pick(Text.CAT_REPLIES.get(action));
+        if (entry.praise && pets.earn(player, "talk", 2, 30)) {
+            reply += "  " + pets.friendshipBar(plugin.data(player));
+        }
+        pets.tell(player, reply);
+    }
+
+    private void hearPup(final Player player, String said) {
+        PetData data = plugin.data(player);
+        final Wolf pup = pets.findPup(player);
+        final List<Text.Voice> commands = commandsFor(said, data);
+        boolean called = false;
+        for (Text.Voice v : commands) {
+            called |= "come".equals(v.action);
+        }
+        if (pup == null || (!called && !pets.isNear(pup, player, 24))) {
+            pets.tell(player, Text.CANT_HEAR_PUP);
+            return;
+        }
+        if (commands.isEmpty()) {
+            pets.sound(pup, org.bukkit.Sound.WOLF_BARK, 1.8f);
+            pets.tell(player, pets.pick(Text.PIP_HI));
+            return;
+        }
+        long at = 6;
+        for (final Text.Voice entry : commands) {
+            pets.later(at, new Runnable() {
+                @Override
+                public void run() {
+                    if (!player.isOnline() || !pup.isValid()) {
+                        return;
+                    }
+                    String action = entry.action;
+                    if ("love".equals(action)) {
+                        pets.pupTrick(player, pup, action, true);
+                        pets.tell(player, Text.PUP_LOVE);
+                        return;
+                    }
+                    // Puppies get "sit" and "come" right; anything fancier is a coin toss.
+                    boolean ok = "sit".equals(action) || "come".equals(action) || "lie".equals(action) || random.nextInt(10) < 6;
+                    pets.pupTrick(player, pup, action, ok);
+                    String name = Text.TRICK_NAMES.containsKey(action) ? Text.TRICK_NAMES.get(action) : entry.words.get(0);
+                    pets.tell(player, (ok ? Text.PUP_DID : Text.PUP_OOPS).replace("{trick}", name));
+                }
+            });
+            at += ticksFor(entry.action);
+        }
+    }
+
     private static long ticksFor(String action) {
+        if ("find".equals(action)) {
+            return 140;
+        }
         if ("dance".equals(action) || "chase".equals(action)) {
             return 70;
+        }
+        if ("shy".equals(action)) {
+            return 50;
         }
         if ("roll".equals(action) || "play".equals(action) || "dead".equals(action)) {
             return 50;
@@ -172,10 +299,10 @@ final class Speech {
         return out.toString();
     }
 
-    /** Your dog's and cat's own names (or something one letter off) count as "jerry" / "mochi". */
+    /** Your pets' own names (or something one letter off) count as "jerry" / "mochi" / "pip". */
     private static String normalizeNames(String text, PetData data) {
         String out = " " + text + " ";
-        String[][] names = {{simplify(data.dogName), "jerry"}, {simplify(data.catName), "mochi"}};
+        String[][] names = {{simplify(data.dogName), "jerry"}, {simplify(data.catName), "mochi"}, {simplify(data.pupName), "pip"}};
         for (String[] pair : names) {
             String name = pair[0];
             String token = pair[1];

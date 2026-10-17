@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
-import org.bukkit.DyeColor;
 import org.bukkit.Effect;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
@@ -36,6 +35,7 @@ final class Pets {
     private static final int[] LEVEL_MIN = {0, 25, 60, 100};
     private static final int CAT_LEVEL = 1;
     private static final int GIFT_LEVEL = 2;
+    private static final int PUP_LEVEL = 3;
     private static final Material[] GIFTS = {
         Material.STICK, Material.BONE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.FEATHER, Material.EMERALD};
 
@@ -49,21 +49,41 @@ final class Pets {
     private final Map<UUID, Long> awaySince = new HashMap<UUID, Long>();
     /** Pets in the middle of something (like fetch) that the follow brain should leave alone. */
     private final Set<UUID> busy = new HashSet<UUID>();
+    /** Thrown tennis balls in flight (nothing can pick up, burn or despawn these). */
+    private final Set<UUID> thrownBalls = new HashSet<UUID>();
+    private int ballCounter;
+    private final Home home;
     private long seconds;
 
     /** Tricks that need practice before he's perfect at them. */
     static final Set<String> PRACTICE = new HashSet<String>(Arrays.asList(
-        "paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin", "lie", "hop", "shakeoff"));
+        "paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin", "lie", "hop", "shakeoff",
+        "find", "shy", "stretch", "spinleft", "spinright"));
     static final int MASTER_AT = 5;
+
+    /** What Mochi will do when you ask her (she's a cat: she does the rest on her own terms). */
+    static final Set<String> CAT_TRICKS = new HashSet<String>(Arrays.asList(
+        "sit", "lie", "come", "paw", "highfive", "roll", "hop", "spin", "spinleft", "spinright", "chase", "purr", "love"));
+    static final Set<String> CAT_PRACTICE = new HashSet<String>(Arrays.asList("paw", "highfive", "roll", "hop", "spin", "chase"));
+    /** Tricks the puppy tries to copy when Jerry does them. */
+    private static final Set<String> COPYABLE = new HashSet<String>(Arrays.asList(
+        "sit", "lie", "paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin",
+        "hop", "bark", "spinleft", "spinright", "stretch", "shy", "shakeoff"));
 
     Pets(JerryPlugin plugin) {
         this.plugin = plugin;
+        this.home = new Home(plugin, this);
+    }
+
+    Home home() {
+        return home;
     }
 
     // ------------------------------------------------------------------ text
 
     String personalize(PetData data, String text) {
-        return text.replace("Jerry", data.dogName).replace("Mochi", data.catName);
+        return text.replace("Jerry", "\u0001").replace("Mochi", "\u0002").replace("Pip", "\u0003")
+            .replace("\u0001", data.dogName).replace("\u0002", data.catName).replace("\u0003", data.pupName);
     }
 
     void tell(Player player, String text) {
@@ -109,15 +129,63 @@ final class Pets {
         return e instanceof Ocelot ? (Ocelot) e : null;
     }
 
-    /** True for any player's dog or cat (they can't be hurt). */
+    Wolf findPup(Player player) {
+        PetData data = plugin.data(player);
+        if (!data.hasPup) {
+            return null;
+        }
+        Entity e = find(data.pupId);
+        return e instanceof Wolf ? (Wolf) e : null;
+    }
+
+    /** True for any player's dog, cat or puppy (they can't be hurt). */
     boolean isPet(Entity entity) {
         UUID id = entity.getUniqueId();
         for (PetData data : plugin.allData().values()) {
-            if (id.equals(data.dogId) || id.equals(data.catId)) {
+            if (id.equals(data.dogId) || id.equals(data.catId) || id.equals(data.pupId)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /** True for any player's puppy (it never fights). */
+    boolean isPup(Entity entity) {
+        UUID id = entity.getUniqueId();
+        for (PetData data : plugin.allData().values()) {
+            if (id.equals(data.pupId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    boolean isThrownBall(Entity entity) {
+        return thrownBalls.contains(entity.getUniqueId());
+    }
+
+    /** On shutdown: a ball still in flight would otherwise become a spare ball someone can pick up. */
+    void removeThrownBalls() {
+        for (World world : Bukkit.getWorlds()) {
+            for (Item item : world.getEntitiesByClass(Item.class)) {
+                if (thrownBalls.contains(item.getUniqueId())) {
+                    item.remove();
+                }
+            }
+        }
+        thrownBalls.clear();
+    }
+
+    boolean isBusy(Entity pet) {
+        return busy.contains(pet.getUniqueId());
+    }
+
+    void setBusy(Entity pet, boolean on) {
+        if (on) {
+            busy.add(pet.getUniqueId());
+        } else {
+            busy.remove(pet.getUniqueId());
+        }
     }
 
     /** The online player who owns this pet, or null. */
@@ -125,7 +193,7 @@ final class Pets {
         UUID id = entity.getUniqueId();
         for (Player player : Bukkit.getOnlinePlayers()) {
             PetData data = plugin.data(player);
-            if (id.equals(data.dogId) || id.equals(data.catId)) {
+            if (id.equals(data.dogId) || id.equals(data.catId) || id.equals(data.pupId)) {
                 return player;
             }
         }
@@ -147,7 +215,8 @@ final class Pets {
         }
         boolean isDog = entity instanceof Wolf && entity.getCustomName().equals(data.dogName) && data.dogId != null;
         boolean isCat = entity instanceof Ocelot && entity.getCustomName().equals(data.catName) && data.catId != null;
-        if (isDog || isCat) {
+        boolean isPup = entity instanceof Wolf && entity.getCustomName().equals(data.pupName) && data.pupId != null;
+        if (isDog || isCat || isPup) {
             entity.remove();
         }
     }
@@ -165,7 +234,7 @@ final class Pets {
         wolf.setAdult();
         wolf.setTamed(true);
         wolf.setOwner(player);
-        wolf.setCollarColor(DyeColor.RED);
+        wolf.setCollarColor(data.collar);
         wolf.setCustomName(data.dogName);
         wolf.setRemoveWhenFarAway(false);
         data.dogId = wolf.getUniqueId();
@@ -189,6 +258,22 @@ final class Pets {
         return cat;
     }
 
+    Wolf spawnPup(Player player, Location at) {
+        PetData data = plugin.data(player);
+        Wolf pup = at.getWorld().spawn(at, Wolf.class);
+        pup.setBaby();
+        pup.setAgeLock(true); // stays a puppy forever
+        pup.setTamed(true);
+        pup.setOwner(player);
+        pup.setCollarColor(data.pupCollar);
+        pup.setCustomName(data.pupName);
+        pup.setRemoveWhenFarAway(false);
+        data.pupId = pup.getUniqueId();
+        cache.put(pup.getUniqueId(), pup);
+        plugin.markDirty();
+        return pup;
+    }
+
     void onJoin(final Player player) {
         final PetData data = plugin.data(player);
         later(60, new Runnable() {
@@ -199,11 +284,16 @@ final class Pets {
                 }
                 if (data.started) {
                     tell(player, Text.WELCOME_BACK);
+                    if (!data.gotFurniture) {
+                        home.giveFurniture(player); // new in this version: everyone gets a bed and a bowl once
+                        tell(player, Text.FURNITURE_NEW);
+                    }
                     return;
                 }
                 data.started = true;
                 Wolf wolf = spawnDog(player, player.getLocation());
                 Items.giveAll(player);
+                home.giveFurniture(player);
                 hearts(wolf);
                 sound(wolf, Sound.WOLF_BARK, 1f);
                 say(player, Text.INTRO, 60);
@@ -221,6 +311,10 @@ final class Pets {
         if (cat != null) {
             cat.remove();
         }
+        Wolf pup = findPup(player);
+        if (pup != null) {
+            pup.remove();
+        }
         plugin.allData().remove(player.getUniqueId());
         plugin.markDirty();
         onJoin(player);
@@ -236,11 +330,13 @@ final class Pets {
         return name.length() > 20 ? name.substring(0, 20).trim() : name;
     }
 
-    /** Renames the dog or cat (from /dog name, a name tag, ...). Returns false if nothing changed. */
-    boolean rename(Player player, boolean cat, String raw, boolean quiet) {
+    /** Renames the "dog", "cat" or "pup" (from /dog name, a name tag, ...). Returns false if nothing changed. */
+    boolean rename(Player player, String kind, String raw, boolean quiet) {
         PetData data = plugin.data(player);
-        String current = cat ? data.catName : data.dogName;
-        LivingEntity pet = cat ? findCat(player) : findDog(player);
+        boolean cat = "cat".equals(kind);
+        boolean pup = "pup".equals(kind);
+        String current = cat ? data.catName : pup ? data.pupName : data.dogName;
+        LivingEntity pet = cat ? findCat(player) : pup ? findPup(player) : findDog(player);
         String name = cleanName(raw);
         if (name.isEmpty() || name.equals(current)) {
             if (pet != null && !current.equals(pet.getCustomName())) {
@@ -250,18 +346,18 @@ final class Pets {
         }
         if (cat) {
             data.catName = name;
+        } else if (pup) {
+            data.pupName = name;
         } else {
             data.dogName = name;
         }
         plugin.markDirty();
         if (pet != null) {
             pet.setCustomName(name);
-            if (pet instanceof Wolf) {
-                hearts((Wolf) pet);
-            }
+            hearts(pet);
         }
         if (!quiet) {
-            tell(player, cat ? Text.CAT_RENAMED : Text.DOG_RENAMED);
+            tell(player, cat ? Text.CAT_RENAMED : pup ? Text.PUP_RENAMED : Text.DOG_RENAMED);
         }
         return true;
     }
@@ -339,28 +435,53 @@ final class Pets {
         }
         Wolf dog = findDog(player);
         Ocelot cat = findCat(player);
+        Wolf pup = findPup(player);
         // Renamed with a name tag?
         if (dog != null && dog.getCustomName() != null && !dog.getCustomName().equals(data.dogName)) {
-            rename(player, false, dog.getCustomName(), false);
+            rename(player, "dog", dog.getCustomName(), false);
         }
         if (cat != null && cat.getCustomName() != null && !cat.getCustomName().equals(data.catName)) {
-            rename(player, true, cat.getCustomName(), false);
+            rename(player, "cat", cat.getCustomName(), false);
+        }
+        if (pup != null && pup.getCustomName() != null && !pup.getCustomName().equals(data.pupName)) {
+            rename(player, "pup", pup.getCustomName(), false);
+        }
+        // A new collar colour (dyed)? Keep it for next time he's whistled or respawned.
+        if (dog != null && dog.getCollarColor() != data.collar) {
+            data.collar = dog.getCollarColor();
+            plugin.markDirty();
+        }
+        if (pup != null && pup.getCollarColor() != data.pupCollar) {
+            data.pupCollar = pup.getCollarColor();
+            plugin.markDirty();
         }
         if (levelOf(data.friendship) >= CAT_LEVEL && !data.hasCat) {
             catArrives(player);
         }
+        if (levelOf(data.friendship) >= PUP_LEVEL && !data.hasPup) {
+            pupArrives(player);
+        }
         if (dog != null) {
             keepClose(player, dog, dog.isSitting()); // (skips while he's fighting or fetching)
             reactToSurroundings(player, dog);
+            if (seconds % 5 == 0 && isNear(dog, player, 24)) {
+                home.visit(player, dog); // food bowl? dog bed?
+            }
         }
         if (cat != null) {
             keepClose(player, cat, cat.isSitting());
+            if (isNear(cat, player, 16)) {
+                catLife(player, cat);
+            }
+        }
+        if (pup != null) {
+            keepClose(player, pup, pup.isSitting());
         }
         if (!isNear(dog, player, 16)) {
             return;
         }
         if (seconds % 60 == 0) {
-            updateNeeds(data, dog.isSitting(), isNight(player.getWorld()));
+            updateNeeds(data, dog.isSitting(), isNight(player.getWorld()), dog.isSitting() && home.onBed(dog, data));
             addFriendship(player, "happy".equals(moodOf(data)) ? 2 : 1); // a happy dog makes friends faster
         }
         UUID id = player.getUniqueId();
@@ -385,12 +506,17 @@ final class Pets {
                 return;
             }
             boolean catMoment = isNear(cat, player, 16) && random.nextInt(3) == 0;
+            boolean pupMoment = !catMoment && isNear(pup, player, 16) && random.nextInt(3) == 0;
             sound(dog, random.nextBoolean() ? Sound.WOLF_PANT : Sound.WOLF_BARK, 1f);
             if (random.nextInt(4) == 0) {
                 hop(dog, 0.45);
             }
+            if (pupMoment) {
+                hop(pup, 0.35);
+                sound(pup, Sound.WOLF_BARK, 1.8f);
+            }
             if (!data.quiet) {
-                tell(player, catMoment ? pick(Text.CAT_MOMENTS) : pick(Text.MOMENTS));
+                tell(player, catMoment ? pick(Text.CAT_MOMENTS) : pupMoment ? pick(Text.PUP_MOMENTS) : pick(Text.MOMENTS));
             }
         }
     }
@@ -403,6 +529,64 @@ final class Pets {
         particles(cat.getLocation(), Effect.HEART, 6);
         player.sendMessage("§d§lA new friend!");
         say(player, Text.CAT_ARRIVES, 60);
+    }
+
+    private void pupArrives(Player player) {
+        PetData data = plugin.data(player);
+        data.hasPup = true;
+        Wolf pup = spawnPup(player, player.getLocation());
+        sound(pup, Sound.WOLF_BARK, 1.8f);
+        hearts(pup);
+        player.sendMessage("§a§lA new friend!");
+        say(player, Text.PUP_ARRIVES, 60);
+    }
+
+    /** Mochi does her own thing: the odd burst of zoomies, naps at night, and hissing at monsters. */
+    private void catLife(Player player, Ocelot cat) {
+        PetData data = plugin.data(player);
+        if (seconds % 3 == 0) {
+            for (Entity e : cat.getNearbyEntities(8, 4, 8)) {
+                if (e instanceof Monster && canReact(player, "cathiss", 30)) {
+                    sound(cat, Sound.CAT_HISS, 1f);
+                    tell(player, Text.CAT_HISS.replace("{mob}", e.getType().name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ')));
+                    return;
+                }
+            }
+        }
+        if (cat.isSitting() || isBusy(cat)) {
+            return;
+        }
+        if (isNight(cat.getWorld()) && random.nextInt(120) == 0 && canReact(player, "catnap", 600)) {
+            cat.setSitting(true);
+            sound(cat, Sound.CAT_PURR, 0.8f);
+            if (!data.quiet) {
+                tell(player, Text.CAT_NAP);
+            }
+        } else if (random.nextInt(150) == 0 && canReact(player, "catzoom", 120)) {
+            catZoomies(cat);
+            if (!data.quiet) {
+                tell(player, pick(Text.CAT_ZOOMIES));
+            }
+        }
+    }
+
+    private void catZoomies(final Ocelot cat) {
+        new BukkitRunnable() {
+            private int step;
+
+            @Override
+            public void run() {
+                if (!cat.isValid() || step >= 5) {
+                    cancel();
+                    return;
+                }
+                cat.setVelocity(new Vector((random.nextDouble() - 0.5) * 0.9, 0.4, (random.nextDouble() - 0.5) * 0.9));
+                if (step % 2 == 0) {
+                    sound(cat, Sound.CAT_MEOW, 1.3f);
+                }
+                step++;
+            }
+        }.runTaskTimer(plugin, 0L, 10L);
     }
 
     private void bringGift(Player player, Wolf dog) {
@@ -471,8 +655,8 @@ final class Pets {
     }
 
     /** Once a minute while he's with you. Resting (sitting) recharges him. */
-    private void updateNeeds(PetData data, boolean resting, boolean night) {
-        changeNeeds(data, resting ? -1 : -3, resting ? 8 : (night ? -4 : -2), -3);
+    private void updateNeeds(PetData data, boolean resting, boolean night, boolean onBed) {
+        changeNeeds(data, resting ? -1 : -3, onBed ? 16 : resting ? 8 : (night ? -4 : -2), -3);
     }
 
     private void moodMoment(Player player, Wolf dog, String mood) {
@@ -521,6 +705,10 @@ final class Pets {
         tell(player, "§fFull: " + meter(data.hunger) + "  §fEnergy: " + meter(data.energy) + "  §fFun: " + meter(data.fun));
         tell(player, "§fFriendship: " + friendshipBar(data));
         tell(player, "§fTricks mastered: §e" + mastered + "/" + PRACTICE.size() + " §7(/dog tricks to see them)");
+        if (data.hasCat || data.hasPup) {
+            tell(player, "§fFamily: " + (data.hasCat ? "§dMochi§7 the cat" : "") + (data.hasCat && data.hasPup ? "§7, " : "")
+                + (data.hasPup ? "§aPip§7 the puppy" : ""));
+        }
     }
 
     // ------------------------------------------------------------------ practice makes perfect
@@ -531,27 +719,40 @@ final class Pets {
     }
 
     /** Returns true if he pulls the trick off. Early on he sometimes does something else instead. */
-    boolean attemptTrick(final Player player, final Wolf dog, String action) {
+    boolean attemptTrick(Player player, Wolf dog, String action) {
+        return attempt(player, dog, action, action, Text.OOPS, Text.MASTERED);
+    }
+
+    /** Same for Mochi (her practice is saved separately, as "cat:roll" and so on). */
+    boolean attemptCatTrick(Player player, Ocelot cat, String action) {
+        return attempt(player, cat, action, "cat:" + action, Text.CAT_OOPS, Text.CAT_MASTERED);
+    }
+
+    static String trickName(String action) {
+        return Text.TRICK_NAMES.containsKey(action) ? Text.TRICK_NAMES.get(action) : action;
+    }
+
+    private boolean attempt(final Player player, final LivingEntity pet, String action, String key, String[] oopsTexts, final String mastered) {
         final PetData data = plugin.data(player);
-        int done = skill(data, action);
+        int done = skill(data, key);
         if (done >= MASTER_AT) {
             return true;
         }
-        final String name = Text.TRICK_NAMES.containsKey(action) ? Text.TRICK_NAMES.get(action) : action;
+        final String name = trickName(action);
         if (random.nextDouble() > 0.6 + done * 0.08) {
-            int oops = random.nextInt(Text.OOPS.length);
+            int oops = random.nextInt(oopsTexts.length);
             if (oops == 0) {
-                spin(dog, 1);
+                spin(pet, 1);
             } else if (oops == 2) {
-                dog.setSitting(true);
+                setSitting(pet, true);
             } else {
-                hop(dog, 0.45);
+                hop(pet, 0.45);
             }
-            sound(dog, Sound.WOLF_WHINE, 1f);
-            tell(player, Text.OOPS[oops].replace("{trick}", name));
+            sound(pet, pet instanceof Ocelot ? Sound.CAT_MEOW : Sound.WOLF_WHINE, pet instanceof Ocelot ? 0.8f : 1f);
+            tell(player, oopsTexts[oops].replace("{trick}", name));
             return false;
         }
-        data.skills.put(action, done + 1);
+        data.skills.put(key, done + 1);
         plugin.markDirty();
         if (done + 1 == MASTER_AT) {
             later(30, new Runnable() {
@@ -560,16 +761,24 @@ final class Pets {
                     if (!player.isOnline()) {
                         return;
                     }
-                    tell(player, Text.MASTERED.replace("{trick}", name));
+                    tell(player, mastered.replace("{trick}", name));
                     player.playSound(player.getLocation(), Sound.LEVEL_UP, 1f, 1.2f);
-                    if (dog.isValid()) {
-                        hearts(dog);
+                    if (pet.isValid()) {
+                        hearts(pet);
                     }
                     addFriendship(player, 3);
                 }
             });
         }
         return true;
+    }
+
+    static void setSitting(Entity pet, boolean sitting) {
+        if (pet instanceof Wolf) {
+            ((Wolf) pet).setSitting(sitting);
+        } else if (pet instanceof Ocelot) {
+            ((Ocelot) pet).setSitting(sitting);
+        }
     }
 
     // ------------------------------------------------------------------ fetch
@@ -586,8 +795,16 @@ final class Pets {
             return;
         }
         Location eye = player.getEyeLocation();
-        final Item ball = player.getWorld().dropItem(eye.clone().add(eye.getDirection()), Items.BALL.create());
+        // Each thrown ball is one of a kind, so two balls in the air can't merge into one.
+        ItemStack stack = Items.BALL.create();
+        org.bukkit.inventory.meta.ItemMeta meta = stack.getItemMeta();
+        java.util.List<String> lore = new java.util.ArrayList<String>(meta.getLore());
+        lore.add("§0#" + (++ballCounter));
+        meta.setLore(lore);
+        stack.setItemMeta(meta);
+        final Item ball = player.getWorld().dropItem(eye.clone().add(eye.getDirection()), stack);
         ball.setPickupDelay(6000); // nobody grabs it but him
+        thrownBalls.add(ball.getUniqueId()); // and lava, cactus, fire, hoppers and despawning can't take it either
         // A gentle throw keeps the ball inside the 10 blocks where vanilla "follow owner" kicks in,
         // so that habit doesn't tug him back to you halfway there.
         ball.setVelocity(eye.getDirection().multiply(0.8).add(new Vector(0, 0.2, 0)));
@@ -644,6 +861,7 @@ final class Pets {
             private void finish(boolean ok) {
                 cancel();
                 busy.remove(dog.getUniqueId());
+                thrownBalls.remove(ball.getUniqueId());
                 if (ball.isValid()) {
                     ball.remove();
                 }
@@ -666,7 +884,7 @@ final class Pets {
 
     // ------------------------------------------------------------------ smart reactions
 
-    private boolean canReact(Player player, String kind, long cooldown) {
+    boolean canReact(Player player, String kind, long cooldown) {
         String key = player.getUniqueId() + ":" + kind;
         Long last = reactedAt.get(key);
         if (last != null && seconds - last < cooldown) {
@@ -711,7 +929,7 @@ final class Pets {
     }
 
     /** True while he's fighting off something that attacked you (don't pull him away mid-fight). */
-    private boolean isFighting(LivingEntity pet, Player player) {
+    boolean isFighting(LivingEntity pet, Player player) {
         if (!(pet instanceof Creature)) {
             return false;
         }
@@ -795,8 +1013,8 @@ final class Pets {
             dog.setSitting(false);
             dog.teleport(player.getLocation());
         }
-        boolean hasCat = plugin.data(player).hasCat;
-        if (hasCat) {
+        PetData data = plugin.data(player);
+        if (data.hasCat) {
             Ocelot cat = findCat(player);
             if (cat == null) {
                 spawnCat(player, player.getLocation());
@@ -805,7 +1023,17 @@ final class Pets {
                 cat.teleport(player.getLocation());
             }
         }
-        tell(player, (hasCat ? Text.BOTH_CAME : Text.CAME_RUNNING) + "  " + friendshipBar(plugin.data(player)));
+        if (data.hasPup) {
+            Wolf pup = findPup(player);
+            if (pup == null) {
+                spawnPup(player, player.getLocation());
+            } else {
+                pup.setSitting(false);
+                pup.teleport(player.getLocation());
+            }
+        }
+        String who = data.hasCat && data.hasPup ? Text.ALL_CAME : data.hasPup ? Text.PUP_CAME : data.hasCat ? Text.BOTH_CAME : Text.CAME_RUNNING;
+        tell(player, who + "  " + friendshipBar(data));
     }
 
     void treat(Player player, Entity target) {
@@ -813,6 +1041,12 @@ final class Pets {
             sound(target, Sound.CAT_PURR, 1f);
             particles(target.getLocation(), Effect.HEART, 4);
             tell(player, Text.TREAT_CAT);
+            return;
+        }
+        if (isPup(target)) {
+            hearts(target);
+            sound(target, Sound.WOLF_BARK, 1.8f);
+            tell(player, Text.TREAT_PUP);
             return;
         }
         Wolf dog = (Wolf) target;
@@ -830,13 +1064,40 @@ final class Pets {
             tell(player, Text.BRUSH_CAT);
             return;
         }
+        if (isPup(target)) {
+            sound(target, Sound.WOLF_PANT, 1.7f);
+            tell(player, Text.BRUSH_PUP);
+            return;
+        }
         sound(target, Sound.WOLF_PANT, 1f);
         changeNeeds(plugin.data(player), 5, 0, 0);
         boolean earned = earn(player, "brush", 3, 30);
         tell(player, pick(Text.BRUSH) + (earned ? "" : Text.FULL) + "  " + friendshipBar(plugin.data(player)));
     }
 
+    /** Sneak + right-click Mochi with an empty hand: purrs. */
+    void petCat(Player player, final Ocelot cat) {
+        sound(cat, Sound.CAT_PURR, 1f);
+        later(20, new Runnable() {
+            @Override
+            public void run() {
+                if (cat.isValid()) {
+                    sound(cat, Sound.CAT_PURR, 1.1f);
+                }
+            }
+        });
+        hearts(cat);
+        boolean earned = earn(player, "petcat", 2, 20);
+        tell(player, pick(Text.PET_CAT) + (earned ? "" : Text.FULL) + "  " + friendshipBar(plugin.data(player)));
+    }
+
     void pet(Player player, Wolf dog) {
+        if (isPup(dog)) {
+            hearts(dog);
+            sound(dog, Sound.WOLF_PANT, 1.7f);
+            tell(player, pick(Text.PET_PUP));
+            return;
+        }
         hearts(dog);
         sound(dog, Sound.WOLF_PANT, 1f);
         changeNeeds(plugin.data(player), 5, 0, 0);
@@ -931,6 +1192,35 @@ final class Pets {
             sound(dog, Sound.WOLF_BARK, 1f);
         } else if ("spin".equals(action)) {
             spin(dog, 1);
+        } else if ("spinleft".equals(action) || "spinright".equals(action)) {
+            dog.setSitting(false);
+            spin(dog, 1, "spinleft".equals(action) ? -30 : 30);
+        } else if ("find".equals(action)) {
+            findIt(player, dog);
+        } else if ("shy".equals(action)) {
+            shy(player, dog);
+        } else if ("stretch".equals(action)) {
+            final boolean wasSitting = dog.isSitting();
+            dog.setSitting(true); // front paws out, bum up... as close as a 1.8 wolf gets
+            sound(dog, Sound.WOLF_PANT, 0.7f);
+            later(25, new Runnable() {
+                @Override
+                public void run() {
+                    if (dog.isValid()) {
+                        dog.setSitting(wasSitting);
+                        sound(dog, Sound.WOLF_WHINE, 0.6f); // the big yawn at the end
+                    }
+                }
+            });
+        } else if ("purr".equals(action)) {
+            sound(dog, Sound.WOLF_GROWL, 1.6f); // he tries his best
+            hearts(dog);
+        } else if ("pupHi".equals(action)) {
+            Wolf pup = findPup(player);
+            if (pup != null) {
+                sound(pup, Sound.WOLF_BARK, 1.8f);
+                hearts(pup);
+            }
         } else if ("hop".equals(action)) {
             sound(dog, Sound.WOLF_BARK, 1f);
             hop(dog, 0.55);
@@ -964,10 +1254,187 @@ final class Pets {
         }
     }
 
+    /** "Find it!": he sniffs around a few spots, then finds a treat. */
+    private void findIt(final Player player, final Wolf dog) {
+        if (busy.contains(dog.getUniqueId())) {
+            return;
+        }
+        dog.setSitting(false);
+        busy.add(dog.getUniqueId());
+        final int spots = 2 + random.nextInt(2);
+        new BukkitRunnable() {
+            private int step;
+            private Location spot;
+
+            @Override
+            public void run() {
+                if (!dog.isValid() || !player.isOnline()) {
+                    done();
+                    return;
+                }
+                if (step % 2 == 0) {
+                    spot = dog.getLocation().add(random.nextDouble() * 10 - 5, 0, random.nextDouble() * 10 - 5);
+                    walkTo(dog, spot, 1.1);
+                } else {
+                    dog.getWorld().playEffect(dog.getLocation(), Effect.SMOKE, 4); // *sniff sniff*
+                    dog.getWorld().playEffect(dog.getLocation().add(0, 0.3, 0), Effect.SMOKE, 4);
+                    sound(dog, Sound.WOLF_PANT, 1.4f);
+                }
+                if (++step >= spots * 2) {
+                    done();
+                    hearts(dog);
+                    sound(dog, Sound.EAT, 1f);
+                    sound(dog, Sound.WOLF_BARK, 1f);
+                    changeNeeds(plugin.data(player), 5, 0, 10);
+                    tell(player, pick(Text.FOUND_IT));
+                }
+            }
+
+            private void done() {
+                cancel();
+                busy.remove(dog.getUniqueId());
+            }
+        }.runTaskTimer(plugin, 5L, 20L);
+    }
+
+    /** "Are you shy?": he turns away, then peeks back at you. */
+    private void shy(final Player player, final Wolf dog) {
+        sound(dog, Sound.WOLF_WHINE, 1.4f);
+        face(dog, player.getLocation(), 180);
+        later(35, new Runnable() {
+            @Override
+            public void run() {
+                if (dog.isValid() && player.isOnline()) {
+                    face(dog, player.getLocation(), 0); // ...peekaboo!
+                    hearts(dog);
+                }
+            }
+        });
+    }
+
+    /** Turns the pet to face a spot (offset 180 = facing away from it). */
+    private void face(Entity pet, Location spot, float offset) {
+        Location l = pet.getLocation();
+        double dx = spot.getX() - l.getX();
+        double dz = spot.getZ() - l.getZ();
+        l.setYaw((float) Math.toDegrees(Math.atan2(-dx, dz)) + offset);
+        pet.teleport(l);
+    }
+
+    /** Mochi's tricks (cats do fewer tricks, but they're very good at them). */
+    void catTrick(Player player, Ocelot cat, String action) {
+        if ("sit".equals(action) || "lie".equals(action)) {
+            cat.setSitting(true);
+            sound(cat, Sound.CAT_MEOW, 1f);
+        } else if ("come".equals(action)) {
+            cat.setSitting(false);
+            if (!isNear(cat, player, 32)) {
+                cat.teleport(player.getLocation());
+            } else {
+                walkTo(cat, player.getLocation(), 1.3);
+            }
+            sound(cat, Sound.CAT_MEOW, 1.2f);
+        } else if ("paw".equals(action) || "highfive".equals(action)) {
+            hearts(cat);
+            sound(cat, Sound.CAT_PURREOW, 1f);
+        } else if ("roll".equals(action)) {
+            cat.setSitting(false);
+            spin(cat, 2);
+            hop(cat, 0.3);
+            hearts(cat);
+        } else if ("hop".equals(action)) {
+            hop(cat, 0.5);
+            sound(cat, Sound.CAT_MEOW, 1.3f);
+        } else if ("spin".equals(action) || "spinleft".equals(action) || "spinright".equals(action)) {
+            spin(cat, 1, "spinleft".equals(action) ? -30 : 30);
+        } else if ("chase".equals(action)) {
+            cat.setSitting(false);
+            spin(cat, 3);
+            sound(cat, Sound.CAT_MEOW, 1.4f);
+        } else {
+            sound(cat, Sound.CAT_PURR, 1f); // purr, love
+            hearts(cat);
+        }
+    }
+
+    /** The puppy's version of a trick. Tiny, enthusiastic, not always correct. */
+    void pupTrick(Player player, Wolf pup, String action, boolean ok) {
+        if (!ok) {
+            spin(pup, 1);
+            hop(pup, 0.2);
+            sound(pup, Sound.WOLF_WHINE, 1.8f);
+            return;
+        }
+        if ("sit".equals(action) || "lie".equals(action) || "dead".equals(action) || "beg".equals(action)
+            || "stretch".equals(action) || "yawn".equals(action)) {
+            pup.setSitting(true);
+            sound(pup, Sound.WOLF_PANT, 1.7f);
+        } else if ("howl".equals(action)) {
+            pup.setSitting(true);
+            sound(pup, Sound.WOLF_HOWL, 1.9f); // a very small awoo
+        } else if ("come".equals(action)) {
+            pup.setSitting(false);
+            if (!isNear(pup, player, 32)) {
+                pup.teleport(player.getLocation());
+            } else {
+                walkTo(pup, player.getLocation(), 1.4);
+            }
+            sound(pup, Sound.WOLF_BARK, 1.8f);
+        } else if ("roll".equals(action) || "backflip".equals(action) || "dance".equals(action)) {
+            pup.setSitting(false);
+            spin(pup, 2);
+            hop(pup, 0.35);
+        } else if ("spin".equals(action) || "chase".equals(action) || "spinleft".equals(action) || "spinright".equals(action)) {
+            spin(pup, "chase".equals(action) ? 2 : 1, "spinleft".equals(action) ? -30 : 30);
+        } else if ("bark".equals(action) || "greet".equals(action) || "wave".equals(action)) {
+            sound(pup, Sound.WOLF_BARK, 1.8f);
+        } else if ("shakeoff".equals(action)) {
+            pup.playEffect(EntityEffect.WOLF_SHAKE);
+            sound(pup, Sound.WOLF_SHAKE, 1.6f);
+        } else if ("paw".equals(action) || "highfive".equals(action) || "love".equals(action) || "shy".equals(action)) {
+            hearts(pup);
+            sound(pup, Sound.WOLF_PANT, 1.7f);
+        } else {
+            hop(pup, 0.4);
+            sound(pup, Sound.WOLF_BARK, 1.8f);
+        }
+    }
+
+    /** When Jerry does a trick, the puppy often tries it too. */
+    void pupCopies(final Player player, final String action) {
+        final Wolf pup = findPup(player);
+        if (!isNear(pup, player, 16)) {
+            return;
+        }
+        if ("come".equals(action)) {
+            pupTrick(player, pup, action, true); // where Jerry goes, the puppy goes
+            return;
+        }
+        if (!COPYABLE.contains(action) || random.nextInt(10) >= 6) {
+            return;
+        }
+        later(20, new Runnable() {
+            @Override
+            public void run() {
+                if (!pup.isValid() || !player.isOnline()) {
+                    return;
+                }
+                boolean ok = random.nextBoolean();
+                pupTrick(player, pup, action, ok);
+                tell(player, (ok ? pick(Text.PUP_COPY) : pick(Text.PUP_COPY_FAIL)).replace("{trick}", trickName(action)));
+            }
+        });
+    }
+
     // ------------------------------------------------------------------ effects
 
-    void hearts(Wolf dog) {
-        dog.playEffect(EntityEffect.WOLF_HEARTS);
+    /** Hearts over any pet (wolves have their own heart effect; for cats we draw them). */
+    void hearts(Entity pet) {
+        if (pet instanceof Wolf) {
+            ((Wolf) pet).playEffect(EntityEffect.WOLF_HEARTS);
+        } else {
+            particles(pet.getLocation(), Effect.HEART, 4);
+        }
     }
 
     void particles(Location at, Effect effect, int count) {
@@ -991,18 +1458,23 @@ final class Pets {
     }
 
     /** Turns him around on the spot (turns full circles). */
-    void spin(final Entity pet, final int turns) {
+    void spin(Entity pet, int turns) {
+        spin(pet, turns, 30);
+    }
+
+    /** step is degrees per move: positive turns right, negative turns left. */
+    void spin(final Entity pet, final int turns, final float step) {
         new BukkitRunnable() {
-            private int step;
+            private int moves;
 
             @Override
             public void run() {
-                if (!pet.isValid() || step++ >= turns * 12) {
+                if (!pet.isValid() || moves++ >= turns * 12) {
                     cancel();
                     return;
                 }
                 Location l = pet.getLocation();
-                l.setYaw(l.getYaw() + 30);
+                l.setYaw(l.getYaw() + step);
                 pet.teleport(l);
             }
         }.runTaskTimer(plugin, 1L, 2L);

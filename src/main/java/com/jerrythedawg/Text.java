@@ -30,7 +30,7 @@ final class Text {
         "",
         "§bJerry§7 now follows you extra closely. You're officially §fBuddies§7!",
         "§bJerry§7 thinks you're the best. Sometimes he'll bring you little §fgifts§7 now!",
-        "§bJerry§7 and you are §fInseparable§7. This is the best friendship in the whole world.",
+        "§bJerry§7 and you are §fInseparable§7. This is the best friendship in the whole world. (And someone small is on the way...)",
     };
 
     static final String[] MOMENTS = {
@@ -43,6 +43,16 @@ final class Text {
     static final String[] CAT_MOMENTS = {
         "§dMochi§7 curls up next to §bJerry§7. Adorable.",
         "§dMochi§7 and §bJerry§7 are having a staring contest. Jerry blinked first.",
+    };
+    static final String[] PUP_MOMENTS = {
+        "§aPip§7 pounces on §bJerry§7's tail. Jerry lets him win.",
+        "§aPip§7 trips over his own paws. He's fine! He's great!",
+        "§aPip§7 follows §bJerry§7 everywhere, copying his every step.",
+    };
+    static final String[] PUP_ARRIVES = {
+        "§7A tiny puppy came bouncing over to §bJerry§7...",
+        "§7Jerry's taking him under his paw! Meet §aPip§7, your new puppy. Rename him with §f/dog pupname <name>§7.",
+        "§7Pip copies Jerry's tricks (not always correctly). Talk to him by name: §f\"Pip, sit\"§7.",
     };
     static final String[] CAT_ARRIVES = {
         "§7A fluffy cat wandered over to say hi to §bJerry§7...",
@@ -58,14 +68,24 @@ final class Text {
     static final String[] PET = {"§bJerry§7 leans into the pets. Best. Feeling. Ever.", "§bJerry§7 does a happy little wiggle."};
     static final String TREAT_CAT = "§dMochi§7 nibbles the treat politely. Purrrr.";
     static final String BRUSH_CAT = "§dMochi§7 is purring so loud you can feel it.";
+    static final String TREAT_PUP = "§aPip§7 crunches the treat with his tiny teeth. Crumbs everywhere.";
+    static final String BRUSH_PUP = "§aPip§7 wiggles so much the brushing takes twice as long.";
+    static final String[] PET_PUP = {"§aPip§7 rolls over for tummy rubs immediately.", "§aPip§7 licks your hand. And your sleeve. And your other hand."};
+    static final String[] PET_CAT = {"§dMochi§7 purrs and headbutts your hand.", "§dMochi§7 slow-blinks at you. That's cat for \"I love you\"."};
     static final String USE_ON_DOG = "§7Right-click §bJerry§7 with it.";
     static final String FULL = " §8(He's had plenty for now!)";
     static final String TOO_FAR = "§7Jerry's too far away. Try the §fDog Whistle§7!";
     static final String CANT_HEAR = "§7Jerry's too far away to hear you. Try the whistle!";
     static final String CAME_RUNNING = "§bJerry§7 came running!";
     static final String BOTH_CAME = "§bJerry§7 and §dMochi§7 came running!";
+    static final String PUP_CAME = "§bJerry§7 and §aPip§7 came running!";
+    static final String ALL_CAME = "§bJerry§7, §dMochi§7 and §aPip§7 came running!";
+    static final String CANT_HEAR_CAT = "§dMochi§7 is too far away to hear you. (Or she's ignoring you. She's a cat.)";
+    static final String CANT_HEAR_PUP = "§aPip§7 is too far away to hear you. Try the whistle!";
     static final String DOG_RENAMED = "§aYour dog is now called §bJerry§a! He loves it.";
     static final String CAT_RENAMED = "§aYour cat is now called §dMochi§a! Purrr.";
+    static final String PUP_RENAMED = "§aYour puppy is now called §aPip§a! He's thrilled.";
+    static final String NO_PUP = "§7You don't have a puppy yet. Become §fInseparable§7 with §bJerry§7!";
     static final String NO_CAT = "§7You don't have a cat yet. Keep being friends with §bJerry§7!";
     static final String QUIET_ON = "§7Jerry will keep his thoughts to himself (no random messages). §f/dog quiet§7 again to undo.";
     static final String QUIET_OFF = "§7Jerry will tell you what he's up to again.";
@@ -75,6 +95,8 @@ final class Text {
         "§bJerry§7 listens very carefully, then wags his tail anyway.",
     };
     static final String[] MOCHI_HI = {"§dMochi§f: Mrrp! §7(That means hi.)", "§dMochi§7 meows back at you and slow-blinks."};
+    static final String[] PIP_HI = {"§aPip§f: Yip! Yip! §7(That means hi.)", "§aPip§7 wags so hard he falls over."};
+    static final String CAT_NOPE = "§dMochi§7 stares at you. Cats don't §f{trick}§7. She licks her paw instead.";
 
     static final String[] HELP = {
         "§6[Jerry the Dawg]§f Commands:",
@@ -83,6 +105,7 @@ final class Text {
         "§f/dog name <name>§7 - rename your dog §8|§f /dog catname <name>§7 - rename your cat",
         "§f/dog call§7 - call your pets §8|§f /dog status§7 - mood, needs, friendship (or sneak + use the whistle)",
         "§f/dog items§7 - get the pet items again §8|§f /dog quiet§7 - no random messages",
+        "§f/dog pupname <name>§7 - rename your puppy",
     };
 
     /** One voice/chat command: the words that trigger it, what he does, and what he says. */
@@ -106,8 +129,21 @@ final class Text {
 
     // The first entry whose words appear in what you said wins, so longer phrases go first.
     static final List<Voice> VOICE = Collections.unmodifiableList(Arrays.asList(
-        new Voice("love", true, w("good boy", "good dog", "love you", "best boy", "good job", "well done", "cute"),
+        new Voice("love", true, w("good boy", "good dog", "love you", "best boy", "good job", "well done", "cute",
+                "good girl", "good kitty", "good puppy", "good pup"),
             "§bJerry§7's tail is wagging so fast it's basically a propeller.", "§bJerry§7 knows. He's very aware. *happy wiggle*"),
+        new Voice("find", false, w("find it", "find the treat", "go find", "find", "seek", "sniff"),
+            "§bJerry§7 puts his nose to the ground. *sniff sniff sniff*", "§bJerry§7 is on the case. Detective Jerry."),
+        new Voice("shy", false, w("hide your face", "are you shy", "shy", "peekaboo", "peek a boo", "hide"),
+            "§bJerry§7 turns away all shy... then peeks back at you. Aww.", "§bJerry§7 hides his face. Too cute to look at directly."),
+        new Voice("stretch", false, w("big stretch", "stretch", "stretching"),
+            "§bJerry§7 does a big long streeeetch... and a yawn.", "§bJerry§7 stretches out every single paw."),
+        new Voice("spinleft", false, w("spin left", "turn left", "spin to the left"),
+            "§bJerry§7 spins to the left!", "§bJerry§7 does a left spin. Nailed it."),
+        new Voice("spinright", false, w("spin right", "turn right", "spin to the right"),
+            "§bJerry§7 spins to the right!", "§bJerry§7 does a right spin. Perfect."),
+        new Voice("purr", false, w("purr", "purr for me", "purring"),
+            "§bJerry§7 tries to purr. It comes out as a happy grumble.", "§bJerry§7 is a dog. But he gives it a go."),
         new Voice("dead", false, w("play dead", "bang", "you're dead", "youre dead"),
             "§bJerry§7 flops down dramatically. Award-winning performance.", "§bJerry§7 plays dead... but his tail is still wagging."),
         new Voice("roll", false, w("roll over", "roll", "belly rub", "belly rubs", "belly"),
@@ -126,7 +162,7 @@ final class Text {
             "§bJerry§7 offers you his paw. What a gentleman.", "§bJerry§7 shakes your hand very politely."),
         new Voice("wave", false, w("wave", "say bye", "bye", "goodbye", "bye bye", "say hi"),
             "§bJerry§7 waves his paw at you!", "§bJerry§7 waves bye-bye. (He's not going anywhere.)"),
-        new Voice("bow", false, w("bow", "take a bow", "stretch"),
+        new Voice("bow", false, w("bow", "take a bow"),
             "§bJerry§7 takes a bow. Thank you, thank you.", "§bJerry§7 does a big play bow. He wants to play!"),
         new Voice("dance", false, w("dance", "boogie", "party", "dance party"),
             "§bJerry§7 hops and spins to the music. DANCE PARTY!", "§bJerry§7 has moves. Serious moves."),
@@ -155,6 +191,7 @@ final class Text {
         new Voice("yawn", false, w("sleep", "tired", "night", "nap", "bed"),
             "§bJerry§7 does a big sleepy yawn.", "§bJerry§7 curls up for a little snooze."),
         new Voice("mochi", false, w("mochi", "kitty", "cat")),
+        new Voice("pupHi", false, w("pip", "puppy", "pup")),
         new Voice("greet", false, w("hello", "hi", "hey", "morning", "jerry"),
             "§bJerry§7 barks hello and wags his whole body.", "§bJerry§7 barks hello right back!")
     ));
@@ -162,7 +199,10 @@ final class Text {
     static final String[] TRICK_LIST = {
         "§6[Jerry the Dawg]§f Tricks §7(say them in chat with his name, or §f/dog <trick>§7):",
         "§fsit, lie down, come, shake, high five, wave, beg, roll over, play dead, bow,",
-        "§fdance, backflip, howl, chase your tail, spin, jump, speak, shake off, fetch",
+        "§fdance, backflip, howl, chase your tail, spin, spin left/right, jump, speak, shake off,",
+        "§ffetch, find it, are you shy, stretch",
+        "§dMochi§7 (say her name first): §fsit, come, paw, high five, roll over, jump, spin, chase your tail, purr",
+        "§aPip§7 the puppy tries anything §bJerry§7 does (say his name to talk to him).",
         "§7New tricks are sloppy at first. Practice them and he'll master them!",
         "§7Chain them: §f\"Jerry, sit then shake then roll over\"",
     };
@@ -224,6 +264,7 @@ final class Text {
             {"paw", "shake"}, {"highfive", "high five"}, {"wave", "wave"}, {"beg", "beg"}, {"roll", "roll over"},
             {"dead", "play dead"}, {"bow", "bow"}, {"dance", "dance"}, {"backflip", "backflip"}, {"howl", "howl"},
             {"chase", "chase his tail"}, {"spin", "spin"}, {"lie", "lie down"}, {"hop", "jump"}, {"shakeoff", "shake off"},
+            {"find", "find it"}, {"shy", "shy"}, {"stretch", "stretch"}, {"spinleft", "spin left"}, {"spinright", "spin right"},
         };
         for (String[] pair : names) {
             m.put(pair[0], pair[1]);
@@ -238,6 +279,24 @@ final class Text {
         "§bJerry§7 got so excited about §f{trick}§7 that he just jumped around.",
     };
     static final String MASTERED = "§e* * * §bJerry§e mastered §f{trick}§e! * * *";
+    static final String[] CAT_OOPS = {
+        "§dMochi§7 was going to §f{trick}§7... then spun around instead. On purpose, obviously.",
+        "§dMochi§7 considered §f{trick}§7 and decided against it. Maybe later.",
+        "§dMochi§7 sat down instead of §f{trick}§7. She's thinking about it.",
+        "§dMochi§7 pounced on an imaginary bug instead of §f{trick}§7.",
+    };
+    static final String CAT_MASTERED = "§e* * * §dMochi§e mastered §f{trick}§e! (She'll pretend she always knew.) * * *";
+    static final String[] PUP_COPY = {
+        "§aPip§7 copies §bJerry§7 and does a tiny §f{trick}§7! So proud.",
+        "§aPip§7 watched §bJerry§7 and does §f{trick}§7 too!",
+    };
+    static final String[] PUP_COPY_FAIL = {
+        "§aPip§7 tries to §f{trick}§7 like §bJerry§7... and tumbles over. Adorable.",
+        "§aPip§7 tries §f{trick}§7 too, gets confused and chases his tail instead.",
+    };
+    static final String PUP_DID = "§aPip§7 does a tiny §f{trick}§7! He looks at you for approval.";
+    static final String PUP_OOPS = "§aPip§7 tries to §f{trick}§7 and trips over his own paws. He's still learning!";
+    static final String PUP_LOVE = "§aPip§7's whole body wags. Puppies don't do anything halfway.";
 
     // ------------------------------------------------------------------ fetch & reactions
 
@@ -255,6 +314,49 @@ final class Text {
     static final String BEG_FOOD = "§bJerry§7 watches you eat with HUGE puppy eyes...";
     static final String WELCOME_HOME = "§bJerry§7 is SO happy you're back! Zoomies!";
     static final String BEDTIME = "§bJerry§7 curls up at the foot of your bed. Goodnight!";
+
+    static final Map<String, String[]> CAT_REPLIES;
+
+    static {
+        Map<String, String[]> m = new HashMap<String, String[]>();
+        m.put("sit", new String[] {"§dMochi§7 sits. Not because you asked. She just wanted to."});
+        m.put("lie", m.get("sit"));
+        m.put("come", new String[] {"§dMochi§7 strolls over. Eventually.", "§dMochi§7 trots right to you, tail up."});
+        m.put("paw", new String[] {"§dMochi§7 boops your hand with her paw.", "§dMochi§7 gives you her paw. A rare honour."});
+        m.put("highfive", new String[] {"§dMochi§7 high fives you! Tiny beans!"});
+        m.put("roll", new String[] {"§dMochi§7 rolls over and shows her tummy. (It's a trap.)"});
+        m.put("hop", new String[] {"§dMochi§7 leaps straight up like a spring!"});
+        m.put("spin", new String[] {"§dMochi§7 does an elegant twirl."});
+        m.put("spinleft", m.get("spin"));
+        m.put("spinright", m.get("spin"));
+        m.put("chase", new String[] {"§dMochi§7 chases her tail. She will deny this ever happened."});
+        m.put("purr", new String[] {"§dMochi§7 purrs like a tiny motorbike.", "§dMochi§7 purrs and kneads the ground."});
+        m.put("love", new String[] {"§dMochi§7 knows she's a good kitty. She's very aware.", "§dMochi§7 slow-blinks at you. Purrrr."});
+        CAT_REPLIES = Collections.unmodifiableMap(m);
+    }
+
+    static final String CAT_HISS = "§dMochi§c hisses! §7There's a §f{mob}§7 nearby.";
+    static final String CAT_NAP = "§dMochi§7 curls into a little ball and falls asleep. (Say §f\"Mochi, come\"§7 to wake her.)";
+    static final String[] CAT_ZOOMIES = {
+        "§dMochi§7 suddenly gets the zoomies! Nobody knows why.",
+        "§dMochi§7 sprints in a circle, then sits down like nothing happened.",
+    };
+
+    static final String[] FOUND_IT = {
+        "§bJerry§7 found it! *crunch crunch* He's very pleased with himself.",
+        "§bJerry§7 sniffed out the treat! Best nose in the Overworld.",
+    };
+
+    static final String FURNITURE_NEW = "§6[Jerry the Dawg]§7 New! §bJerry§7 has a §cDog Bed§7 and a §7Food Bowl§7. Place them somewhere cozy!";
+    static final String BED_PLACED = "§7You put down §bJerry§7's bed. He'll nap on it when he's sleepy (and at night).";
+    static final String BOWL_PLACED = "§7You put down §bJerry§7's food bowl. Fill it with §fDog Treats§7 or any meat (right-click it).";
+    static final String BOWL_FILLED = "§7You fill the food bowl. §bJerry§7 will eat when he's hungry.";
+    static final String BOWL_FULL = "§7The food bowl is already full.";
+    static final String BOWL_HINT = "§7Fill the food bowl with §fDog Treats§7 or any meat.";
+    static final String GOING_TO_EAT = "§bJerry§7 trots over to his food bowl...";
+    static final String ATE_FROM_BOWL = "§bJerry§7 licks the bowl clean. Delicious!";
+    static final String GOING_TO_BED = "§bJerry§7 heads to his bed...";
+    static final String NAP_ON_BED = "§bJerry§7 curls up on his bed for a nap. (Say §f\"come\"§7 to wake him.)";
 
     static final String[] GIFT_NAMES = {"a stick. The best stick", "a bone", "a poppy", "a dandelion", "a feather", "an emerald?! Where did he find that"};
 }
