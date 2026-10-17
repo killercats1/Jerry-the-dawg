@@ -151,6 +151,17 @@ an older Mochi keeps hers), but she has a personality:
   stretches, gets the zoomies, hisses at monsters, sleeps on your pillow and sometimes brings you a gift.
 - **Wardrobe**: pick her fur and collar colour, or use a dye on her.
 
+## The puppy 🐶
+
+At **Inseparable** friendship, a **puppy** joins the family. You get to name him (default: Pip).
+He's a little Jerry with a big head and one of the wolf coats (change it in the wardrobe).
+
+- He **copies Jerry's tricks**: when Jerry rolls over, the puppy tries too... and sometimes falls over.
+  He always copies "sit", "lie down" and "come".
+- **Talk to him by name** (*"Pip, wave"*): he knows Jerry's tricks, but he's little, so he messes up a lot.
+- He naps a lot, pounces on Jerry's tail, gets the zoomies and snuggles up with Jerry at bedtime.
+- He never fights (Jerry does the protecting) and, like everyone, can't get hurt.
+
 ## Friendship
 
 Treats, brushing, playing and just spending time together slowly fill Jerry's friendship bar.
@@ -160,7 +171,7 @@ Treats, brushing, playing and just spending time together slowly fill Jerry's fr
 | New Pal | 0 | Jerry follows you around and does cute stuff |
 | Buddy | 25 | **Mochi** the cat joins the family |
 | Best Friend | 60 | Jerry brings you little gifts (sticks, flowers, berries... sometimes an emerald) |
-| Inseparable | 100 | The best friendship in the whole world |
+| Inseparable | 100 | The best friendship in the whole world, and **a puppy** joins the family |
 
 Your pets can't get hurt, so you never lose them.
 

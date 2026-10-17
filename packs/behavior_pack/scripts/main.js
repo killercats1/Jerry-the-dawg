@@ -39,8 +39,11 @@ const PROP = {
   catName: "jf:cat_name",
   look: "jf:look",
   gotHome: "jf:got_home",
+  pup: "jf:pup_id",
+  hasPup: "jf:has_pup",
+  pupName: "jf:pup_name",
 };
-const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat" };
+const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat", pup: "jf_pup" };
 const DIMENSIONS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
 const JERRY = "jf:jerry";
 const MOCHI = "jf:mochi";
@@ -53,12 +56,14 @@ const POSE = {
 };
 const DEFAULT_DOG_NAME = "Jerry";
 const DEFAULT_CAT_NAME = "Mochi";
+const DEFAULT_PUP_NAME = "Pip";
 
 // Friendship goes 0-100. Level thresholds line up with T.LEVELS.
 const MAX_FRIENDSHIP = 100;
 const LEVEL_MIN = [0, 25, 60, 100];
 const CAT_LEVEL = 1;
 const GIFT_LEVEL = 2;
+const PUP_LEVEL = 3;
 const GAIN = { treat: 5, brush: 3, ball: 4, talk: 2, pet: 2, together: 1 };
 const COOLDOWN = { treat: 60, brush: 30, ball: 45, talk: 30, pet: 20 }; // seconds before an action earns friendship again
 
@@ -69,6 +74,8 @@ const nextGift = new Map();
 const lastUse = new Map();
 const pendingIntro = new Set();
 const pendingCat = new Set();
+const pendingPup = new Set();
+const refreshed = new Set(); // dogs whose behaviors were refreshed this session
 const poseTimers = new Map(); // dog id -> latest trick, so an older timer doesn't cut a newer trick short
 const propTimers = new Map(); // "dogId:property" -> latest timed change
 const fetching = new Map(); // dog id -> the running fetch game
@@ -132,11 +139,13 @@ function sparkle(pet, id = "minecraft:heart_particle", count = 5) {
 // the real names right before it's shown.
 const dogName = (player) => player.getDynamicProperty(PROP.dogName) || DEFAULT_DOG_NAME;
 const catName = (player) => player.getDynamicProperty(PROP.catName) || DEFAULT_CAT_NAME;
+const pupName = (player) => player.getDynamicProperty(PROP.pupName) || DEFAULT_PUP_NAME;
 
 function personalize(player, text) {
   return String(text)
     .replace(/Jerry/g, () => dogName(player)) // no \b: colour codes like "§bJerry" sit right against the name
-    .replace(/Mochi/g, () => catName(player));
+    .replace(/Mochi/g, () => catName(player))
+    .replace(/Pip/g, () => pupName(player));
 }
 
 function tell(player, text) {
@@ -325,6 +334,23 @@ function spawnJerry(player, at) {
   system.runTimeout(() => isValid(dog) && isValid(player) && applyLook(player, dog), 10); // after taming sets the red collar
   return dog;
 }
+const findPup = (player) => (player.getDynamicProperty(PROP.hasPup) ? findPet(player, PROP.pup, TAG.pup) : undefined);
+const isPup = (pet) => isValid(pet) && pet.hasTag(TAG.pup);
+
+// The puppy is a little Jerry: same entity, but a baby (smaller, big head, never fights).
+function spawnPup(player, at) {
+  const pup = spawnPet(player, JERRY, TAG.pup, pupName(player), PROP.pup, at);
+  const shrink = () => {
+    try {
+      if (isValid(pup)) pup.triggerEvent("jf:make_puppy");
+    } catch {}
+  };
+  shrink();
+  system.runTimeout(shrink, 5);
+  system.runTimeout(() => isValid(pup) && isValid(player) && applyPupLook(pup, getLook(player)), 10);
+  return pup;
+}
+
 function spawnMochi(player, at) {
   const cat = spawnPet(player, MOCHI, TAG.cat, catName(player), PROP.cat, at);
   system.runTimeout(() => isValid(cat) && isValid(player) && applyCatLook(cat, getLook(player)), 10);
@@ -462,7 +488,24 @@ function setLook(player, change) {
   if (dog) applyLook(player, dog);
   const cat = player.getDynamicProperty(PROP.hasCat) ? findPet(player, PROP.cat, TAG.cat) : undefined;
   if (cat?.typeId === MOCHI) applyCatLook(cat, look);
+  const pup = findPup(player);
+  if (pup) applyPupLook(pup, look);
   return look;
+}
+
+// The puppy's coat (picked when he arrives) and collar; no outfits for the little one.
+function applyPupLook(pup, look) {
+  const props = { "jf:coat": look.pupCoat ?? 0, "jf:hat": 0, "jf:neck": 0 };
+  for (const [key, value] of Object.entries(props)) {
+    try {
+      if (pup.getProperty(key) !== value) pup.setProperty(key, value);
+    } catch {}
+  }
+  try {
+    const collar = pup.getComponent("minecraft:color");
+    const colour = look.pupCollar ?? 3;
+    if (collar && collar.value !== colour) collar.value = colour;
+  } catch {}
 }
 
 // Mochi's coat (any vanilla cat coat, tabby if she never had one) and collar.
@@ -492,11 +535,12 @@ function applyLook(player, dog, look = getLook(player)) {
 
 function dyeCollar(player, pet, colour) {
   const isCat = pet.typeId === MOCHI;
-  setLook(player, isCat ? { catCollar: colour } : { collar: colour });
+  setLook(player, isCat ? { catCollar: colour } : isPup(pet) ? { pupCollar: colour } : { collar: colour });
   sparkle(pet, "minecraft:villager_happy", 6);
   sound(pet.dimension, isCat ? "mob.cat.purr" : "mob.wolf.panting", pet.location);
   showFace(pet, "happy", 60);
-  actionbar(player, (isCat ? T.CAT_COLLAR_DYED : T.COLLAR_DYED).replace("{colour}", T.COLLARS[colour].toLowerCase()));
+  const text = isCat ? T.CAT_COLLAR_DYED : T.COLLAR_DYED.replace(/Jerry/g, isPup(pet) ? "Pip" : "Jerry");
+  actionbar(player, text.replace("{colour}", T.COLLARS[colour].toLowerCase()));
 }
 
 function openWardrobe(player, retries = 3) {
@@ -513,6 +557,8 @@ function openWardrobe(player, retries = 3) {
       .dropdown(personalize(player, T.WARDROBE_CAT_COAT), T.CAT_COATS, look.catCoat ?? 8)
       .dropdown(personalize(player, T.WARDROBE_CAT_COLLAR), T.COLLARS, look.catCollar ?? 14);
   }
+  const hasPup = !!player.getDynamicProperty(PROP.hasPup);
+  if (hasPup) form.dropdown(personalize(player, T.WARDROBE_PUP_COAT), T.COATS, look.pupCoat ?? 0);
   form
     .show(player)
     .then((response) => {
@@ -522,10 +568,16 @@ function openWardrobe(player, retries = 3) {
         }
         return;
       }
-      const [hat, neck, coat, collar, catCoat, catCollar] = (response.formValues ?? []).map(Number);
+      const values = (response.formValues ?? []).map(Number);
+      const [hat, neck, coat, collar] = values;
       const pickOr = (value, fallback) => (Number.isInteger(value) ? value : fallback);
       const change = { hat: hat || 0, neck: neck || 0, coat: coat || 0, collar: pickOr(collar, look.collar) };
-      if (hasCat) Object.assign(change, { catCoat: pickOr(catCoat, look.catCoat ?? 8), catCollar: pickOr(catCollar, look.catCollar ?? 14) });
+      let next = 4;
+      if (hasCat) {
+        Object.assign(change, { catCoat: pickOr(values[next], look.catCoat ?? 8), catCollar: pickOr(values[next + 1], look.catCollar ?? 14) });
+        next += 2;
+      }
+      if (hasPup) change.pupCoat = pickOr(values[next], look.pupCoat ?? 0);
       setLook(player, change);
       const dog = findDog(player);
       if (isValid(dog)) {
@@ -577,32 +629,40 @@ function cleanName(raw) {
 }
 
 // Gives a pet a new name (from the naming box, a name tag or /scriptevent jf:name).
+const NAMES = {
+  dog: { prop: PROP.dogName, get: dogName, find: findDog, renamed: () => T.DOG_RENAMED },
+  cat: { prop: PROP.catName, get: catName, find: findCat, renamed: () => T.CAT_RENAMED },
+  pup: { prop: PROP.pupName, get: pupName, find: findPup, renamed: () => T.PUP_RENAMED },
+};
+
 function namePet(player, kind, raw, quiet = false) {
-  const isCat = kind === "cat";
-  const current = isCat ? catName(player) : dogName(player);
-  const pet = isCat ? findCat(player) : findDog(player);
+  const info = NAMES[kind] ?? NAMES.dog;
+  const current = info.get(player);
+  const pet = info.find(player);
   const name = cleanName(raw);
   if (!name || name === current) {
     if (pet && pet.nameTag !== current) pet.nameTag = current; // keep the tag in sync
     return false;
   }
-  player.setDynamicProperty(isCat ? PROP.catName : PROP.dogName, name);
+  player.setDynamicProperty(info.prop, name);
   if (pet) {
     pet.nameTag = name;
     sparkle(pet);
-    if (!isCat) showFace(pet, "love", 60);
+    showFace(pet, "love", 60);
   }
-  if (!quiet) tell(player, isCat ? T.CAT_RENAMED : T.DOG_RENAMED);
+  if (!quiet) tell(player, info.renamed());
   return true;
 }
 
 // The naming box: shown when you first get your dog, and on sneak + Dog Whistle.
 function openNaming(player, intro = false, retries = 3, done) {
   const hasCat = !intro && !!player.getDynamicProperty(PROP.hasCat);
+  const hasPup = !intro && !!player.getDynamicProperty(PROP.hasPup);
   const form = new ModalFormData()
     .title(personalize(player, intro ? T.NAME_TITLE_NEW : T.NAME_TITLE))
     .textField(intro ? T.NAME_NEW_DOG : T.NAME_DOG, DEFAULT_DOG_NAME, dogName(player));
   if (hasCat) form.textField(T.NAME_CAT, DEFAULT_CAT_NAME, catName(player));
+  if (hasPup) form.textField(T.NAME_PUP_FIELD, DEFAULT_PUP_NAME, pupName(player));
   form
     .show(player)
     .then((response) => {
@@ -614,6 +674,7 @@ function openNaming(player, intro = false, retries = 3, done) {
       } else {
         namePet(player, "dog", response.formValues?.[0], intro);
         if (hasCat) namePet(player, "cat", response.formValues?.[1]);
+        if (hasPup) namePet(player, "pup", response.formValues?.[hasCat ? 2 : 1]);
       }
       done?.();
     })
@@ -663,6 +724,39 @@ function scheduleCat(player) {
   }, 200);
 }
 
+function schedulePup(player) {
+  if (pendingPup.has(player.id)) return;
+  pendingPup.add(player.id);
+  system.runTimeout(() => {
+    pendingPup.delete(player.id);
+    if (!isValid(player) || player.getDynamicProperty(PROP.hasPup)) return;
+    player.setDynamicProperty(PROP.hasPup, true);
+    setLook(player, { pupCoat: Math.floor(Math.random() * T.COATS.length) });
+    const pup = spawnPup(player);
+    const dog = findDog(player);
+    if (dog) {
+      showFace(dog, "love", 100);
+      sound(dog.dimension, "mob.wolf.bark", dog.location);
+    }
+    sparkle(pup);
+    showFace(pup, "puppy", 100);
+    title(player, "§eA puppy!", "§fSomeone small joined the family");
+    say(player, T.PUP_ARRIVES, 70);
+    // Name him (the box waits until the messages are done).
+    system.runTimeout(() => {
+      if (!isValid(player)) return;
+      new ModalFormData()
+        .title(personalize(player, T.NAME_PUP_TITLE))
+        .textField(T.NAME_PUP, DEFAULT_PUP_NAME, pupName(player))
+        .show(player)
+        .then((response) => {
+          if (!response.canceled) namePet(player, "pup", response.formValues?.[0]);
+        })
+        .catch(() => {});
+    }, 160);
+  }, 300);
+}
+
 // ---------------------------------------------------------------- every second
 
 function playMoment(player, dog, cat) {
@@ -682,8 +776,10 @@ function playMoment(player, dog, cat) {
     showFace(dog, moment.face, moment.action === "nap" ? 400 : 70);
     return actionbar(player, moment.text);
   }
-  // Mochi does her own thing sometimes.
-  if (isNear(cat, player, 16) && !fetching.has(cat.id) && Math.random() < 0.3) return catMoment(player, cat);
+  // Mochi and the puppy do their own thing sometimes.
+  if (isNear(cat, player, 16) && Math.random() < 0.3) return catMoment(player, cat);
+  const pup = findPup(player);
+  if (isNear(pup, player, 16) && Math.random() < 0.3) return pupMoment(player, pup, dog);
   const options = [...T.MOMENTS];
   if (isNight()) options.push(...T.NIGHT_MOMENTS);
   if (isNear(cat, player, 16)) options.push(...T.CAT_MOMENTS);
@@ -743,6 +839,18 @@ function protectAll(player) {
   if (dog) {
     protect(dog);
     applyLook(player, dog); // keeps his outfit and collar right
+    // Once per session: refresh his behaviors (worlds from before "defend you" moved to its own group).
+    if (!refreshed.has(dog.id) && !isSitting(dog) && !fetching.has(dog.id) && !errands.has(dog.id)) {
+      refreshed.add(dog.id);
+      try {
+        dog.triggerEvent("jf:stand");
+      } catch {}
+    }
+  }
+  const pup = findPup(player);
+  if (pup) {
+    protect(pup);
+    applyPupLook(pup, getLook(player));
   }
   const cat = findCat(player);
   if (cat) {
@@ -757,12 +865,15 @@ function tick(player) {
 
   const friendship = getNum(player, PROP.friendship);
   if (levelOf(friendship) >= CAT_LEVEL && !player.getDynamicProperty(PROP.hasCat)) scheduleCat(player);
+  if (levelOf(friendship) >= PUP_LEVEL && !player.getDynamicProperty(PROP.hasPup)) schedulePup(player);
 
   const dog = findDog(player);
   // Renamed with a name tag?
   if (dog && dog.nameTag && dog.nameTag !== dogName(player)) namePet(player, "dog", dog.nameTag);
   const cat = findCat(player);
   if (cat && cat.nameTag && cat.nameTag !== catName(player)) namePet(player, "cat", cat.nameTag);
+  const pup = findPup(player);
+  if (pup && pup.nameTag && pup.nameTag !== pupName(player)) namePet(player, "pup", pup.nameTag);
 
   if (dog) reactToSurroundings(player, dog);
   if (!isNear(dog, player, 16)) return;
@@ -809,6 +920,7 @@ function petKind(player, entity) {
   if (!isValid(entity) || !entity.hasTag(ownerTag(player))) return undefined;
   if (entity.hasTag(TAG.dog)) return "dog";
   if (entity.hasTag(TAG.cat)) return "cat";
+  if (entity.hasTag(TAG.pup)) return "pup";
   return undefined;
 }
 
@@ -820,6 +932,14 @@ function whistle(player) {
     bring(dog, player);
   } else spawnJerry(player);
   let text = "§bJerry";
+  if (player.getDynamicProperty(PROP.hasPup)) {
+    const pup = findPup(player);
+    if (pup) {
+      if (isSitting(pup)) stand(pup);
+      bring(pup, player);
+    } else spawnPup(player);
+    text += "§7, §ePip";
+  }
   if (player.getDynamicProperty(PROP.hasCat)) {
     const cat = findCat(player);
     if (cat) bring(cat, player);
@@ -838,6 +958,11 @@ function giveTreat(player, target) {
     showFace(target, "love", 60);
     return actionbar(player, T.TREAT_CAT);
   }
+  if (kind === "pup") {
+    sound(target.dimension, "mob.wolf.bark", target.location, { pitch: 1.5 });
+    showFace(target, "love", 60);
+    return actionbar(player, T.TREAT_PUP);
+  }
   sound(target.dimension, "mob.wolf.bark", target.location);
   showFace(target, "love", 60);
   changeNeeds(player, { hunger: 30, fun: 2 });
@@ -853,6 +978,10 @@ function brush(player, target) {
     sound(target.dimension, "mob.cat.purr", target.location);
     showFace(target, "happy", 60);
     return actionbar(player, T.BRUSH_CAT);
+  }
+  if (kind === "pup") {
+    showFace(target, "happy", 60);
+    return actionbar(player, T.BRUSH_PUP);
   }
   sound(target.dimension, "mob.wolf.panting", target.location);
   showFace(target, "happy", 60);
@@ -906,6 +1035,15 @@ function petMochi(player, cat) {
   showFace(cat, "happy", 50);
   const earned = earn(player, "pet");
   actionbar(player, `${pick(T.PET_CAT)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
+}
+
+function petPup(player, pup) {
+  sparkle(pup);
+  sound(pup.dimension, "mob.wolf.panting", pup.location, { pitch: 1.5 });
+  hop(pup, 0.3);
+  showFace(pup, "happy", 50);
+  const earned = earn(player, "pet");
+  actionbar(player, `${pick(T.PET_PUP)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
 }
 
 function petJerry(player, dog) {
@@ -1415,11 +1553,18 @@ function reactToSurroundings(player, dog) {
       if (!goToBed(player, dog, true)) sit(dog, POSE.lie);
       showFace(dog, "sleepy", 400);
       changeNeeds(player, { energy: 40 });
+      const pup = findPup(player);
+      let pupText = "";
+      if (isNear(pup, player, 24)) {
+        sit(pup, POSE.lie);
+        showFace(pup, "sleepy", 400);
+        pupText = T.BEDTIME_PUP;
+      }
       const cat = findCat(player);
-      if (!isNear(cat, player, 24)) return actionbar(player, T.BEDTIME);
+      if (!isNear(cat, player, 24)) return actionbar(player, T.BEDTIME + pupText);
       sit(cat, POSE.lie);
       showFace(cat, "sleepy", 400);
-      return actionbar(player, T.BEDTIME_CAT);
+      return actionbar(player, T.BEDTIME_CAT + pupText);
     }
   } catch {}
 
@@ -1505,6 +1650,10 @@ function openStatus(player, retries = 3) {
     `§fFriendship: ${friendshipBar(player)}`,
     `§fTricks mastered: §e${mastered}/${PRACTICE.size}`,
   ];
+  const family = ["§bJerry"];
+  if (player.getDynamicProperty(PROP.hasCat)) family.push("§dMochi");
+  if (player.getDynamicProperty(PROP.hasPup)) family.push("§ePip");
+  if (family.length > 1) body.push(`§fFamily: ${family.join("§7, ")}`);
   if (player.getDynamicProperty(PROP.hasCat)) {
     const catMastered = [...CAT_PRACTICE].filter((a) => (skills[`cat:${a}`] ?? 0) >= MASTER_AT).length;
     body.push(`§dMochi§f's tricks mastered: §e${catMastered}/${CAT_PRACTICE.size}`);
@@ -1680,7 +1829,7 @@ function cleanWords(text) {
 // Your dog's and cat's own names (or something one letter off) count as "jerry" / "mochi".
 function normalizeNames(text, player) {
   let out = ` ${text} `;
-  for (const [name, token] of [[dogName(player), "jerry"], [catName(player), "mochi"]]) {
+  for (const [name, token] of [[dogName(player), "jerry"], [catName(player), "mochi"], [pupName(player), "pip"]]) {
     const n = name.toLowerCase().replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ").trim();
     if (n.length < 2 || n === token) continue;
     out = out.split(` ${n} `).join(` ${token} `);
@@ -1730,10 +1879,18 @@ function talkingToCat(said, player) {
   return / (mochi|kitty) /.test(words) && !/ jerry /.test(words);
 }
 
-// Returns how many ticks Jerry (or Mochi) will be busy reacting (0 if nobody could hear you).
+// Did you say the puppy's name? Then the commands are for him.
+function talkingToPup(said, player) {
+  if (!player.getDynamicProperty(PROP.hasPup)) return false;
+  const words = ` ${cleanWords(normalizeNames(said.toLowerCase().replace(/[^a-z' ]+/g, " "), player))} `;
+  return / pip /.test(words) && !/ jerry /.test(words);
+}
+
+// Returns how many ticks Jerry (or Mochi, or the puppy) will be busy reacting (0 if nobody could hear you).
 function hearSpeech(player, said) {
   player.sendMessage(`§7You: §f"${said.slice(0, 80)}"`); // your own words, unchanged
   if (talkingToCat(said, player)) return hearCat(player, said);
+  if (talkingToPup(said, player)) return hearPup(player, said);
   const dog = findDog(player);
   const commands = parseCommands(said, player);
   // "come" works from anywhere, like the whistle; everything else needs Jerry in earshot.
@@ -1885,6 +2042,98 @@ function respondCat(player, cat, entry) {
   if (replies) tell(player, pick(replies));
 }
 
+// ---------------------------------------------------------------- the puppy
+// He does Jerry's tricks (no fetch or treasure hunts yet), but he's little, so he messes up a lot.
+
+const PUP_SKIP = new Set(["fetch", "find", "mochi", "play"]);
+
+function hearPup(player, said) {
+  const pup = findPup(player);
+  const commands = parseCommands(said, player).filter((entry) => entry.action !== "greet");
+  const calledHim = commands.some((entry) => entry.action === "come");
+  if (!pup || (!calledHim && !isNear(pup, player, 24))) {
+    tell(player, T.PUP_NOT_HERE);
+    return 0;
+  }
+  showSpeaker(pup, 40);
+  if (!commands.length) commands.push(T.VOICE.find((entry) => entry.action === "greet"));
+  let at = 12;
+  for (const entry of commands) {
+    system.runTimeout(() => {
+      if (isValid(player) && isValid(pup)) respondPup(player, pup, entry);
+    }, at);
+    at += actionTicks(entry);
+  }
+  return at;
+}
+
+function respondPup(player, pup, entry) {
+  if (entry.action === "fetch" || entry.action === "play") {
+    pupZoomies(pup);
+    return tell(player, T.PUP_MOMENTS[3].text);
+  }
+  if (entry.action === "find") return trick(pup, POSE.sniff, 50, false);
+  if (PUP_SKIP.has(entry.action)) return tiltHead(pup);
+  if (PRACTICE.has(entry.action) && Math.random() < 0.3) {
+    pupOops(pup);
+    return tell(player, pick(T.PUP_OOPS));
+  }
+  talkAction(player, pup, entry.action);
+  if (entry.face) showFace(pup, entry.face, actionTicks(entry) + 20);
+  if (entry.replies) tell(player, pick(entry.replies).replace(/Jerry/g, "Pip"));
+}
+
+function pupOops(pup) {
+  const which = Math.floor(Math.random() * 3);
+  if (which === 0) trick(pup, POSE.playDead, 40); // falls over
+  else if (which === 1) spin(pup);
+  else trick(pup, POSE.sit, 40);
+  showFace(pup, "puppy", 50);
+  return which;
+}
+
+function pupZoomies(pup) {
+  for (let i = 0; i < 4; i++) system.runTimeout(() => isValid(pup) && hop(pup, 0.35), i * 10);
+  spin(pup);
+}
+
+// When Jerry does a trick, the puppy (if he's around) tries to copy him.
+const PUP_FOLLOWS = new Set(["sit", "lie", "come"]); // these he always copies
+const PUP_COPIES = new Set([
+  "roll", "paw", "highfive", "wave", "beg", "dead", "bow", "dance", "howl", "chase", "spin", "spinleft", "spinright",
+  "hop", "bark", "shy", "stretch", "love", "shock",
+]);
+
+function pupCopies(player, action) {
+  const pup = findPup(player);
+  if (!isNear(pup, player, 24)) return;
+  const always = PUP_FOLLOWS.has(action);
+  if (!always && !(PUP_COPIES.has(action) && Math.random() < 0.6)) return;
+  system.runTimeout(() => {
+    if (!isValid(pup) || !isValid(player)) return;
+    if (always || Math.random() < 0.5) {
+      talkAction(player, pup, action);
+      if (!always && Math.random() < 0.5) tell(player, pick(T.PUP_COPY_OK));
+    } else {
+      tell(player, T.PUP_COPY_OOPS[pupOops(pup)]);
+    }
+  }, 15);
+}
+
+function pupMoment(player, pup, dog) {
+  const moment = pick(T.PUP_MOMENTS);
+  sound(pup.dimension, moment.sound, pup.location, { pitch: 1.5 });
+  if (moment.action === "hop") hop(pup, 0.4);
+  if (moment.action === "tilt") tiltHead(pup);
+  if (moment.action === "nap" && !isSitting(pup)) trick(pup, POSE.lie, 200);
+  if (moment.action === "zoomies") {
+    pupZoomies(pup);
+    if (isValid(dog) && !isSitting(dog)) spin(dog);
+  }
+  showFace(pup, moment.face, moment.action === "nap" ? 200 : 70);
+  actionbar(player, moment.text);
+}
+
 function catZoomies(cat) {
   for (let i = 0; i < 4; i++) {
     system.runTimeout(() => {
@@ -1919,6 +2168,7 @@ function respond(player, dog, entry) {
     if (!attemptTrick(player, dog, entry.action)) return;
   }
   talkAction(player, dog, entry.action);
+  if (!isPup(dog)) pupCopies(player, entry.action);
   if (entry.face) showFace(dog, entry.face, actionTicks(entry) + 20);
   let reply = entry.replies ? pick(entry.replies) : "";
   if (entry.action === "mochi") {
@@ -2112,6 +2362,7 @@ system.afterEvents.scriptEventReceive.subscribe(
     else if (id === "jf:boost") addFriendship(player, 25);
     else if (id === "jf:name") namePet(player, "dog", message);
     else if (id === "jf:cat_name") namePet(player, "cat", message);
+    else if (id === "jf:pup_name") namePet(player, "pup", message);
   },
   { namespaces: ["jf"] }
 );
@@ -2160,6 +2411,7 @@ world.beforeEvents.playerInteractWithEntity?.subscribe((event) => {
       if (!isValid(player) || !isValid(target) || !target.hasTag(ownerTag(player))) return;
       if (talk) startTalking(player);
       else if (target.typeId === MOCHI) petMochi(player, target);
+      else if (isPup(target)) petPup(player, target);
       else petJerry(player, target);
     });
     return;
@@ -2212,6 +2464,6 @@ world.afterEvents.entityLoad?.subscribe(({ entity }) => {
   if (!entity.hasTag(TAG.pet)) return;
   const owner = world.getAllPlayers().find((p) => entity.hasTag(ownerTag(p)));
   if (!owner) return;
-  const current = owner.getDynamicProperty(entity.hasTag(TAG.cat) ? PROP.cat : PROP.dog);
+  const current = owner.getDynamicProperty(entity.hasTag(TAG.cat) ? PROP.cat : entity.hasTag(TAG.pup) ? PROP.pup : PROP.dog);
   if (typeof current === "string" && current !== entity.id) entity.remove();
 });

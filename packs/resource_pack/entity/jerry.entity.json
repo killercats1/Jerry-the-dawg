@@ -51,7 +51,8 @@
         "howl": "animation.jf_jerry.howl",
         "sniff": "animation.jf_jerry.sniff",
         "shy": "animation.jf_jerry.shy",
-        "stretch": "animation.jf_jerry.stretch"
+        "stretch": "animation.jf_jerry.stretch",
+        "baby": "animation.jf_jerry.baby"
       },
       "scripts": {
         "animate": [
@@ -61,7 +62,10 @@
           },
           "tail_wag",
           "pose",
-          "speaker"
+          "speaker",
+          {
+            "baby": "query.is_baby"
+          }
         ]
       },
       "render_controllers": [

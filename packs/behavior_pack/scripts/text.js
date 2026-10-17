@@ -20,7 +20,7 @@ export const LEVEL_UP = [
   "",
   "§bJerry§7 now follows you extra closely. You're officially §fBuddies§7!",
   "§bJerry§7 thinks you're the best. Sometimes he'll bring you little §fgifts§7 now!",
-  "§bJerry§7 and you are §fInseparable§7. This is the best friendship in the whole world.",
+  "§bJerry§7 and you are §fInseparable§7. This is the best friendship in the whole world. (And someone small is on the way...)",
 ];
 
 // face: which expression Jerry makes (happy, puppy, shocked, love, sleepy).
@@ -148,6 +148,45 @@ export const GIFTS = [
   { item: "minecraft:feather", name: "a feather" },
   { item: "minecraft:emerald", name: "an emerald?! Where did he find that" },
 ];
+
+// ---------------------------------------------------------------- the puppy (joins at Inseparable)
+// "Pip" is swapped for the puppy's real name, like "Jerry" and "Mochi".
+export const PUP_ARRIVES = [
+  "§7A tiny puppy came bouncing over and won't stop following §bJerry§7 around...",
+  "§7Looks like you have a new family member! Meet §ePip§7. Pip copies everything §bJerry§7 does.",
+];
+export const NAME_PUP_TITLE = "A puppy!";
+export const NAME_PUP = "What do you want to name the puppy?\n§7(You can change it later with a name tag, or sneak + use the Dog Whistle.)";
+export const NAME_PUP_FIELD = "Your puppy's name";
+export const PUP_RENAMED = "§aYour puppy is now called §ePip§a! *tiny tail wags*";
+export const PUP_NOT_HERE = "§ePip§7 is too far away to hear you. Try the whistle!";
+export const PET_PUP = [
+  "§ePip§7 wiggles so hard he falls over. Then gets up and wiggles more.",
+  "§ePip§7 licks your hand with his tiny tongue.",
+  "§ePip§7 rolls onto his back for belly rubs. Tiny belly!",
+];
+export const TREAT_PUP = "§ePip§7 nibbles the treat with his tiny teeth. *nom nom nom*";
+export const BRUSH_PUP = "§ePip§7 is the fluffiest puppy in the world now.";
+export const PUP_COPY_OK = [
+  "§ePip§7 copies §bJerry§7. Nailed it!",
+  "§ePip§7 watches §bJerry§7 and does it too. Like father, like son.",
+];
+export const PUP_COPY_OOPS = [
+  "§ePip§7 tries to copy §bJerry§7... and falls over. He's still little.",
+  "§ePip§7 tries too, gets confused and chases his tail instead.",
+  "§ePip§7 tries it and just sits down. Good try, little guy!",
+];
+export const PUP_OOPS = [
+  "§ePip§7 tries his best... and tumbles over. So close!",
+  "§ePip§7 gets so excited he forgets what you said. *tiny bark*",
+];
+export const PUP_MOMENTS = [
+  { sound: "mob.wolf.bark", face: "happy", action: "hop", text: "§ePip§7 pounces on §bJerry§7's tail. §bJerry§7 is very patient." },
+  { sound: "mob.wolf.panting", face: "sleepy", action: "nap", text: "§ePip§7 falls asleep mid-step. Puppies, right?" },
+  { sound: "mob.wolf.whine", face: "puppy", action: "tilt", text: "§ePip§7 tilts his head at a butterfly." },
+  { sound: "mob.wolf.bark", face: "happy", action: "zoomies", text: "§ePip§7 has the zoomies! §bJerry§7 joins in!" },
+];
+export const BEDTIME_PUP = " §ePip§7 snuggles up against §bJerry§7.";
 
 export const CAT_ARRIVES = [
   "§7A fluffy cat wandered over to say hi to §bJerry§7...",
@@ -360,6 +399,7 @@ export const WARDROBE_NECK = "Neck";
 export const WARDROBE_COAT = "Fur";
 export const WARDROBE_COLLAR = "Collar colour §7(or use any dye on him)";
 export const WARDROBE_CAT_COAT = "§dMochi§f's fur";
+export const WARDROBE_PUP_COAT = "§ePip§f's fur";
 export const WARDROBE_CAT_COLLAR = "§dMochi§f's collar §7(dyes work on her too)";
 // Order matches the vanilla cat variants (and Mochi's jf:coat property).
 export const CAT_COATS = ["White", "Tuxedo", "Red tabby", "Siamese", "British shorthair", "Calico", "Persian", "Ragdoll", "Tabby", "Black", "Jellie"];
