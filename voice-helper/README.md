@@ -9,12 +9,14 @@ You only do steps 1-4 once. After that it's just step 5 each time you play.
 
 ## 1. Install the apps (once)
 
-1. Install **F-Droid** from <https://f-droid.org>.
-2. In F-Droid, install **Termux** and **Termux:API**.
-   (Get both from F-Droid. The Play Store versions don't work together.)
-3. Long-press the **Termux:API** icon → **App info**:
-   - **Permissions → Microphone → Allow**
-   - **Battery → Unrestricted** (so it keeps listening while Minecraft is open)
+**Either** of these works (don't mix them):
+
+- **Play Store:** install **Termux** (a recent version has speech-to-text built in, no extra app).
+  Then long-press the **Termux** icon → **App info** → **Permissions → Microphone → Allow**,
+  and **Battery → Unrestricted**.
+- **F-Droid:** install **F-Droid** from <https://f-droid.org>, then **Termux** and **Termux:API**
+  from it. Long-press the **Termux:API** icon → **App info** → **Permissions → Microphone → Allow**,
+  and **Battery → Unrestricted**.
 
 ## 2. Install the helper (once)
 
@@ -84,8 +86,9 @@ recognition didn't get any sound. Usually that's because Android blocks the micr
 background while a game is open. Try these, in order:
 
 1. **Test the mic on its own**: in Termux run `termux-speech-to-text` and say something. If your words
-   show up, the mic works and it's the background block. If not, give **Termux:API** the
-   **Microphone** permission (long-press its icon → App info → Permissions).
+   show up, the mic works and it's the background block. If not, give the app the **Microphone**
+   permission (long-press its icon → App info → Permissions): **Termux** if you got it from the
+   Play Store, **Termux:API** if you got it from F-Droid.
 2. **Split screen**: open Minecraft and Termux side by side (on Samsung: recent apps → the app icon →
    *Open in split screen view*). Apps on screen are allowed to use the mic.
 3. **Keyboard voice typing** always works: when the talk box opens, tap the keyboard's mic.

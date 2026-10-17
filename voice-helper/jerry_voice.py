@@ -248,8 +248,8 @@ async def hear(game, args, event_id):
         log(f"Android's speech recognition failed ({args.error}).")
         if args.errors_in_a_row in (1, 5):
             log("  If it keeps failing while Minecraft is open, Android is probably blocking the microphone\n"
-                "  for apps in the background. Try Minecraft and Termux in split screen, check that Termux:API\n"
-                "  has Microphone permission, or use the keyboard's mic button in the talk box instead.\n"
+                "  for apps in the background. Check that Termux (Play Store) or Termux:API (F-Droid) has\n"
+                "  Microphone permission, or use the keyboard's mic button in the talk box instead.\n"
                 "  Test the microphone on its own: in Termux run  termux-speech-to-text  and say something.")
         if event_id == "jf:voice":
             await game.command("scriptevent jf:voice_status blocked")
@@ -301,7 +301,8 @@ def check_engine(args):
     tool = "termux-speech-to-text" if args.engine == "android" else "termux-microphone-record"
     if not shutil.which(tool):
         print(f"Can't find '{tool}'. In Termux run:  pkg install -y termux-api\n"
-              "and install the Termux:API app from F-Droid (give it microphone permission).")
+              "Play Store Termux: update it and give Termux microphone permission.\n"
+              "F-Droid Termux: also install the Termux:API app from F-Droid (give it microphone permission).")
         return False
     if args.engine == "groq" and not args.groq_key:
         print("The groq engine needs a free API key from https://console.groq.com/keys\n"

@@ -286,7 +286,7 @@ export const VOICE_LISTENING = "§a>> Listening... talk to Jerry now! <<";
 export const VOICE_NOTHING = "§7Jerry didn't catch that. Try again!";
 export const VOICE_BLOCKED = "§7Your phone's speech recognition couldn't hear you, so here's the talk box (tap the keyboard's mic).";
 export const VOICE_BLOCKED_HELP =
-  "§7[Voice] Android often blocks the microphone for apps in the background while a game is open. Try §fsplit screen§7 (Minecraft + Termux), check §fTermux:API§7 has Microphone permission, or just use the keyboard's mic in the talk box.";
+  "§7[Voice] Check that §fTermux§7 (Play Store) or §fTermux:API§7 (F-Droid) has Microphone permission. Android can also block the mic for apps in the background while a game is open; the keyboard's mic in the talk box always works.";
 export const VOICE_LOST = "§7[Voice] The voice helper isn't answering, so here's the text box. (Is Termux still running? Run /connect 127.0.0.1:3000 again.)";
 
 // Naming your pets.
