@@ -84,7 +84,7 @@
           "value": 1
         }
       },
-      "jf:fetch_chase": {
+      "jf:fetch_chase_0": {
         "minecraft:behavior.nearest_attackable_target": {
           "priority": 1,
           "must_see": false,
@@ -94,9 +94,249 @@
           "entity_types": [
             {
               "filters": {
-                "test": "is_family",
-                "subject": "other",
-                "value": "jf_ball"
+                "all_of": [
+                  {
+                    "test": "is_family",
+                    "subject": "other",
+                    "value": "jf_ball"
+                  },
+                  {
+                    "test": "has_tag",
+                    "subject": "other",
+                    "value": "jf_ball_0"
+                  }
+                ]
+              },
+              "max_dist": 32
+            }
+          ]
+        },
+        "minecraft:behavior.melee_attack": {
+          "priority": 2,
+          "speed_multiplier": 1.4,
+          "track_target": true
+        }
+      },
+      "jf:fetch_chase_1": {
+        "minecraft:behavior.nearest_attackable_target": {
+          "priority": 1,
+          "must_see": false,
+          "must_reach": false,
+          "reselect_targets": true,
+          "within_radius": 32,
+          "entity_types": [
+            {
+              "filters": {
+                "all_of": [
+                  {
+                    "test": "is_family",
+                    "subject": "other",
+                    "value": "jf_ball"
+                  },
+                  {
+                    "test": "has_tag",
+                    "subject": "other",
+                    "value": "jf_ball_1"
+                  }
+                ]
+              },
+              "max_dist": 32
+            }
+          ]
+        },
+        "minecraft:behavior.melee_attack": {
+          "priority": 2,
+          "speed_multiplier": 1.4,
+          "track_target": true
+        }
+      },
+      "jf:fetch_chase_2": {
+        "minecraft:behavior.nearest_attackable_target": {
+          "priority": 1,
+          "must_see": false,
+          "must_reach": false,
+          "reselect_targets": true,
+          "within_radius": 32,
+          "entity_types": [
+            {
+              "filters": {
+                "all_of": [
+                  {
+                    "test": "is_family",
+                    "subject": "other",
+                    "value": "jf_ball"
+                  },
+                  {
+                    "test": "has_tag",
+                    "subject": "other",
+                    "value": "jf_ball_2"
+                  }
+                ]
+              },
+              "max_dist": 32
+            }
+          ]
+        },
+        "minecraft:behavior.melee_attack": {
+          "priority": 2,
+          "speed_multiplier": 1.4,
+          "track_target": true
+        }
+      },
+      "jf:fetch_chase_3": {
+        "minecraft:behavior.nearest_attackable_target": {
+          "priority": 1,
+          "must_see": false,
+          "must_reach": false,
+          "reselect_targets": true,
+          "within_radius": 32,
+          "entity_types": [
+            {
+              "filters": {
+                "all_of": [
+                  {
+                    "test": "is_family",
+                    "subject": "other",
+                    "value": "jf_ball"
+                  },
+                  {
+                    "test": "has_tag",
+                    "subject": "other",
+                    "value": "jf_ball_3"
+                  }
+                ]
+              },
+              "max_dist": 32
+            }
+          ]
+        },
+        "minecraft:behavior.melee_attack": {
+          "priority": 2,
+          "speed_multiplier": 1.4,
+          "track_target": true
+        }
+      },
+      "jf:fetch_chase_4": {
+        "minecraft:behavior.nearest_attackable_target": {
+          "priority": 1,
+          "must_see": false,
+          "must_reach": false,
+          "reselect_targets": true,
+          "within_radius": 32,
+          "entity_types": [
+            {
+              "filters": {
+                "all_of": [
+                  {
+                    "test": "is_family",
+                    "subject": "other",
+                    "value": "jf_ball"
+                  },
+                  {
+                    "test": "has_tag",
+                    "subject": "other",
+                    "value": "jf_ball_4"
+                  }
+                ]
+              },
+              "max_dist": 32
+            }
+          ]
+        },
+        "minecraft:behavior.melee_attack": {
+          "priority": 2,
+          "speed_multiplier": 1.4,
+          "track_target": true
+        }
+      },
+      "jf:fetch_chase_5": {
+        "minecraft:behavior.nearest_attackable_target": {
+          "priority": 1,
+          "must_see": false,
+          "must_reach": false,
+          "reselect_targets": true,
+          "within_radius": 32,
+          "entity_types": [
+            {
+              "filters": {
+                "all_of": [
+                  {
+                    "test": "is_family",
+                    "subject": "other",
+                    "value": "jf_ball"
+                  },
+                  {
+                    "test": "has_tag",
+                    "subject": "other",
+                    "value": "jf_ball_5"
+                  }
+                ]
+              },
+              "max_dist": 32
+            }
+          ]
+        },
+        "minecraft:behavior.melee_attack": {
+          "priority": 2,
+          "speed_multiplier": 1.4,
+          "track_target": true
+        }
+      },
+      "jf:fetch_chase_6": {
+        "minecraft:behavior.nearest_attackable_target": {
+          "priority": 1,
+          "must_see": false,
+          "must_reach": false,
+          "reselect_targets": true,
+          "within_radius": 32,
+          "entity_types": [
+            {
+              "filters": {
+                "all_of": [
+                  {
+                    "test": "is_family",
+                    "subject": "other",
+                    "value": "jf_ball"
+                  },
+                  {
+                    "test": "has_tag",
+                    "subject": "other",
+                    "value": "jf_ball_6"
+                  }
+                ]
+              },
+              "max_dist": 32
+            }
+          ]
+        },
+        "minecraft:behavior.melee_attack": {
+          "priority": 2,
+          "speed_multiplier": 1.4,
+          "track_target": true
+        }
+      },
+      "jf:fetch_chase_7": {
+        "minecraft:behavior.nearest_attackable_target": {
+          "priority": 1,
+          "must_see": false,
+          "must_reach": false,
+          "reselect_targets": true,
+          "within_radius": 32,
+          "entity_types": [
+            {
+              "filters": {
+                "all_of": [
+                  {
+                    "test": "is_family",
+                    "subject": "other",
+                    "value": "jf_ball"
+                  },
+                  {
+                    "test": "has_tag",
+                    "subject": "other",
+                    "value": "jf_ball_7"
+                  }
+                ]
               },
               "max_dist": 32
             }
@@ -228,7 +468,14 @@
         "remove": {
           "component_groups": [
             "jf:moving",
-            "jf:fetch_chase",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7",
             "jf:fetch_return"
           ]
         },
@@ -242,7 +489,14 @@
         "remove": {
           "component_groups": [
             "jf:sitting",
-            "jf:fetch_chase",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7",
             "jf:fetch_return"
           ]
         },
@@ -252,17 +506,171 @@
           ]
         }
       },
-      "jf:fetch_chase": {
+      "jf:fetch_chase_0": {
         "remove": {
           "component_groups": [
             "jf:moving",
             "jf:sitting",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7",
             "jf:fetch_return"
           ]
         },
         "add": {
           "component_groups": [
-            "jf:fetch_chase"
+            "jf:fetch_chase_0"
+          ]
+        }
+      },
+      "jf:fetch_chase_1": {
+        "remove": {
+          "component_groups": [
+            "jf:moving",
+            "jf:sitting",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7",
+            "jf:fetch_return"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "jf:fetch_chase_1"
+          ]
+        }
+      },
+      "jf:fetch_chase_2": {
+        "remove": {
+          "component_groups": [
+            "jf:moving",
+            "jf:sitting",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7",
+            "jf:fetch_return"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "jf:fetch_chase_2"
+          ]
+        }
+      },
+      "jf:fetch_chase_3": {
+        "remove": {
+          "component_groups": [
+            "jf:moving",
+            "jf:sitting",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7",
+            "jf:fetch_return"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "jf:fetch_chase_3"
+          ]
+        }
+      },
+      "jf:fetch_chase_4": {
+        "remove": {
+          "component_groups": [
+            "jf:moving",
+            "jf:sitting",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7",
+            "jf:fetch_return"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "jf:fetch_chase_4"
+          ]
+        }
+      },
+      "jf:fetch_chase_5": {
+        "remove": {
+          "component_groups": [
+            "jf:moving",
+            "jf:sitting",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7",
+            "jf:fetch_return"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "jf:fetch_chase_5"
+          ]
+        }
+      },
+      "jf:fetch_chase_6": {
+        "remove": {
+          "component_groups": [
+            "jf:moving",
+            "jf:sitting",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_7",
+            "jf:fetch_return"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "jf:fetch_chase_6"
+          ]
+        }
+      },
+      "jf:fetch_chase_7": {
+        "remove": {
+          "component_groups": [
+            "jf:moving",
+            "jf:sitting",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_return"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "jf:fetch_chase_7"
           ]
         }
       },
@@ -271,7 +679,14 @@
           "component_groups": [
             "jf:moving",
             "jf:sitting",
-            "jf:fetch_chase"
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7"
           ]
         },
         "add": {

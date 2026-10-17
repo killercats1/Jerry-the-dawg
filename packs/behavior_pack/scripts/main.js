@@ -34,6 +34,7 @@ const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat" };
 const DIMENSIONS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
 const JERRY = "jf:jerry";
 const BALL = "jf:thrown_ball"; // the thrown tennis ball (can't be picked up or broken)
+const FETCH_SLOTS = 8; // matches the jf:fetch_chase_0..7 behaviors in entities/jerry.json
 // Matches the jf:pose property in entities/jerry.json and the pose animation controller.
 const POSE = {
   stand: 0, sit: 1, roll: 2, tilt: 3, paw: 4, wave: 5, beg: 6,
@@ -349,7 +350,7 @@ function trick(dog, pose, ticks, holdStill = true) {
     if (!isValid(dog) || poseTimers.get(dog.id) !== token) return;
     if (freeze && !isSitting(dog)) {
       try {
-        dog.triggerEvent(fetching.get(dog.id)?.event ?? "jf:stand"); // back to fetch if he was playing
+        dog.triggerEvent(fetching.get(dog.id)?.event ?? (fetching.has(dog.id) ? "jf:sit" : "jf:stand")); // back to fetch if he was playing
       } catch {}
     }
     setPose(dog, restPose(dog) ?? POSE.stand);
@@ -799,7 +800,7 @@ function attemptTrick(player, dog, action) {
 // ---------------------------------------------------------------- fetch
 // The Tennis Ball really gets thrown: he runs after it, picks it up and brings it back.
 
-// He runs with Minecraft's own pathfinding: his jf:fetch_chase behavior goes after the ball and
+// He runs with Minecraft's own pathfinding: his jf:fetch_chase_N behavior goes after his ball and
 // jf:fetch_return follows you back (see entities/jerry.json). The script just watches. If he gets
 // stuck (or the behaviors aren't working), it gently steers him instead.
 
@@ -891,11 +892,19 @@ function throwBall(player) {
   sound(dog.dimension, "mob.wolf.bark", dog.location);
   actionbar(player, T.FETCH_THROW);
 
-  const game = { phase: "chase", ticks: 0, ballId: ball.id, event: "jf:fetch_chase", best: Infinity, bestAt: 0, steer: false };
+  // Each game gets a numbered ball (tag jf_ball_N) and his matching behavior only chases that
+  // one, so two dogs never run off with each other's ball. If every number is taken, he steers.
+  const used = new Set([...fetching.values()].map((g) => g.slot));
+  const slot = [...Array(FETCH_SLOTS).keys()].find((n) => !used.has(n));
+  try {
+    if (slot !== undefined) ball.addTag(`jf_ball_${slot}`);
+  } catch {}
+  const chaseEvent = slot === undefined ? undefined : `jf:fetch_chase_${slot}`;
+  const game = { phase: "chase", ticks: 0, ballId: ball.id, slot, event: chaseEvent, best: Infinity, bestAt: 0, steer: false };
   const setPhase = (phase, event) => {
-    Object.assign(game, { phase, event, ticks: 0, best: Infinity, bestAt: 0, steer: false });
+    Object.assign(game, { phase, event, ticks: 0, best: Infinity, bestAt: 0, steer: !event });
     try {
-      dog.triggerEvent(event);
+      dog.triggerEvent(event ?? "jf:sit"); // no behavior to use: pause his follow brain and steer
     } catch {
       game.steer = true; // no fetch behaviors: steer him the whole way
     }
@@ -966,7 +975,7 @@ function throwBall(player) {
     }
   }, 1);
   fetching.set(dog.id, game);
-  setPhase("chase", "jf:fetch_chase");
+  setPhase("chase", chaseEvent);
 }
 
 // ---------------------------------------------------------------- defending you
