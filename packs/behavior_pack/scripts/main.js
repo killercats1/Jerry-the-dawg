@@ -17,6 +17,14 @@ const ITEMS = {
   talk: "jf:talk",
 };
 const OUR_ITEMS = new Set(Object.values(ITEMS));
+// The placeable dog bed and food bowl (blocks/). A full bowl is its own block so his "go eat"
+// behavior can look for full bowls only.
+const BLOCKS = { bed: "jf:dog_bed", bowl: "jf:food_bowl", fullBowl: "jf:food_bowl_full" };
+const FOODS = new Set([
+  "jf:dog_treat", "minecraft:beef", "minecraft:cooked_beef", "minecraft:porkchop", "minecraft:cooked_porkchop",
+  "minecraft:chicken", "minecraft:cooked_chicken", "minecraft:mutton", "minecraft:cooked_mutton",
+  "minecraft:rabbit", "minecraft:cooked_rabbit", "minecraft:rotten_flesh",
+]);
 
 const PROP = {
   started: "jf:started",
@@ -30,6 +38,7 @@ const PROP = {
   dogName: "jf:dog_name",
   catName: "jf:cat_name",
   look: "jf:look",
+  gotHome: "jf:got_home",
 };
 const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat" };
 const DIMENSIONS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
@@ -64,6 +73,7 @@ const poseTimers = new Map(); // dog id -> latest trick, so an older timer doesn
 const propTimers = new Map(); // "dogId:property" -> latest timed change
 const fetching = new Map(); // dog id -> the running fetch game
 const fighting = new Map(); // dog id -> { attacker id, until tick } while he's defending you
+const errands = new Map(); // dog id -> his trip to the food bowl or his bed
 const reactedAt = new Map(); // "playerId:reaction" -> seconds, so reactions don't spam
 const awaySince = new Map(); // player id -> seconds when the dog was last nearby
 // The optional phone voice helper (voice-helper/jerry_voice.py) checks in every few seconds.
@@ -176,6 +186,11 @@ function hasItem(player, id) {
   if (!inv) return false;
   for (let i = 0; i < inv.size; i++) if (inv.getItem(i)?.typeId === id) return true;
   return false;
+}
+
+function giveAllItems(player) {
+  for (const id of [...Object.values(ITEMS), BLOCKS.bed, BLOCKS.bowl]) give(player, id);
+  player.setDynamicProperty(PROP.gotHome, true);
 }
 
 function give(player, id) {
@@ -354,6 +369,9 @@ function stand(dog) {
   } catch {}
   dog.setDynamicProperty("jf:rest", undefined);
   dog.setDynamicProperty("jf:sitting", undefined);
+  dog.setDynamicProperty("jf:on_bed", undefined);
+  const errand = errands.get(dog.id);
+  if (errand) errand.cancel = true; // called or told to get up: forget the trip
   setPose(dog, POSE.stand);
 }
 
@@ -372,11 +390,18 @@ function trick(dog, pose, ticks, holdStill = true) {
     if (!isValid(dog) || poseTimers.get(dog.id) !== token) return;
     if (freeze && !isSitting(dog)) {
       try {
-        dog.triggerEvent(fetching.get(dog.id)?.event ?? (fetching.has(dog.id) ? "jf:sit" : "jf:stand")); // back to fetch if he was playing
+        dog.triggerEvent(movingEvent(dog)); // back to fetch (or his trip to the bowl) if he was busy
       } catch {}
     }
     setPose(dog, restPose(dog) ?? POSE.stand);
   }, ticks);
+}
+
+// The behavior he should be running when not doing a trick.
+function movingEvent(dog) {
+  if (fetching.has(dog.id)) return fetching.get(dog.id).event ?? "jf:sit";
+  if (errands.has(dog.id)) return errands.get(dog.id).event;
+  return "jf:stand";
 }
 
 const rollOver = (dog) => trick(dog, POSE.roll, 50);
@@ -610,7 +635,7 @@ function startIntro(player) {
   removeAllPets(player);
   spawnJerry(player);
   player.setDynamicProperty(PROP.started, true);
-  for (const id of Object.values(ITEMS)) give(player, id);
+  giveAllItems(player);
   title(player, T.TITLE, "§fYour very good dog");
   sound(player.dimension, "mob.wolf.bark", player.location);
   // First thing: pick a name (it can be changed any time). Then the welcome messages.
@@ -651,6 +676,7 @@ function playMoment(player, dog, cat) {
     if (moment.action === "bone") holdBone(dog, 80);
     if (moment.action === "nap") {
       if (isSitting(dog)) return; // already resting
+      if (goToBed(player, dog)) return;
       sit(dog, POSE.lie);
     }
     showFace(dog, moment.face, moment.action === "nap" ? 400 : 70);
@@ -747,7 +773,13 @@ function tick(player) {
     addFriendship(player, moodOf(getNeeds(player)) === "happy" ? GAIN.together * 2 : GAIN.together);
   }
 
-  if (busy) return;
+  if (busy || errands.has(dog.id)) return;
+  // Hungry and there's a full bowl? Sleepy and there's his bed? Off he goes.
+  if (seconds % 5 === 0 && !isSitting(dog)) {
+    const needs = getNeeds(player);
+    if (needs.hunger < 40 && canReact(player, "bowl", 20) && goEat(player, dog)) return;
+    if ((needs.energy < 30 || (isNight() && needs.energy < 80)) && canReact(player, "bedtrip", 60) && goToBed(player, dog)) return;
+  }
   if (levelOf(friendship) >= GIFT_LEVEL) {
     if (!nextGift.has(player.id)) nextGift.set(player.id, seconds + 120);
     if (seconds >= nextGift.get(player.id)) {
@@ -917,11 +949,18 @@ function moodOf(needs) {
 // Once a minute while he's with you. Resting (sitting or lying down) recharges him.
 function updateNeeds(player, dog) {
   const resting = isSitting(dog);
-  changeNeeds(player, {
+  const inBed = resting && dog.getDynamicProperty("jf:on_bed") === true;
+  const needs = changeNeeds(player, {
     hunger: -3,
     fun: resting ? -1 : -3,
-    energy: resting ? 8 : isNight() ? -4 : -2,
+    energy: inBed ? 16 : resting ? 8 : isNight() ? -4 : -2,
   });
+  // A good nap in his own bed: he gets up by himself in the daytime once he's rested.
+  if (inBed && needs.energy >= 95 && !isNight() && !player.isSleeping) {
+    stand(dog);
+    showFace(dog, "happy", 60);
+    tell(player, T.WOKE_UP);
+  }
 }
 
 // ---------------------------------------------------------------- practice makes perfect
@@ -1173,6 +1212,177 @@ function isFighting(dog) {
   return true;
 }
 
+// ---------------------------------------------------------------- dog bed & food bowl
+// Placed beds and bowls are remembered (world property), so we know where to send him.
+
+const HOMES = "jf:homes";
+
+function getHomes() {
+  try {
+    const raw = world.getDynamicProperty(HOMES);
+    if (typeof raw === "string") return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+const sameSpot = (a, b) => a.d === b.d && a.x === b.x && a.y === b.y && a.z === b.z;
+
+function saveHomes(list) {
+  world.setDynamicProperty(HOMES, JSON.stringify(list.slice(-200)));
+}
+
+function rememberHome(block) {
+  const spot = { d: block.dimension.id, x: block.location.x, y: block.location.y, z: block.location.z };
+  saveHomes([...getHomes().filter((h) => !sameSpot(h, spot)), spot]);
+}
+
+function forgetHome(dimId, location) {
+  const spot = { d: dimId, x: location.x, y: location.y, z: location.z };
+  saveHomes(getHomes().filter((h) => !sameSpot(h, spot)));
+}
+
+// The nearest placed block of one of these types within range of the dog (gone ones are forgotten).
+function nearestHome(dog, types, range = 16) {
+  let best;
+  let bestDist = range;
+  for (const spot of getHomes()) {
+    if (spot.d !== dog.dimension.id) continue;
+    const centre = { x: spot.x + 0.5, y: spot.y, z: spot.z + 0.5 };
+    const d = dist(centre, dog.location);
+    if (d > bestDist) continue;
+    let block;
+    try {
+      block = dog.dimension.getBlock(spot);
+    } catch {}
+    if (!block) continue; // not loaded right now
+    if (![BLOCKS.bed, BLOCKS.bowl, BLOCKS.fullBowl].includes(block.typeId)) {
+      forgetHome(spot.d, spot); // broken by something else (explosion, piston...)
+      continue;
+    }
+    if (!types.includes(block.typeId)) continue;
+    best = { block, centre };
+    bestDist = d;
+  }
+  return best;
+}
+
+function fillBowl(player, block, itemId) {
+  if (block.typeId === BLOCKS.fullBowl) return actionbar(player, T.BOWL_FULL_ALREADY);
+  if (!FOODS.has(itemId)) return actionbar(player, T.BOWL_HOW);
+  // Meat gets used up (treats come from your endless treat bag).
+  if (itemId !== ITEMS.treat) {
+    try {
+      if (player.getGameMode() !== "creative") {
+        const inv = inventory(player);
+        const stack = inv?.getItem(player.selectedSlotIndex);
+        if (stack?.typeId === itemId) {
+          if (stack.amount > 1) {
+            stack.amount -= 1;
+            inv.setItem(player.selectedSlotIndex, stack);
+          } else inv.setItem(player.selectedSlotIndex, undefined);
+        }
+      }
+    } catch {}
+  }
+  block.setType(BLOCKS.fullBowl);
+  sound(block.dimension, "random.pop", block.location);
+  particle(block.dimension, "minecraft:villager_happy", { x: block.location.x + 0.5, y: block.location.y + 0.4, z: block.location.z + 0.5 });
+  actionbar(player, T.BOWL_FILLED);
+}
+
+// A trip with his own pathfinding (jf:go_eat / jf:go_bed), steering if he gets stuck, then
+// arrive() runs there. Anything else he gets asked to do (sit, fetch, a fight) cancels it.
+function startErrand(player, dog, event, spot, arrive) {
+  if (errands.has(dog.id)) return;
+  const errand = { event, ticks: 0, best: Infinity, bestAt: 0, steer: false };
+  errands.set(dog.id, errand);
+  try {
+    dog.triggerEvent(event);
+  } catch {
+    errand.steer = true;
+  }
+  const done = (ok) => {
+    system.clearRun(errand.run);
+    errands.delete(dog.id);
+    if (!isValid(dog)) return;
+    if (!ok) {
+      if (!isSitting(dog) && !fetching.has(dog.id)) {
+        try {
+          dog.triggerEvent("jf:stand");
+        } catch {}
+      }
+      return;
+    }
+    arrive();
+  };
+  errand.run = system.runInterval(() => {
+    try {
+      if (!isValid(dog) || !isValid(player)) return done(false);
+      if (errand.cancel || isSitting(dog) || fetching.has(dog.id) || isFighting(dog) || dog.dimension.id !== spot.dimension) return done(false);
+      errand.ticks += 2;
+      const d = flat(dog.location, spot.centre);
+      if (d < errand.best - 0.3) {
+        errand.best = d;
+        errand.bestAt = errand.ticks;
+      } else if (errand.ticks - errand.bestAt > 40) errand.steer = true;
+      if (errand.steer) runToward(dog, spot.centre, 0.22);
+      if (d < 1.3) return done(true);
+      if (errand.ticks > 400) {
+        dog.teleport({ ...spot.centre, y: spot.centre.y + 0.3 });
+        return done(true);
+      }
+    } catch (error) {
+      console.warn(`[jf] errand: ${error}`);
+      done(false);
+    }
+  }, 2);
+}
+
+function goEat(player, dog) {
+  const bowl = nearestHome(dog, [BLOCKS.fullBowl]);
+  if (!bowl) return false;
+  actionbar(player, T.GOING_TO_EAT);
+  showFace(dog, "happy", 60);
+  startErrand(player, dog, "jf:go_eat", { dimension: dog.dimension.id, centre: bowl.centre }, () => {
+    let block;
+    try {
+      block = dog.dimension.getBlock(bowl.block.location);
+    } catch {}
+    try {
+      dog.triggerEvent("jf:stand");
+    } catch {}
+    if (block?.typeId !== BLOCKS.fullBowl) return; // someone got there first
+    block.setType(BLOCKS.bowl);
+    for (let i = 0; i < 4; i++) system.runTimeout(() => isValid(dog) && sound(dog.dimension, "random.eat", dog.location), i * 6);
+    sparkle(dog);
+    showFace(dog, "love", 60);
+    changeNeeds(player, { hunger: 45 });
+    if (isValid(player)) tell(player, pick(T.ATE));
+  });
+  return true;
+}
+
+function goToBed(player, dog, quiet = false) {
+  const bed = nearestHome(dog, [BLOCKS.bed], 24);
+  if (!bed) return false;
+  if (!quiet) actionbar(player, T.GOING_TO_BED);
+  showFace(dog, "sleepy", 100);
+  startErrand(player, dog, "jf:go_bed", { dimension: dog.dimension.id, centre: bed.centre }, () => {
+    try {
+      dog.teleport({ ...bed.centre, y: bed.block.location.y + 0.2 });
+    } catch {}
+    spin(dog); // three little turns before lying down
+    system.runTimeout(() => {
+      if (!isValid(dog) || errands.has(dog.id) || fetching.has(dog.id)) return;
+      sit(dog, POSE.lie);
+      dog.setDynamicProperty("jf:on_bed", true);
+      showFace(dog, "sleepy", 600);
+      if (!quiet && isValid(player)) tell(player, T.ON_BED);
+    }, 26);
+  });
+  return true;
+}
+
 // ---------------------------------------------------------------- smart reactions
 
 function canReact(player, kind, cooldown) {
@@ -1202,7 +1412,7 @@ function reactToSurroundings(player, dog) {
   // Bedtime: he naps by your bed (and it recharges him).
   try {
     if (player.isSleeping && canReact(player, "bed", 300)) {
-      sit(dog, POSE.lie);
+      if (!goToBed(player, dog, true)) sit(dog, POSE.lie);
       showFace(dog, "sleepy", 400);
       changeNeeds(player, { energy: 40 });
       const cat = findCat(player);
@@ -1305,6 +1515,7 @@ function openStatus(player, retries = 3) {
     .body(personalize(player, text))
     .button(T.STATUS_TRICKS)
     .button(T.STATUS_WARDROBE)
+    .button(T.STATUS_ITEMS)
     .button(T.STATUS_RENAME)
     .button(T.STATUS_CLOSE)
     .show(player)
@@ -1317,7 +1528,10 @@ function openStatus(player, retries = 3) {
       }
       if (response.selection === 0) openTricks(player);
       else if (response.selection === 1) openWardrobe(player);
-      else if (response.selection === 2) openNaming(player);
+      else if (response.selection === 2) {
+        giveAllItems(player);
+        tell(player, T.ITEMS_GIVEN);
+      } else if (response.selection === 3) openNaming(player);
     })
     .catch((error) => console.warn(`[jf] status screen failed: ${error}`));
 }
@@ -1923,6 +2137,10 @@ world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
     if (!isValid(player)) return;
     tell(player, T.WELCOME_BACK);
     give(player, ITEMS.talk); // players from before "Talk to Jerry" existed
+    if (!player.getDynamicProperty(PROP.gotHome)) {
+      giveAllItems(player); // players from before the dog bed and food bowl existed
+      tell(player, T.HOME_ITEMS);
+    }
   }, 100);
 });
 
@@ -1959,6 +2177,31 @@ world.beforeEvents.playerInteractWithEntity?.subscribe((event) => {
   const { player, target } = event;
   system.run(() => {
     if (isValid(player)) useItem(player, id, target);
+  });
+});
+
+// Dog beds and food bowls: remember where they are; fill bowls with treats or meat.
+world.afterEvents.playerPlaceBlock.subscribe(({ block }) => {
+  if (block.typeId === BLOCKS.bed || block.typeId === BLOCKS.bowl) rememberHome(block);
+});
+
+world.afterEvents.playerBreakBlock.subscribe(({ block, brokenBlockPermutation }) => {
+  if ([BLOCKS.bed, BLOCKS.bowl, BLOCKS.fullBowl].includes(brokenBlockPermutation.type.id)) forgetHome(block.dimension.id, block.location);
+});
+
+world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
+  const { block, player, itemStack } = event;
+  if (block.typeId !== BLOCKS.bowl && block.typeId !== BLOCKS.fullBowl) return;
+  if (!itemStack || !event.isFirstEvent) return;
+  event.cancel = true;
+  lastUse.set(player.id, system.currentTick); // so the same tap doesn't also use the treats on Jerry
+  const itemId = itemStack.typeId;
+  system.run(() => {
+    if (!isValid(player)) return;
+    try {
+      const now = block.dimension.getBlock(block.location);
+      if (now) fillBowl(player, now, itemId);
+    } catch {}
   });
 });
 

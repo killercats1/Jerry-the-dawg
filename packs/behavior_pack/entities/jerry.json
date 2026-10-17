@@ -382,6 +382,32 @@
           "start_distance": 1,
           "stop_distance": 1
         }
+      },
+      "jf:go_eat": {
+        "minecraft:behavior.move_to_block": {
+          "priority": 2,
+          "tick_interval": 1,
+          "search_range": 16,
+          "search_height": 4,
+          "goal_radius": 0.8,
+          "speed_multiplier": 1.1,
+          "target_blocks": [
+            "jf:food_bowl_full"
+          ]
+        }
+      },
+      "jf:go_bed": {
+        "minecraft:behavior.move_to_block": {
+          "priority": 2,
+          "tick_interval": 1,
+          "search_range": 16,
+          "search_height": 4,
+          "goal_radius": 0.8,
+          "speed_multiplier": 1.1,
+          "target_blocks": [
+            "jf:dog_bed"
+          ]
+        }
       }
     },
     "components": {
@@ -503,7 +529,9 @@
             "jf:fetch_chase_5",
             "jf:fetch_chase_6",
             "jf:fetch_chase_7",
-            "jf:fetch_return"
+            "jf:fetch_return",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
@@ -524,7 +552,9 @@
             "jf:fetch_chase_5",
             "jf:fetch_chase_6",
             "jf:fetch_chase_7",
-            "jf:fetch_return"
+            "jf:fetch_return",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
@@ -545,7 +575,9 @@
             "jf:fetch_chase_5",
             "jf:fetch_chase_6",
             "jf:fetch_chase_7",
-            "jf:fetch_return"
+            "jf:fetch_return",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
@@ -566,7 +598,9 @@
             "jf:fetch_chase_5",
             "jf:fetch_chase_6",
             "jf:fetch_chase_7",
-            "jf:fetch_return"
+            "jf:fetch_return",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
@@ -587,7 +621,9 @@
             "jf:fetch_chase_5",
             "jf:fetch_chase_6",
             "jf:fetch_chase_7",
-            "jf:fetch_return"
+            "jf:fetch_return",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
@@ -608,7 +644,9 @@
             "jf:fetch_chase_5",
             "jf:fetch_chase_6",
             "jf:fetch_chase_7",
-            "jf:fetch_return"
+            "jf:fetch_return",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
@@ -629,7 +667,9 @@
             "jf:fetch_chase_5",
             "jf:fetch_chase_6",
             "jf:fetch_chase_7",
-            "jf:fetch_return"
+            "jf:fetch_return",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
@@ -650,7 +690,9 @@
             "jf:fetch_chase_4",
             "jf:fetch_chase_6",
             "jf:fetch_chase_7",
-            "jf:fetch_return"
+            "jf:fetch_return",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
@@ -671,7 +713,9 @@
             "jf:fetch_chase_4",
             "jf:fetch_chase_5",
             "jf:fetch_chase_7",
-            "jf:fetch_return"
+            "jf:fetch_return",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
@@ -692,7 +736,9 @@
             "jf:fetch_chase_4",
             "jf:fetch_chase_5",
             "jf:fetch_chase_6",
-            "jf:fetch_return"
+            "jf:fetch_return",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
@@ -713,12 +759,60 @@
             "jf:fetch_chase_4",
             "jf:fetch_chase_5",
             "jf:fetch_chase_6",
-            "jf:fetch_chase_7"
+            "jf:fetch_chase_7",
+            "jf:go_eat",
+            "jf:go_bed"
           ]
         },
         "add": {
           "component_groups": [
             "jf:fetch_return"
+          ]
+        }
+      },
+      "jf:go_eat": {
+        "remove": {
+          "component_groups": [
+            "jf:moving",
+            "jf:sitting",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7",
+            "jf:fetch_return",
+            "jf:go_bed"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "jf:go_eat"
+          ]
+        }
+      },
+      "jf:go_bed": {
+        "remove": {
+          "component_groups": [
+            "jf:moving",
+            "jf:sitting",
+            "jf:fetch_chase_0",
+            "jf:fetch_chase_1",
+            "jf:fetch_chase_2",
+            "jf:fetch_chase_3",
+            "jf:fetch_chase_4",
+            "jf:fetch_chase_5",
+            "jf:fetch_chase_6",
+            "jf:fetch_chase_7",
+            "jf:fetch_return",
+            "jf:go_eat"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "jf:go_bed"
           ]
         }
       },

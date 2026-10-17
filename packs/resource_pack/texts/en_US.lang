@@ -2,3 +2,6 @@ entity.jf:jerry.name=Jerry
 entity.jf:thrown_ball.name=Tennis Ball
 entity.jf:mochi.name=Mochi
 action.interact.jf_pet=Pet
+tile.jf:food_bowl.name=Food Bowl
+tile.jf:food_bowl_full.name=Food Bowl (full)
+tile.jf:dog_bed.name=Dog Bed

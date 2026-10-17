@@ -328,6 +328,21 @@ export const WORRIED = "§bJerry§7 rushes over to check on you. You okay?";
 export const BEG_FOOD = "§bJerry§7 watches you eat with HUGE puppy eyes...";
 export const WELCOME_HOME = "§bJerry§7 is SO happy you're back! Zoomies!";
 export const BEDTIME = "§bJerry§7 curls up at the foot of your bed. Goodnight!";
+
+// ---------------------------------------------------------------- dog bed & food bowl
+export const HOME_ITEMS = "§7New: a §fDog Bed§7 and a §fFood Bowl§7! Place them, and fill the bowl with treats or meat.";
+export const BOWL_FILLED = "§7You fill the bowl. §bJerry§7 will eat when he's hungry.";
+export const BOWL_FULL_ALREADY = "§7The bowl is already full.";
+export const BOWL_HOW = "§7Fill the bowl with §fDog Treats§7 or any meat.";
+export const GOING_TO_EAT = "§bJerry§7's tummy rumbles. He trots over to his bowl.";
+export const ATE = [
+  "§bJerry§7 eats every last bite. *licks bowl*",
+  "§bJerry§7 crunches away happily. Delicious!",
+  "§bJerry§7 finishes his dinner and wags his tail. Thank you!",
+];
+export const GOING_TO_BED = "§bJerry§7 yawns and pads over to his bed.";
+export const ON_BED = "§bJerry§7 turns around three times and curls up in his bed. Zzz...";
+export const WOKE_UP = "§bJerry§7 wakes up from his nap, all recharged!";
 export const BEDTIME_CAT = "§bJerry§7 curls up at the foot of your bed, and §dMochi§7 loafs right on your pillow. Goodnight!";
 
 // ---------------------------------------------------------------- the status screen (sneak + Dog Whistle)
@@ -335,6 +350,8 @@ export const STATUS_TITLE = "Jerry";
 export const STATUS_TRICKS = "Tricks";
 export const STATUS_RENAME = "Rename";
 export const STATUS_WARDROBE = "Wardrobe";
+export const STATUS_ITEMS = "Get pet items";
+export const ITEMS_GIVEN = "§7Here are your pet items! (Anything you already had is left as it is.)";
 
 // ---------------------------------------------------------------- wardrobe
 export const WARDROBE_TITLE = "Jerry's Wardrobe";

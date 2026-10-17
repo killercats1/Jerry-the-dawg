@@ -11,7 +11,7 @@ just a very good boy (and eventually a cat). His name is Jerry by default, but *
 
 When you join a world, **Jerry** shows up: he looks just like a regular tamed wolf (red collar and all,
 and he uses your resource pack's wolf texture), but he knows tricks: sitting, rolling over and tilting his head. **Tap him with an empty hand to pet him.**
-You also get five items:
+You also get five items (plus a dog bed and a food bowl, see below):
 
 | Item | What it does |
 |---|---|
@@ -39,6 +39,15 @@ You also get five items:
   you come back after a while, and curls up by your bed when you sleep.
 - **Status screen.** **Sneak + use the Dog Whistle** to see his mood, needs, friendship and trick
   stars (and to rename your pets or open his wardrobe).
+
+## Dog bed & food bowl 🛏️🥣
+
+You also get a **Dog Bed** and a **Food Bowl** to place anywhere (lost them? **sneak + Dog Whistle → Get pet items**).
+
+- **Fill the bowl** by using **Dog Treats** or any meat on it. When he gets hungry, he trots over and eats.
+- When he's **sleepy** (or it's night and he's tired), he walks to **his bed**, turns around three times
+  and curls up. Naps in his own bed recharge him twice as fast, and he gets up by himself once he's rested.
+- When you go to sleep, he goes to his bed too.
 
 ## Wardrobe 🎀
 

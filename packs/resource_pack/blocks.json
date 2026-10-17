@@ -1,0 +1,16 @@
+{
+  "format_version": [
+    1,
+    1,
+    0
+  ],
+  "jf:food_bowl": {
+    "sound": "stone"
+  },
+  "jf:food_bowl_full": {
+    "sound": "stone"
+  },
+  "jf:dog_bed": {
+    "sound": "cloth"
+  }
+}
