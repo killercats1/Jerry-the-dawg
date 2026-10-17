@@ -29,6 +29,7 @@ const PROP = {
   skills: "jf:skills",
   dogName: "jf:dog_name",
   catName: "jf:cat_name",
+  look: "jf:look",
 };
 const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat" };
 const DIMENSIONS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
@@ -291,7 +292,11 @@ function spawnPet(player, typeId, role, name, prop, at = { dimension: player.dim
   return pet;
 }
 
-const spawnJerry = (player, at) => spawnPet(player, JERRY, TAG.dog, dogName(player), PROP.dog, at);
+function spawnJerry(player, at) {
+  const dog = spawnPet(player, JERRY, TAG.dog, dogName(player), PROP.dog, at);
+  system.runTimeout(() => isValid(dog) && isValid(player) && applyLook(player, dog), 10); // after taming sets the red collar
+  return dog;
+}
 const spawnMochi = (player) => spawnPet(player, "minecraft:cat", TAG.cat, catName(player), PROP.cat);
 
 function bring(pet, player) {
@@ -385,6 +390,85 @@ const FACE = { normal: 0, happy: 1, puppy: 2, shocked: 3, love: 4, sleepy: 5 };
 const showFace = (dog, face, ticks = 60) => setFor(dog, "jf:face", FACE[face] ?? FACE.normal, FACE.normal, ticks);
 // The bone he carries in his mouth.
 const holdBone = (dog, ticks = 60) => setFor(dog, "jf:bone", true, false, ticks);
+
+// ---------------------------------------------------------------- his look (wardrobe)
+// Hat, neckwear and fur are entity properties the resource pack shows; the collar is the vanilla
+// wolf collar colour (minecraft:color). Saved on you, so a new Jerry (whistle, reset) keeps it.
+
+const LOOK_START = { hat: 0, neck: 0, coat: 0, collar: 14 };
+// Dyes (and the old dye items) -> collar colour.
+const DYES = {
+  white_dye: 0, bone_meal: 0, orange_dye: 1, magenta_dye: 2, light_blue_dye: 3, yellow_dye: 4,
+  lime_dye: 5, pink_dye: 6, gray_dye: 7, light_gray_dye: 8, cyan_dye: 9, purple_dye: 10,
+  blue_dye: 11, lapis_lazuli: 11, brown_dye: 12, cocoa_beans: 12, green_dye: 13, red_dye: 14,
+  black_dye: 15, ink_sac: 15,
+};
+const dyeColour = (itemId) => DYES[String(itemId).replace("minecraft:", "")];
+
+function getLook(player) {
+  try {
+    const raw = player.getDynamicProperty(PROP.look);
+    if (typeof raw === "string") return { ...LOOK_START, ...JSON.parse(raw) };
+  } catch {}
+  return { ...LOOK_START };
+}
+
+function setLook(player, change) {
+  const look = { ...getLook(player), ...change };
+  player.setDynamicProperty(PROP.look, JSON.stringify(look));
+  const dog = findDog(player);
+  if (dog) applyLook(player, dog);
+  return look;
+}
+
+function applyLook(player, dog, look = getLook(player)) {
+  for (const key of ["hat", "neck", "coat"]) {
+    try {
+      if (dog.getProperty(`jf:${key}`) !== look[key]) dog.setProperty(`jf:${key}`, look[key]);
+    } catch {}
+  }
+  try {
+    const collar = dog.getComponent("minecraft:color");
+    if (collar && collar.value !== look.collar) collar.value = look.collar;
+  } catch {}
+}
+
+function dyeCollar(player, dog, colour) {
+  setLook(player, { collar: colour });
+  sparkle(dog, "minecraft:villager_happy", 6);
+  sound(dog.dimension, "mob.wolf.panting", dog.location);
+  showFace(dog, "happy", 60);
+  actionbar(player, T.COLLAR_DYED.replace("{colour}", T.COLLARS[colour].toLowerCase()));
+}
+
+function openWardrobe(player, retries = 3) {
+  const look = getLook(player);
+  new ModalFormData()
+    .title(personalize(player, T.WARDROBE_TITLE))
+    .dropdown(T.WARDROBE_HAT, T.HATS, look.hat)
+    .dropdown(T.WARDROBE_NECK, T.NECKS, look.neck)
+    .dropdown(T.WARDROBE_COAT, T.COATS, look.coat)
+    .dropdown(T.WARDROBE_COLLAR, T.COLLARS, look.collar)
+    .show(player)
+    .then((response) => {
+      if (response.canceled) {
+        if (response.cancelationReason === "UserBusy" && retries > 0) {
+          system.runTimeout(() => isValid(player) && openWardrobe(player, retries - 1), 10);
+        }
+        return;
+      }
+      const [hat, neck, coat, collar] = (response.formValues ?? []).map(Number);
+      setLook(player, { hat: hat || 0, neck: neck || 0, coat: coat || 0, collar: Number.isInteger(collar) ? collar : look.collar });
+      const dog = findDog(player);
+      if (isValid(dog)) {
+        spin(dog);
+        sparkle(dog, "minecraft:villager_happy", 8);
+        showFace(dog, "happy", 60);
+      }
+      tell(player, pick(T.LOOK_SAVED));
+    })
+    .catch((error) => console.warn(`[jf] wardrobe failed: ${error}`));
+}
 
 function removeAllPets(player) {
   for (const dimId of DIMENSIONS) {
@@ -560,7 +644,10 @@ function bringGift(player, dog) {
 
 function protectAll(player) {
   const dog = findDog(player);
-  if (dog) protect(dog);
+  if (dog) {
+    protect(dog);
+    applyLook(player, dog); // keeps his outfit and collar right
+  }
   const cat = findCat(player);
   if (cat) protect(cat);
 }
@@ -1108,6 +1195,7 @@ function openStatus(player, retries = 3) {
     .title(personalize(player, T.STATUS_TITLE))
     .body(personalize(player, body))
     .button(T.STATUS_TRICKS)
+    .button(T.STATUS_WARDROBE)
     .button(T.STATUS_RENAME)
     .button(T.STATUS_CLOSE)
     .show(player)
@@ -1119,7 +1207,8 @@ function openStatus(player, retries = 3) {
         return;
       }
       if (response.selection === 0) openTricks(player);
-      else if (response.selection === 1) openNaming(player);
+      else if (response.selection === 1) openWardrobe(player);
+      else if (response.selection === 2) openNaming(player);
     })
     .catch((error) => console.warn(`[jf] status screen failed: ${error}`));
 }
@@ -1534,6 +1623,14 @@ world.beforeEvents.playerInteractWithEntity?.subscribe((event) => {
       if (talk) startTalking(player);
       else petJerry(player, target);
     });
+    return;
+  }
+  // A dye on your dog changes his collar colour.
+  if (dyeColour(id) !== undefined && event.target.typeId === JERRY) {
+    const { player, target } = event;
+    if (!target.hasTag(ownerTag(player))) return;
+    event.cancel = true;
+    system.run(() => isValid(player) && isValid(target) && dyeCollar(player, target, dyeColour(id)));
     return;
   }
   if (!id || !OUR_ITEMS.has(id)) return;

@@ -2,6 +2,21 @@
   "format_version": "1.8.0",
   "render_controllers": {
     "controller.render.jf_jerry": {
+      "arrays": {
+        "textures": {
+          "Array.coats": [
+            "Texture.default",
+            "Texture.coat_ashen",
+            "Texture.coat_black",
+            "Texture.coat_chestnut",
+            "Texture.coat_rusty",
+            "Texture.coat_snowy",
+            "Texture.coat_spotted",
+            "Texture.coat_striped",
+            "Texture.coat_woods"
+          ]
+        }
+      },
       "geometry": "Geometry.default",
       "materials": [
         {
@@ -9,7 +24,7 @@
         }
       ],
       "textures": [
-        "Texture.default"
+        "Array.coats[query.property('jf:coat')]"
       ]
     },
     "controller.render.jf_jerry_extras": {
@@ -31,6 +46,21 @@
         },
         {
           "mouth_ball": "query.property('jf:ball')"
+        },
+        {
+          "bandana": "query.property('jf:neck') == 1"
+        },
+        {
+          "bow_tie": "query.property('jf:neck') == 2"
+        },
+        {
+          "party_hat": "query.property('jf:hat') == 1"
+        },
+        {
+          "flower_crown": "query.property('jf:hat') == 2"
+        },
+        {
+          "shades": "query.property('jf:hat') == 3"
         }
       ]
     },

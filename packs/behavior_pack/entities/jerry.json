@@ -39,6 +39,33 @@
           "type": "bool",
           "default": false,
           "client_sync": true
+        },
+        "jf:hat": {
+          "type": "int",
+          "range": [
+            0,
+            3
+          ],
+          "default": 0,
+          "client_sync": true
+        },
+        "jf:neck": {
+          "type": "int",
+          "range": [
+            0,
+            2
+          ],
+          "default": 0,
+          "client_sync": true
+        },
+        "jf:coat": {
+          "type": "int",
+          "range": [
+            0,
+            8
+          ],
+          "default": 0,
+          "client_sync": true
         }
       }
     },

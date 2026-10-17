@@ -255,6 +255,29 @@ export const BEDTIME = "§bJerry§7 curls up at the foot of your bed. Goodnight!
 export const STATUS_TITLE = "Jerry";
 export const STATUS_TRICKS = "Tricks";
 export const STATUS_RENAME = "Rename";
+export const STATUS_WARDROBE = "Wardrobe";
+
+// ---------------------------------------------------------------- wardrobe
+export const WARDROBE_TITLE = "Jerry's Wardrobe";
+export const WARDROBE_HAT = "Hat";
+export const WARDROBE_NECK = "Neck";
+export const WARDROBE_COAT = "Fur";
+export const WARDROBE_COLLAR = "Collar colour §7(or use any dye on him)";
+export const HATS = ["None", "Party hat", "Flower crown", "Cool shades"];
+export const NECKS = ["None", "Bandana", "Bow tie"];
+// Order matches Array.coats in the resource pack (the game's own wolf coats).
+export const COATS = ["Classic", "Ashen", "Black", "Chestnut", "Rusty", "Snowy", "Spotted", "Striped", "Woods"];
+// Order matches the minecraft:color values (0 = white ... 14 = red, 15 = black).
+export const COLLARS = [
+  "White", "Orange", "Magenta", "Light blue", "Yellow", "Lime", "Pink", "Gray",
+  "Light gray", "Cyan", "Purple", "Blue", "Brown", "Green", "Red", "Black",
+];
+export const LOOK_SAVED = [
+  "§bJerry§7 shows off his new look. Very handsome!",
+  "§bJerry§7 does a little spin to show off his outfit.",
+  "§bJerry§7 looks fabulous and he knows it.",
+];
+export const COLLAR_DYED = "§bJerry§7's collar is now §f{colour}§7. He loves it!";
 export const STATUS_CLOSE = "Close";
 export const TRICKS_TITLE = "Jerry's tricks";
 export const TRICKS_BACK = "Back";

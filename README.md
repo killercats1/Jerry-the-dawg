@@ -38,7 +38,18 @@ You also get five items:
 - **He cares.** He rushes over if you get hurt, begs with puppy eyes while you eat, does zoomies when
   you come back after a while, and curls up by your bed when you sleep.
 - **Status screen.** **Sneak + use the Dog Whistle** to see his mood, needs, friendship and trick
-  stars (and to rename your pets).
+  stars (and to rename your pets or open his wardrobe).
+
+## Wardrobe 🎀
+
+**Sneak + use the Dog Whistle → Wardrobe** to dress him up:
+
+- **Hats:** party hat, flower crown or cool shades
+- **Neck:** bandana or bow tie
+- **Fur:** classic or any of Minecraft's wolf coats (ashen, black, chestnut, rusty, snowy, spotted, striped, woods)
+- **Collar colour:** pick one there, or just **use any dye on him**
+
+His look is saved, so it stays even if the whistle brings a new copy of him.
 
 ## Naming your pets 🏷️
 
