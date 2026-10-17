@@ -33,6 +33,7 @@ const PROP = {
 const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat" };
 const DIMENSIONS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
 const JERRY = "jf:jerry";
+const BALL = "jf:thrown_ball"; // the thrown tennis ball (can't be picked up or broken)
 // Matches the jf:pose property in entities/jerry.json and the pose animation controller.
 const POSE = {
   stand: 0, sit: 1, roll: 2, tilt: 3, paw: 4, wave: 5, beg: 6,
@@ -59,6 +60,7 @@ const pendingCat = new Set();
 const poseTimers = new Map(); // dog id -> latest trick, so an older timer doesn't cut a newer trick short
 const propTimers = new Map(); // "dogId:property" -> latest timed change
 const fetching = new Map(); // dog id -> the running fetch game
+const fighting = new Map(); // dog id -> { attacker id, until tick } while he's defending you
 const reactedAt = new Map(); // "playerId:reaction" -> seconds, so reactions don't spam
 const awaySince = new Map(); // player id -> seconds when the dog was last nearby
 // The optional phone voice helper (voice-helper/jerry_voice.py) checks in every few seconds.
@@ -347,7 +349,7 @@ function trick(dog, pose, ticks, holdStill = true) {
     if (!isValid(dog) || poseTimers.get(dog.id) !== token) return;
     if (freeze && !isSitting(dog)) {
       try {
-        dog.triggerEvent("jf:stand");
+        dog.triggerEvent(fetching.get(dog.id)?.event ?? "jf:stand"); // back to fetch if he was playing
       } catch {}
     }
     setPose(dog, restPose(dog) ?? POSE.stand);
@@ -577,12 +579,14 @@ function tick(player) {
 
   if (dog) reactToSurroundings(player, dog);
   if (!isNear(dog, player, 16)) return;
+  const busy = fetching.has(dog.id) || isFighting(dog); // no naps or gifts in the middle of a game or a fight
   if (seconds % 60 === 0) {
     updateNeeds(player, dog);
     // A happy dog makes friends faster.
     addFriendship(player, moodOf(getNeeds(player)) === "happy" ? GAIN.together * 2 : GAIN.together);
   }
 
+  if (busy) return;
   if (levelOf(friendship) >= GIFT_LEVEL) {
     if (!nextGift.has(player.id)) nextGift.set(player.id, seconds + 120);
     if (seconds >= nextGift.get(player.id)) {
@@ -795,7 +799,14 @@ function attemptTrick(player, dog, action) {
 // ---------------------------------------------------------------- fetch
 // The Tennis Ball really gets thrown: he runs after it, picks it up and brings it back.
 
-function runToward(dog, target, speed = 0.32) {
+// He runs with Minecraft's own pathfinding: his jf:fetch_chase behavior goes after the ball and
+// jf:fetch_return follows you back (see entities/jerry.json). The script just watches. If he gets
+// stuck (or the behaviors aren't working), it gently steers him instead.
+
+const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+
+// Fallback steering: eases his speed toward the target (no sudden snaps) and faces where he's going.
+function runToward(dog, target, speed = 0.25) {
   const p = dog.location;
   const dx = target.x - p.x;
   const dz = target.z - p.z;
@@ -808,7 +819,8 @@ function runToward(dog, target, speed = 0.32) {
     const ahead = dog.dimension.getBlock({ x: Math.floor(p.x + (dx / d) * 0.8), y: Math.floor(p.y), z: Math.floor(p.z + (dz / d) * 0.8) });
     if (ahead && !ahead.isAir && !ahead.isLiquid && dog.isOnGround) jump = 0.42;
   } catch {}
-  dog.applyImpulse({ x: (dx / d) * speed - v.x, y: jump, z: (dz / d) * speed - v.z });
+  const ease = 0.35;
+  dog.applyImpulse({ x: ((dx / d) * speed - v.x) * ease, y: jump, z: ((dz / d) * speed - v.z) * ease });
   try {
     dog.setRotation({ x: 0, y: (Math.atan2(-dx, dz) * 180) / Math.PI });
   } catch {}
@@ -821,7 +833,7 @@ function setBall(dog, on) {
   } catch {}
 }
 
-// You only ever keep one ball, even if you grab the thrown one yourself.
+// You only ever keep one ball in your inventory.
 function keepOneBall(player) {
   const inv = inventory(player);
   if (!inv) return;
@@ -833,30 +845,71 @@ function keepOneBall(player) {
   }
 }
 
+// The thrown ball. Older worlds (or if the ball entity is missing) fall back to a dropped item.
+function spawnBall(player) {
+  const head = player.getHeadLocation();
+  const dir = player.getViewDirection();
+  const at = { x: head.x + dir.x * 0.6, y: head.y + dir.y * 0.6 - 0.2, z: head.z + dir.z * 0.6 };
+  try {
+    const ball = player.dimension.spawnEntity(BALL, at);
+    ball.applyImpulse({ x: dir.x * 0.85, y: dir.y * 0.6 + 0.25, z: dir.z * 0.85 });
+    return ball;
+  } catch {}
+  const ball = player.dimension.spawnItem(new ItemStack(ITEMS.ball, 1), { x: head.x + dir.x * 1.5, y: head.y + dir.y * 1.5, z: head.z + dir.z * 1.5 });
+  ball.applyImpulse({ x: dir.x * 0.7, y: dir.y * 0.6 + 0.25, z: dir.z * 0.7 });
+  return ball;
+}
+
+const activeBalls = () => new Set([...fetching.values()].map((game) => game.ballId));
+
+// Thrown balls left over from a game that got cut off (world closed mid-fetch) are cleaned up.
+function removeStrayBalls() {
+  const keep = activeBalls();
+  for (const id of DIMENSIONS) {
+    try {
+      for (const ball of world.getDimension(id).getEntities({ type: BALL })) {
+        if (ball.typeId === BALL && !keep.has(ball.id)) ball.remove();
+      }
+    } catch {}
+  }
+}
+
 function throwBall(player) {
   const dog = findDog(player);
   if (!isNear(dog, player, 24)) return actionbar(player, T.TOO_FAR);
   if (fetching.has(dog.id)) return actionbar(player, T.FETCH_BUSY);
 
-  const head = player.getHeadLocation();
-  const dir = player.getViewDirection();
   let ball;
   try {
-    ball = player.dimension.spawnItem(new ItemStack(ITEMS.ball, 1), { x: head.x + dir.x, y: head.y + dir.y, z: head.z + dir.z });
-    ball.applyImpulse({ x: dir.x * 1.1, y: dir.y * 1.1 + 0.3, z: dir.z * 1.1 });
+    ball = spawnBall(player);
   } catch {
     return play(player); // couldn't throw it; just play instead
   }
   if (isSitting(dog)) stand(dog);
-  try {
-    dog.triggerEvent("jf:sit"); // pause his follow/wander brain while we steer him
-  } catch {}
+  fighting.delete(dog.id); // playing beats fighting
   showFace(dog, "happy", 200);
   sound(dog.dimension, "mob.wolf.bark", dog.location);
   actionbar(player, T.FETCH_THROW);
 
-  const game = { phase: "chase", ticks: 0 };
-  const finish = (ok) => {
+  const game = { phase: "chase", ticks: 0, ballId: ball.id, event: "jf:fetch_chase", best: Infinity, bestAt: 0, steer: false };
+  const setPhase = (phase, event) => {
+    Object.assign(game, { phase, event, ticks: 0, best: Infinity, bestAt: 0, steer: false });
+    try {
+      dog.triggerEvent(event);
+    } catch {
+      game.steer = true; // no fetch behaviors: steer him the whole way
+    }
+  };
+  // Is he getting closer? If he hasn't for 1.5 seconds, help him along with steering.
+  const watch = (d) => {
+    if (d < game.best - 0.3) {
+      game.best = d;
+      game.bestAt = game.ticks;
+    } else if (game.ticks - game.bestAt > 30) {
+      game.steer = true;
+    }
+  };
+  const finish = (result) => {
     system.clearRun(game.run);
     fetching.delete(dog.id);
     if (isValid(ball)) ball.remove();
@@ -867,7 +920,8 @@ function throwBall(player) {
     } catch {}
     if (!isValid(player)) return;
     keepOneBall(player);
-    if (!ok) return actionbar(player, T.FETCH_LOST);
+    if (result === "stopped") return; // you told him to sit mid-game
+    if (!result) return actionbar(player, T.FETCH_LOST);
     sparkle(dog);
     showFace(dog, "love", 60);
     sound(dog.dimension, "mob.wolf.bark", dog.location);
@@ -878,25 +932,31 @@ function throwBall(player) {
   game.run = system.runInterval(() => {
     try {
       if (!isValid(dog) || !isValid(player)) return finish(false);
+      if (isSitting(dog)) return finish("stopped");
       game.ticks++;
       if (game.phase === "chase") {
-        if (!isValid(ball)) return finish(false); // someone picked it up
+        if (!isValid(ball)) return finish(false); // (only a dropped-item ball can be picked up)
+        if (ball.location.y < -60) return finish(false); // fell out of the world
         if (game.ticks < 8) return; // let it fly a moment first
-        const d = runToward(dog, ball.location, 0.34);
-        if (d < 1.3 || game.ticks > 200) {
-          if (game.ticks > 200) dog.teleport(ball.location);
+        const target = ball.location;
+        const d = flat(dog.location, target);
+        watch(d);
+        if (game.steer) runToward(dog, target, 0.26);
+        if ((d < 1.6 && Math.abs(dog.location.y - target.y) < 1.5) || game.ticks > 240) {
+          if (game.ticks > 240) dog.teleport(target);
           ball.remove();
           setBall(dog, true);
           sound(dog.dimension, "random.pop", dog.location);
           actionbar(player, T.FETCH_GOT_IT);
-          game.phase = "return";
-          game.ticks = 0;
+          setPhase("return", "jf:fetch_return");
         }
       } else {
         if (dog.dimension.id !== player.dimension.id) return finish(false);
-        const d = runToward(dog, player.location, 0.32);
-        if (d < 2.2 || game.ticks > 200) {
-          if (game.ticks > 200) dog.teleport(player.location);
+        const d = flat(dog.location, player.location);
+        watch(d);
+        if (game.steer) runToward(dog, player.location, 0.24);
+        if (d < 2.2 || game.ticks > 240) {
+          if (game.ticks > 240) dog.teleport(player.location);
           finish(true);
         }
       }
@@ -906,6 +966,22 @@ function throwBall(player) {
     }
   }, 1);
   fetching.set(dog.id, game);
+  setPhase("chase", "jf:fetch_chase");
+}
+
+// ---------------------------------------------------------------- defending you
+// His "owner hurt" behavior does the actual chasing. The script remembers the fight so nothing
+// else (like rushing back to check on you) pulls him away from it halfway through.
+
+function isFighting(dog) {
+  const fight = fighting.get(dog.id);
+  if (!fight) return false;
+  const foe = world.getEntity(fight.attackerId);
+  if (system.currentTick > fight.until || !isValid(foe) || foe.dimension.id !== dog.dimension.id || dist(foe.location, dog.location) > 24) {
+    fighting.delete(dog.id); // won, it ran off, or it's been a while: the fight's over
+    return false;
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------- smart reactions
@@ -972,12 +1048,13 @@ world.afterEvents.entityHurt.subscribe(
     // Something attacked you: he goes after it (his "owner hurt" behavior does the chasing).
     const attacker = damageSource?.damagingEntity;
     if (attacker && attacker.id !== dog.id && attacker.id !== player.id && !isSitting(dog)) {
+      fighting.set(dog.id, { attackerId: attacker.id, until: system.currentTick + 20 * 15 });
       showFace(dog, "shocked", 40);
       sound(dog.dimension, "mob.wolf.growl", dog.location);
       if (canReact(player, "defend", 10)) actionbar(player, T.DEFEND.replace("{mob}", prettyMob(attacker.typeId)));
       return;
     }
-    if (!canReact(player, "hurt", 15)) return;
+    if (isFighting(dog) || !canReact(player, "hurt", 15)) return; // busy protecting you
     if (!isSitting(dog) && !isNear(dog, player, 4)) bring(dog, player);
     showFace(dog, "puppy", 80);
     tiltHead(dog);
@@ -1411,6 +1488,7 @@ system.afterEvents.scriptEventReceive.subscribe(
 
 system.runInterval(() => {
   seconds++;
+  if (seconds % 10 === 0) removeStrayBalls();
   for (const player of world.getAllPlayers()) {
     try {
       tick(player);
@@ -1459,7 +1537,9 @@ world.beforeEvents.playerInteractWithEntity?.subscribe((event) => {
 
 // Clean up leftover copies (e.g. after the whistle respawned a pet that was in an unloaded chunk).
 world.afterEvents.entityLoad?.subscribe(({ entity }) => {
-  if (!isValid(entity) || !entity.hasTag(TAG.pet)) return;
+  if (!isValid(entity)) return;
+  if (entity.typeId === BALL && !activeBalls().has(entity.id)) return entity.remove(); // from a game that got cut off
+  if (!entity.hasTag(TAG.pet)) return;
   const owner = world.getAllPlayers().find((p) => entity.hasTag(ownerTag(p)));
   if (!owner) return;
   const current = owner.getDynamicProperty(entity.hasTag(TAG.cat) ? PROP.cat : PROP.dog);

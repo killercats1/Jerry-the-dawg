@@ -62,6 +62,12 @@ EXTRAS_BONES = [
     ("mouth_ball", "head", [0, 9, -12.5], None, [cube([-1, 7.5, -13.5], [2, 2, 2], [20, 8])]),
 ]
 
+# The thrown tennis ball (its own little entity, jf:thrown_ball). Same texture as the ball in
+# his mouth, a bit bigger so you can spot it on the ground.
+BALL_BONES = [
+    ("ball", None, [0, 1.5, 0], None, [dict(cube([-1, 0.5, -1], [2, 2, 2], [20, 8]), inflate=0.5)]),
+]
+
 # The expression overlay: a flat plane just in front of the top 6x4 pixels of the face
 # (brows, eyes, top of the muzzle). The snout sits in front of its lower middle, like vanilla.
 FACE_BONES = [
@@ -138,6 +144,7 @@ def main():
             geometry("geometry.jf_jerry", WOLF_BONES, 64, 32),
             geometry("geometry.jf_jerry_extras", EXTRAS_BONES, 32, 16),
             geometry("geometry.jf_jerry_face", FACE_BONES, 6, 4),  # textures are 8x (48x32)
+            geometry("geometry.jf_tennis_ball", BALL_BONES, 32, 16),
         ],
     }
     path = ROOT / "packs/resource_pack/models/entity/jerry.geo.json"

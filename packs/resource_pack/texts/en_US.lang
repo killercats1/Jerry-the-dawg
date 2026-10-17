@@ -1,2 +1,3 @@
 entity.jf:jerry.name=Jerry
+entity.jf:thrown_ball.name=Tennis Ball
 action.interact.jf_pet=Pet

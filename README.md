@@ -29,10 +29,12 @@ You also get five items:
   A happy dog makes friends twice as fast. Nothing bad ever happens to him.
 - **Practice makes perfect.** New tricks are a bit sloppy at first; sometimes he does a spin instead
   of a roll over. Every good try teaches him, and after 5 he **masters** the trick.
-- **Real fetch.** The **Tennis Ball** gets thrown: he runs after it, grabs it in his mouth and brings it back.
+- **Real fetch.** The **Tennis Ball** gets thrown: he runs after it with Minecraft's own pathfinding,
+  grabs it in his mouth and brings it back. The thrown ball can't be picked up or broken, and it floats.
 - **Guard dog.** He growls and warns you when a monster sneaks up.
 - **Protects you.** If something attacks you, he goes after it (he can't get hurt). He doesn't pick
-  fights on his own, and he won't fight while he's sitting or lying down.
+  fights on his own, he won't fight while he's sitting or lying down, and he stays on it until the
+  fight's over instead of running back to you halfway through.
 - **He cares.** He rushes over if you get hurt, begs with puppy eyes while you eat, does zoomies when
   you come back after a while, and curls up by your bed when you sleep.
 - **Status screen.** **Sneak + use the Dog Whistle** to see his mood, needs, friendship and trick
