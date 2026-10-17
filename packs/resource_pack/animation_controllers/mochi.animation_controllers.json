@@ -1,0 +1,186 @@
+{
+  "format_version": "1.10.0",
+  "animation_controllers": {
+    "controller.animation.jf_mochi.pose": {
+      "initial_state": "default",
+      "states": {
+        "default": {
+          "animations": [
+            "walk"
+          ],
+          "transitions": [
+            {
+              "sit": "query.property('jf:pose') == 1"
+            },
+            {
+              "roll_over": "query.property('jf:pose') == 2"
+            },
+            {
+              "head_tilt": "query.property('jf:pose') == 3"
+            },
+            {
+              "paw": "query.property('jf:pose') == 4"
+            },
+            {
+              "wave": "query.property('jf:pose') == 5"
+            },
+            {
+              "beg": "query.property('jf:pose') == 6"
+            },
+            {
+              "play_dead": "query.property('jf:pose') == 7"
+            },
+            {
+              "lie": "query.property('jf:pose') == 8"
+            },
+            {
+              "sniff": "query.property('jf:pose') == 13"
+            },
+            {
+              "shy": "query.property('jf:pose') == 14"
+            },
+            {
+              "stretch": "query.property('jf:pose') == 15"
+            },
+            {
+              "groom": "query.property('jf:pose') == 16"
+            }
+          ]
+        },
+        "sit": {
+          "animations": [
+            "sit"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 1"
+            }
+          ]
+        },
+        "roll_over": {
+          "animations": [
+            "roll_over"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 2"
+            }
+          ]
+        },
+        "head_tilt": {
+          "animations": [
+            "head_tilt"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 3"
+            }
+          ]
+        },
+        "paw": {
+          "animations": [
+            "paw"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 4"
+            }
+          ]
+        },
+        "wave": {
+          "animations": [
+            "wave"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 5"
+            }
+          ]
+        },
+        "beg": {
+          "animations": [
+            "beg"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 6"
+            }
+          ]
+        },
+        "play_dead": {
+          "animations": [
+            "play_dead"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 7"
+            }
+          ]
+        },
+        "lie": {
+          "animations": [
+            "lie"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 8"
+            }
+          ]
+        },
+        "sniff": {
+          "animations": [
+            "walk",
+            "sniff"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 13"
+            }
+          ]
+        },
+        "shy": {
+          "animations": [
+            "shy"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 14"
+            }
+          ]
+        },
+        "stretch": {
+          "animations": [
+            "stretch"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 15"
+            }
+          ]
+        },
+        "groom": {
+          "animations": [
+            "groom"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 16"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

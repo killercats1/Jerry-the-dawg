@@ -1,0 +1,917 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.jf_mochi.walk": {
+      "loop": true,
+      "bones": {
+        "backLegL": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 38.17) * 57.3 * query.modified_move_speed",
+            0.0,
+            0.0
+          ]
+        },
+        "backLegR": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 38.17 + 180.0) * 57.3 * query.modified_move_speed",
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegL": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 38.17 + 180.0) * 57.3 * query.modified_move_speed",
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegR": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 38.17) * 57.3 * query.modified_move_speed",
+            0.0,
+            0.0
+          ]
+        },
+        "tail1": {
+          "rotation": [
+            -51.57,
+            0.0,
+            0.0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            "62.0 + math.cos(query.modified_distance_moved * 57.3) * 45.0 * query.modified_move_speed",
+            0.0,
+            0.0
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.sit": {
+      "loop": true,
+      "bones": {
+        "backLegL": {
+          "position": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "backLegR": {
+          "position": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "body": {
+          "position": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegL": {
+          "position": [
+            0.0,
+            -4.5,
+            -1.0
+          ],
+          "rotation": [
+            42.15,
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegR": {
+          "position": [
+            0.0,
+            -4.5,
+            -1.0
+          ],
+          "rotation": [
+            42.15,
+            0.0,
+            0.0
+          ]
+        },
+        "tail1": {
+          "position": [
+            0.0,
+            -3.0,
+            1.0
+          ],
+          "rotation": [
+            45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "tail2": {
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "head": {
+          "position": [
+            0.0,
+            -1.25,
+            0.0
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.roll_over": {
+      "loop": true,
+      "bones": {
+        "root": {
+          "rotation": [
+            0,
+            0,
+            180
+          ],
+          "position": [
+            0,
+            12,
+            0
+          ]
+        },
+        "frontLegL": {
+          "rotation": [
+            "-20 + math.sin(query.anim_time * 600.0) * 15",
+            0,
+            0
+          ]
+        },
+        "frontLegR": {
+          "rotation": [
+            "-20 - math.sin(query.anim_time * 600.0) * 15",
+            0,
+            0
+          ]
+        },
+        "backLegL": {
+          "rotation": [
+            "20 + math.sin(query.anim_time * 500.0) * 10",
+            0,
+            0
+          ]
+        },
+        "backLegR": {
+          "rotation": [
+            "20 - math.sin(query.anim_time * 500.0) * 10",
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            0,
+            "math.sin(query.anim_time * 300.0) * 15",
+            0
+          ]
+        },
+        "tail1": {
+          "rotation": [
+            -40,
+            0,
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            30,
+            "math.sin(query.anim_time * 400.0) * 12",
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.head_tilt": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            0,
+            0,
+            22
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.paw": {
+      "loop": true,
+      "bones": {
+        "backLegL": {
+          "position": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "backLegR": {
+          "position": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "body": {
+          "position": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegL": {
+          "position": [
+            0.0,
+            -4.5,
+            -1.0
+          ],
+          "rotation": [
+            42.15,
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegR": {
+          "rotation": [
+            "-38 + math.sin(query.anim_time * 720.0) * 5",
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -4.5,
+            -1
+          ]
+        },
+        "tail1": {
+          "position": [
+            0.0,
+            -3.0,
+            1.0
+          ],
+          "rotation": [
+            45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "tail2": {
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "head": {
+          "position": [
+            0,
+            -1.25,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            10
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.wave": {
+      "loop": true,
+      "bones": {
+        "backLegL": {
+          "position": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "backLegR": {
+          "position": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "body": {
+          "position": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegL": {
+          "position": [
+            0.0,
+            -4.5,
+            -1.0
+          ],
+          "rotation": [
+            42.15,
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegR": {
+          "rotation": [
+            "-75 + math.sin(query.anim_time * 720.0) * 18",
+            0,
+            "math.sin(query.anim_time * 720.0) * 10"
+          ],
+          "position": [
+            0,
+            -4.5,
+            -1
+          ]
+        },
+        "tail1": {
+          "position": [
+            0.0,
+            -3.0,
+            1.0
+          ],
+          "rotation": [
+            45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "tail2": {
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "head": {
+          "position": [
+            0.0,
+            -1.25,
+            0.0
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.beg": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            -70,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            1
+          ]
+        },
+        "backLegL": {
+          "rotation": [
+            -20,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            1
+          ]
+        },
+        "backLegR": {
+          "rotation": [
+            -20,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            1
+          ]
+        },
+        "frontLegL": {
+          "rotation": [
+            "30 + math.sin(query.anim_time * 600.0) * 8",
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6,
+            0
+          ]
+        },
+        "frontLegR": {
+          "rotation": [
+            "30 - math.sin(query.anim_time * 600.0) * 8",
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6,
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            60,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -1,
+            0
+          ]
+        },
+        "tail1": {
+          "rotation": [
+            70,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -3,
+            1
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            20,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.play_dead": {
+      "loop": true,
+      "bones": {
+        "root": {
+          "rotation": [
+            0,
+            0,
+            90
+          ],
+          "position": [
+            5,
+            2,
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            0,
+            "math.sin(query.anim_time * 400.0) * 12",
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.lie": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "position": [
+            0,
+            -4,
+            0
+          ]
+        },
+        "frontLegL": {
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -5,
+            -1
+          ]
+        },
+        "frontLegR": {
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -5,
+            -1
+          ]
+        },
+        "backLegL": {
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -2.5,
+            -2
+          ]
+        },
+        "backLegR": {
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -2.5,
+            -2
+          ]
+        },
+        "tail1": {
+          "rotation": [
+            8,
+            55,
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            0,
+            55,
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.sniff": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "35 + math.sin(query.anim_time * 900.0) * 4",
+            "math.sin(query.anim_time * 300.0) * 14",
+            0
+          ],
+          "position": [
+            0,
+            -2,
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.shy": {
+      "loop": true,
+      "bones": {
+        "backLegL": {
+          "position": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "backLegR": {
+          "position": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "body": {
+          "position": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegL": {
+          "position": [
+            0.0,
+            -4.5,
+            -1.0
+          ],
+          "rotation": [
+            42.15,
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegR": {
+          "rotation": [
+            "-95 + math.sin(query.anim_time * 360.0) * 3",
+            0,
+            10
+          ],
+          "position": [
+            0,
+            -4.5,
+            -1
+          ]
+        },
+        "tail1": {
+          "position": [
+            0.0,
+            -3.0,
+            1.0
+          ],
+          "rotation": [
+            45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "tail2": {
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "head": {
+          "position": [
+            0,
+            -1.25,
+            0
+          ],
+          "rotation": [
+            12,
+            12,
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.stretch": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            14,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -1,
+            0
+          ]
+        },
+        "frontLegL": {
+          "rotation": [
+            -62,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -1,
+            0
+          ]
+        },
+        "frontLegR": {
+          "rotation": [
+            -62,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -1,
+            0
+          ]
+        },
+        "backLegL": {
+          "rotation": [
+            8,
+            0,
+            0
+          ]
+        },
+        "backLegR": {
+          "rotation": [
+            8,
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            -28,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -0.5,
+            0
+          ]
+        },
+        "tail1": {
+          "rotation": [
+            -60,
+            0,
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            -10,
+            "math.sin(query.anim_time * 400.0) * 12",
+            0
+          ]
+        }
+      }
+    },
+    "animation.jf_mochi.groom": {
+      "loop": true,
+      "bones": {
+        "backLegL": {
+          "position": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "backLegR": {
+          "position": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "body": {
+          "position": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "rotation": [
+            -45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegL": {
+          "position": [
+            0.0,
+            -4.5,
+            -1.0
+          ],
+          "rotation": [
+            42.15,
+            0.0,
+            0.0
+          ]
+        },
+        "frontLegR": {
+          "rotation": [
+            "-70 + math.sin(query.anim_time * 540.0) * 10",
+            0,
+            20
+          ],
+          "position": [
+            0,
+            -4.5,
+            -1
+          ]
+        },
+        "tail1": {
+          "position": [
+            0.0,
+            -3.0,
+            1.0
+          ],
+          "rotation": [
+            45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "tail2": {
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            45.0,
+            0.0,
+            0.0
+          ]
+        },
+        "head": {
+          "position": [
+            0,
+            -1.25,
+            0
+          ],
+          "rotation": [
+            "20 + math.sin(query.anim_time * 1080.0) * 6",
+            -22,
+            8
+          ]
+        }
+      }
+    }
+  }
+}

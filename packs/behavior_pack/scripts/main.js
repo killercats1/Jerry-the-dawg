@@ -34,12 +34,13 @@ const PROP = {
 const TAG = { pet: "jf_pet", dog: "jf_dog", cat: "jf_cat" };
 const DIMENSIONS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
 const JERRY = "jf:jerry";
+const MOCHI = "jf:mochi";
 const BALL = "jf:thrown_ball"; // the thrown tennis ball (can't be picked up or broken)
 const FETCH_SLOTS = 8; // matches the jf:fetch_chase_0..7 behaviors in entities/jerry.json
 // Matches the jf:pose property in entities/jerry.json and the pose animation controller.
 const POSE = {
   stand: 0, sit: 1, roll: 2, tilt: 3, paw: 4, wave: 5, beg: 6,
-  playDead: 7, lie: 8, bow: 9, dance: 10, backflip: 11, howl: 12, sniff: 13, shy: 14, stretch: 15,
+  playDead: 7, lie: 8, bow: 9, dance: 10, backflip: 11, howl: 12, sniff: 13, shy: 14, stretch: 15, groom: 16,
 };
 const DEFAULT_DOG_NAME = "Jerry";
 const DEFAULT_CAT_NAME = "Mochi";
@@ -256,7 +257,19 @@ function findDog(player) {
   dog.remove();
   return spawnJerry(player, at);
 }
-const findCat = (player) => (player.getDynamicProperty(PROP.hasCat) ? findPet(player, PROP.cat, TAG.cat) : undefined);
+function findCat(player) {
+  if (!player.getDynamicProperty(PROP.hasCat)) return undefined;
+  const cat = findPet(player, PROP.cat, TAG.cat);
+  if (!cat || cat.typeId === MOCHI) return cat;
+  // Older versions used a vanilla cat for Mochi; swap in the new Mochi, keeping her coat.
+  const at = { dimension: cat.dimension, location: cat.location };
+  try {
+    const variant = /** @type {any} */ (cat.getComponent("minecraft:variant"))?.value;
+    if (typeof variant === "number" && getLook(player).catCoat === undefined) setLook(player, { catCoat: variant });
+  } catch {}
+  cat.remove();
+  return spawnMochi(player, at);
+}
 
 function tame(pet, player) {
   try {
@@ -297,7 +310,11 @@ function spawnJerry(player, at) {
   system.runTimeout(() => isValid(dog) && isValid(player) && applyLook(player, dog), 10); // after taming sets the red collar
   return dog;
 }
-const spawnMochi = (player) => spawnPet(player, "minecraft:cat", TAG.cat, catName(player), PROP.cat);
+function spawnMochi(player, at) {
+  const cat = spawnPet(player, MOCHI, TAG.cat, catName(player), PROP.cat, at);
+  system.runTimeout(() => isValid(cat) && isValid(player) && applyCatLook(cat, getLook(player)), 10);
+  return cat;
+}
 
 function bring(pet, player) {
   try {
@@ -418,7 +435,22 @@ function setLook(player, change) {
   player.setDynamicProperty(PROP.look, JSON.stringify(look));
   const dog = findDog(player);
   if (dog) applyLook(player, dog);
+  const cat = player.getDynamicProperty(PROP.hasCat) ? findPet(player, PROP.cat, TAG.cat) : undefined;
+  if (cat?.typeId === MOCHI) applyCatLook(cat, look);
   return look;
+}
+
+// Mochi's coat (any vanilla cat coat, tabby if she never had one) and collar.
+function applyCatLook(cat, look) {
+  const coat = look.catCoat ?? 8;
+  try {
+    if (cat.getProperty("jf:coat") !== coat) cat.setProperty("jf:coat", coat);
+  } catch {}
+  try {
+    const collar = cat.getComponent("minecraft:color");
+    const colour = look.catCollar ?? 14;
+    if (collar && collar.value !== colour) collar.value = colour;
+  } catch {}
 }
 
 function applyLook(player, dog, look = getLook(player)) {
@@ -433,22 +465,30 @@ function applyLook(player, dog, look = getLook(player)) {
   } catch {}
 }
 
-function dyeCollar(player, dog, colour) {
-  setLook(player, { collar: colour });
-  sparkle(dog, "minecraft:villager_happy", 6);
-  sound(dog.dimension, "mob.wolf.panting", dog.location);
-  showFace(dog, "happy", 60);
-  actionbar(player, T.COLLAR_DYED.replace("{colour}", T.COLLARS[colour].toLowerCase()));
+function dyeCollar(player, pet, colour) {
+  const isCat = pet.typeId === MOCHI;
+  setLook(player, isCat ? { catCollar: colour } : { collar: colour });
+  sparkle(pet, "minecraft:villager_happy", 6);
+  sound(pet.dimension, isCat ? "mob.cat.purr" : "mob.wolf.panting", pet.location);
+  showFace(pet, "happy", 60);
+  actionbar(player, (isCat ? T.CAT_COLLAR_DYED : T.COLLAR_DYED).replace("{colour}", T.COLLARS[colour].toLowerCase()));
 }
 
 function openWardrobe(player, retries = 3) {
   const look = getLook(player);
-  new ModalFormData()
+  const hasCat = !!player.getDynamicProperty(PROP.hasCat);
+  const form = new ModalFormData()
     .title(personalize(player, T.WARDROBE_TITLE))
     .dropdown(T.WARDROBE_HAT, T.HATS, look.hat)
     .dropdown(T.WARDROBE_NECK, T.NECKS, look.neck)
     .dropdown(T.WARDROBE_COAT, T.COATS, look.coat)
-    .dropdown(T.WARDROBE_COLLAR, T.COLLARS, look.collar)
+    .dropdown(T.WARDROBE_COLLAR, T.COLLARS, look.collar);
+  if (hasCat) {
+    form
+      .dropdown(personalize(player, T.WARDROBE_CAT_COAT), T.CAT_COATS, look.catCoat ?? 8)
+      .dropdown(personalize(player, T.WARDROBE_CAT_COLLAR), T.COLLARS, look.catCollar ?? 14);
+  }
+  form
     .show(player)
     .then((response) => {
       if (response.canceled) {
@@ -457,8 +497,11 @@ function openWardrobe(player, retries = 3) {
         }
         return;
       }
-      const [hat, neck, coat, collar] = (response.formValues ?? []).map(Number);
-      setLook(player, { hat: hat || 0, neck: neck || 0, coat: coat || 0, collar: Number.isInteger(collar) ? collar : look.collar });
+      const [hat, neck, coat, collar, catCoat, catCollar] = (response.formValues ?? []).map(Number);
+      const pickOr = (value, fallback) => (Number.isInteger(value) ? value : fallback);
+      const change = { hat: hat || 0, neck: neck || 0, coat: coat || 0, collar: pickOr(collar, look.collar) };
+      if (hasCat) Object.assign(change, { catCoat: pickOr(catCoat, look.catCoat ?? 8), catCollar: pickOr(catCollar, look.catCollar ?? 14) });
+      setLook(player, change);
       const dog = findDog(player);
       if (isValid(dog)) {
         spin(dog);
@@ -613,6 +656,8 @@ function playMoment(player, dog, cat) {
     showFace(dog, moment.face, moment.action === "nap" ? 400 : 70);
     return actionbar(player, moment.text);
   }
+  // Mochi does her own thing sometimes.
+  if (isNear(cat, player, 16) && !fetching.has(cat.id) && Math.random() < 0.3) return catMoment(player, cat);
   const options = [...T.MOMENTS];
   if (isNight()) options.push(...T.NIGHT_MOMENTS);
   if (isNear(cat, player, 16)) options.push(...T.CAT_MOMENTS);
@@ -626,7 +671,31 @@ function playMoment(player, dog, cat) {
   actionbar(player, moment.text);
 }
 
+function catMoment(player, cat) {
+  const moment = pick(T.MOCHI_MOMENTS);
+  sound(cat.dimension, moment.sound, cat.location);
+  if (moment.action === "groom") trick(cat, POSE.groom, 70);
+  if (moment.action === "stretch") trick(cat, POSE.stretch, 50);
+  if (moment.action === "tilt") tiltHead(cat);
+  if (moment.action === "zoomies") catZoomies(cat);
+  if (moment.action === "lie" && !isSitting(cat)) trick(cat, POSE.lie, 200);
+  showFace(cat, moment.face, moment.action === "lie" ? 200 : 70);
+  actionbar(player, moment.text);
+}
+
 function bringGift(player, dog) {
+  // Sometimes it's Mochi with a present instead.
+  const cat = findCat(player);
+  if (isNear(cat, player, 16) && Math.random() < 0.35) {
+    const gift = pick(T.CAT_GIFTS);
+    showFace(cat, "happy", 80);
+    try {
+      cat.dimension.spawnItem(new ItemStack(gift.item, 1), cat.location);
+    } catch {}
+    sound(cat.dimension, "mob.cat.purreow", cat.location);
+    sparkle(cat, "minecraft:villager_happy", 6);
+    return tell(player, `§dMochi§7 brought you a gift: §f${gift.name}§7! She expects praise.`);
+  }
   const gift = pick(T.GIFTS);
   showFace(dog, "happy", 80);
   // A bone gets carried over in his mouth first, like in the video.
@@ -650,7 +719,10 @@ function protectAll(player) {
     applyLook(player, dog); // keeps his outfit and collar right
   }
   const cat = findCat(player);
-  if (cat) protect(cat);
+  if (cat) {
+    protect(cat);
+    applyCatLook(cat, getLook(player));
+  }
 }
 
 function tick(player) {
@@ -731,6 +803,7 @@ function giveTreat(player, target) {
   sparkle(target);
   if (kind === "cat") {
     sound(target.dimension, "mob.cat.purr", target.location);
+    showFace(target, "love", 60);
     return actionbar(player, T.TREAT_CAT);
   }
   sound(target.dimension, "mob.wolf.bark", target.location);
@@ -746,6 +819,7 @@ function brush(player, target) {
   sparkle(target, "minecraft:villager_happy", 8);
   if (kind === "cat") {
     sound(target.dimension, "mob.cat.purr", target.location);
+    showFace(target, "happy", 60);
     return actionbar(player, T.BRUSH_CAT);
   }
   sound(target.dimension, "mob.wolf.panting", target.location);
@@ -791,6 +865,15 @@ function useItem(player, itemId, target) {
   target = isValid(target) ? target : lookTarget(player);
   if (itemId === ITEMS.treat) return giveTreat(player, target);
   if (itemId === ITEMS.brush) return brush(player, target);
+}
+
+function petMochi(player, cat) {
+  sparkle(cat);
+  sound(cat.dimension, "mob.cat.purr", cat.location);
+  tiltHead(cat);
+  showFace(cat, "happy", 50);
+  const earned = earn(player, "pet");
+  actionbar(player, `${pick(T.PET_CAT)}${earned ? "" : T.FULL}  ${friendshipBar(player)}`);
 }
 
 function petJerry(player, dog) {
@@ -847,6 +930,9 @@ const PRACTICE = new Set([
   "paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin", "lie", "hop",
   "find", "shy", "stretch",
 ]);
+// The tricks Mochi knows (practiced like Jerry's). Anything else gets cat sass.
+const CAT_PRACTICE = new Set(["paw", "highfive", "wave", "beg", "roll", "dead", "spin", "lie", "hop", "shy", "stretch", "chase", "groom"]);
+const CAT_ALWAYS = new Set(["love", "sit", "come", "greet", "bark", "spinleft", "spinright", "find", "excited", "yawn", "shock", "play", "mochi"]);
 const MASTER_AT = 5; // successful tries to master a trick
 
 function getSkills(player) {
@@ -857,31 +943,34 @@ function getSkills(player) {
   return {};
 }
 
-// Returns true if he pulls the trick off. Early on he sometimes does something else instead.
-function attemptTrick(player, dog, action) {
+// Returns true if the pet pulls the trick off. Early on they sometimes do something else instead.
+function attemptTrick(player, pet, action) {
+  const isCat = pet.typeId === MOCHI;
+  const key = isCat ? `cat:${action}` : action;
   const skills = getSkills(player);
-  const done = skills[action] ?? 0;
+  const done = skills[key] ?? 0;
   if (done >= MASTER_AT) return true;
   const trickName = T.TRICK_NAMES[action] ?? action;
   if (Math.random() > 0.6 + done * 0.08) {
-    const oops = pick(T.OOPS);
-    if (oops.action === "spin") spin(dog);
-    else if (oops.action === "tilt") tiltHead(dog);
-    else if (oops.action === "sit") sit(dog);
-    else hop(dog, 0.45);
-    showFace(dog, "puppy", 50);
-    sound(dog.dimension, "mob.wolf.whine", dog.location);
+    const oops = pick(isCat ? T.CAT_OOPS : T.OOPS);
+    if (oops.action === "spin") spin(pet);
+    else if (oops.action === "tilt") tiltHead(pet);
+    else if (oops.action === "sit") sit(pet);
+    else if (oops.action === "groom") trick(pet, POSE.groom, 50);
+    else hop(pet, 0.45);
+    showFace(pet, "puppy", 50);
+    sound(pet.dimension, isCat ? "mob.cat.meow" : "mob.wolf.whine", pet.location);
     tell(player, oops.text.replace("{trick}", trickName));
     return false;
   }
-  skills[action] = done + 1;
+  skills[key] = done + 1;
   player.setDynamicProperty(PROP.skills, JSON.stringify(skills));
-  if (skills[action] === MASTER_AT) {
+  if (skills[key] === MASTER_AT) {
     system.runTimeout(() => {
       if (!isValid(player)) return;
-      tell(player, T.MASTERED.replace("{trick}", trickName));
+      tell(player, (isCat ? T.CAT_MASTERED : T.MASTERED).replace("{trick}", trickName));
       sound(player.dimension, "random.levelup", player.location);
-      if (isValid(dog)) showFace(dog, "love", 60);
+      if (isValid(pet)) showFace(pet, "love", 60);
       addFriendship(player, 3);
     }, 30);
   }
@@ -1116,7 +1205,11 @@ function reactToSurroundings(player, dog) {
       sit(dog, POSE.lie);
       showFace(dog, "sleepy", 400);
       changeNeeds(player, { energy: 40 });
-      return actionbar(player, T.BEDTIME);
+      const cat = findCat(player);
+      if (!isNear(cat, player, 24)) return actionbar(player, T.BEDTIME);
+      sit(cat, POSE.lie);
+      showFace(cat, "sleepy", 400);
+      return actionbar(player, T.BEDTIME_CAT);
     }
   } catch {}
 
@@ -1134,7 +1227,14 @@ function reactToSurroundings(player, dog) {
         const m = monster.location;
         dog.setRotation({ x: 0, y: (Math.atan2(-(m.x - dog.location.x), m.z - dog.location.z) * 180) / Math.PI });
       } catch {}
-      actionbar(player, T.GUARD.replace("{mob}", prettyMob(monster.typeId)));
+      let text = T.GUARD.replace("{mob}", prettyMob(monster.typeId));
+      const cat = findCat(player);
+      if (isNear(cat, player, 16)) {
+        sound(cat.dimension, "mob.cat.hiss", cat.location);
+        showFace(cat, "shocked", 50);
+        text += T.GUARD_CAT;
+      }
+      actionbar(player, text);
     }
   }
 }
@@ -1194,10 +1294,15 @@ function openStatus(player, retries = 3) {
     `§fFun:      ${meter(needs.fun)}`,
     `§fFriendship: ${friendshipBar(player)}`,
     `§fTricks mastered: §e${mastered}/${PRACTICE.size}`,
-  ].join("\n");
+  ];
+  if (player.getDynamicProperty(PROP.hasCat)) {
+    const catMastered = [...CAT_PRACTICE].filter((a) => (skills[`cat:${a}`] ?? 0) >= MASTER_AT).length;
+    body.push(`§dMochi§f's tricks mastered: §e${catMastered}/${CAT_PRACTICE.size}`);
+  }
+  const text = body.join("\n");
   new ActionFormData()
     .title(personalize(player, T.STATUS_TITLE))
-    .body(personalize(player, body))
+    .body(personalize(player, text))
     .button(T.STATUS_TRICKS)
     .button(T.STATUS_WARDROBE)
     .button(T.STATUS_RENAME)
@@ -1400,13 +1505,21 @@ function parseCommands(said, player) {
 const ACTION_TICKS = {
   roll: 56, spin: 34, play: 50, greet: 40, paw: 50, highfive: 50, wave: 50, beg: 50,
   dead: 75, lie: 25, bow: 45, dance: 75, backflip: 30, howl: 55, chase: 75,
-  find: 110, shy: 65, stretch: 55, spinleft: 34, spinright: 34,
+  find: 110, shy: 65, stretch: 55, spinleft: 34, spinright: 34, groom: 70,
 };
 const actionTicks = (entry) => ACTION_TICKS[entry.action] ?? 30;
 
-// Returns how many ticks Jerry will be busy reacting (0 if he couldn't hear you).
+// Did you say Mochi's name (or "kitty")? Then the commands are for her.
+function talkingToCat(said, player) {
+  if (!player.getDynamicProperty(PROP.hasCat)) return false;
+  const words = ` ${cleanWords(normalizeNames(said.toLowerCase().replace(/[^a-z' ]+/g, " "), player))} `;
+  return / (mochi|kitty) /.test(words) && !/ jerry /.test(words);
+}
+
+// Returns how many ticks Jerry (or Mochi) will be busy reacting (0 if nobody could hear you).
 function hearSpeech(player, said) {
   player.sendMessage(`§7You: §f"${said.slice(0, 80)}"`); // your own words, unchanged
+  if (talkingToCat(said, player)) return hearCat(player, said);
   const dog = findDog(player);
   const commands = parseCommands(said, player);
   // "come" works from anywhere, like the whistle; everything else needs Jerry in earshot.
@@ -1429,6 +1542,146 @@ function hearSpeech(player, said) {
     at += actionTicks(entry);
   }
   return at;
+}
+
+function hearCat(player, said) {
+  const cat = findCat(player);
+  const commands = parseCommands(said, player).filter((entry) => entry.action !== "mochi" && entry.action !== "greet");
+  const calledHer = commands.some((entry) => entry.action === "come");
+  if (!cat || (!calledHer && !isNear(cat, player, 24))) {
+    tell(player, T.CAT_NOT_HERE);
+    return 0;
+  }
+  showFace(cat, "puppy", 30); // ears up: she heard you (whether she listens is another matter)
+  if (!commands.length) commands.push(T.VOICE.find((entry) => entry.action === "greet"));
+  let at = 12;
+  for (const entry of commands) {
+    system.runTimeout(() => {
+      if (isValid(player) && isValid(cat)) respondCat(player, cat, entry);
+    }, at);
+    at += actionTicks(entry);
+  }
+  return at;
+}
+
+function respondCat(player, cat, entry) {
+  const action = entry.action;
+  const dim = cat.dimension;
+  const trickName = T.TRICK_NAMES[action] ?? action;
+  if (!CAT_PRACTICE.has(action) && !CAT_ALWAYS.has(action)) {
+    trick(cat, POSE.groom, 50); // a dog trick? she washes her paw instead
+    sound(dim, "mob.cat.meow", cat.location);
+    return tell(player, pick(T.CAT_SASS).replace("{trick}", trickName));
+  }
+  if (CAT_PRACTICE.has(action) && !attemptTrick(player, cat, action)) return;
+  const meow = () => sound(dim, "mob.cat.meow", cat.location);
+  switch (action) {
+    case "love":
+      sparkle(cat);
+      showFace(cat, "love", 60);
+      sound(dim, "mob.cat.purr", cat.location);
+      if (earn(player, "talk")) actionbar(player, friendshipBar(player));
+      break;
+    case "sit":
+      meow();
+      sit(cat);
+      break;
+    case "lie":
+      sound(dim, "mob.cat.purr", cat.location);
+      sit(cat, POSE.lie);
+      break;
+    case "come":
+      if (isSitting(cat)) stand(cat);
+      if (!isNear(cat, player, 6)) bring(cat, player);
+      meow();
+      break;
+    case "roll":
+      sparkle(cat, "minecraft:villager_happy", 6);
+      trick(cat, POSE.roll, 50);
+      break;
+    case "greet":
+    case "bark":
+      meow();
+      tiltHead(cat);
+      break;
+    case "spin":
+    case "spinleft":
+    case "spinright":
+      spin(cat, action === "spinleft" ? -1 : 1);
+      break;
+    case "hop":
+      hop(cat, 0.5);
+      meow();
+      break;
+    case "paw":
+    case "highfive":
+      sound(dim, "mob.cat.purr", cat.location);
+      trick(cat, POSE.paw, 45);
+      if (action === "highfive") system.runTimeout(() => isValid(cat) && sound(cat.dimension, "random.orb", cat.location, { pitch: 1.6 }), 10);
+      break;
+    case "wave":
+      meow();
+      trick(cat, POSE.wave, 50);
+      break;
+    case "beg":
+      sound(dim, "mob.cat.purreow", cat.location);
+      trick(cat, POSE.beg, 50);
+      break;
+    case "dead":
+      meow();
+      trick(cat, POSE.playDead, 75);
+      break;
+    case "chase":
+      for (let i = 0; i < 3; i++) system.runTimeout(() => isValid(cat) && spin(cat), i * 24);
+      meow();
+      break;
+    case "shy":
+      trick(cat, POSE.shy, 60);
+      system.runTimeout(() => isValid(cat) && showFace(cat, "love", 30), 45);
+      break;
+    case "stretch":
+      trick(cat, POSE.stretch, 50);
+      break;
+    case "groom":
+      sound(dim, "mob.cat.purr", cat.location);
+      trick(cat, POSE.groom, 70);
+      break;
+    case "find":
+      trick(cat, POSE.sniff, 60, false);
+      system.runTimeout(() => isValid(cat) && hop(cat, 0.45), 60); // pounce!
+      break;
+    case "excited":
+      sound(dim, "mob.cat.purreow", cat.location);
+      tiltHead(cat);
+      break;
+    case "yawn":
+      sit(cat, POSE.lie);
+      break;
+    case "shock":
+      hop(cat, 0.55);
+      sound(dim, "mob.cat.hiss", cat.location);
+      break;
+    case "play":
+      catZoomies(cat);
+      break;
+  }
+  const faces = { lie: "sleepy", yawn: "sleepy", shock: "shocked", dead: "sleepy", beg: "puppy", excited: "puppy", shy: "puppy" };
+  if (action !== "love") showFace(cat, faces[action] ?? "happy", actionTicks(entry) + 20);
+  const replies = T.CAT_REPLIES[action];
+  if (replies) tell(player, pick(replies));
+}
+
+function catZoomies(cat) {
+  for (let i = 0; i < 4; i++) {
+    system.runTimeout(() => {
+      if (!isValid(cat)) return;
+      hop(cat, 0.4);
+      try {
+        cat.applyImpulse({ x: rand(-0.5, 0.5), y: 0, z: rand(-0.5, 0.5) });
+      } catch {}
+    }, i * 10);
+  }
+  spin(cat);
 }
 
 function respond(player, dog, entry) {
@@ -1559,6 +1812,9 @@ function talkAction(player, dog, action) {
       return spin(dog, action === "spinleft" ? -1 : 1);
     case "find":
       return findIt(player, dog);
+    case "groom":
+      sound(dim, "mob.wolf.panting", dog.location);
+      return tiltHead(dog);
     case "shy":
       sound(dim, "mob.wolf.whine", dog.location, { pitch: 1.3 });
       trick(dog, POSE.shy, 60);
@@ -1678,19 +1934,20 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack }) => {
 // Using one of our items on a pet should not make it sit down; an empty hand pets Jerry.
 world.beforeEvents.playerInteractWithEntity?.subscribe((event) => {
   const id = event.itemStack?.typeId;
-  if (!id && event.target.typeId === JERRY) {
-    // Empty hand: tap to pet him, or sneak + tap to start talking.
+  if (!id && (event.target.typeId === JERRY || event.target.typeId === MOCHI)) {
+    // Empty hand: tap to pet, or sneak + tap to start talking.
     const { player, target } = event;
     const talk = player.isSneaking;
     system.run(() => {
       if (!isValid(player) || !isValid(target) || !target.hasTag(ownerTag(player))) return;
       if (talk) startTalking(player);
+      else if (target.typeId === MOCHI) petMochi(player, target);
       else petJerry(player, target);
     });
     return;
   }
   // A dye on your dog changes his collar colour.
-  if (dyeColour(id) !== undefined && event.target.typeId === JERRY) {
+  if (dyeColour(id) !== undefined && (event.target.typeId === JERRY || event.target.typeId === MOCHI)) {
     const { player, target } = event;
     if (!target.hasTag(ownerTag(player))) return;
     event.cancel = true;

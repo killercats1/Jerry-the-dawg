@@ -120,12 +120,27 @@ pkg update -y && pkg install -y python termux-api curl && curl -fLo ~/jerry_voic
 | "sleep", "tired" | yawns |
 | "bone" | shows off his bone (in his mouth) |
 | "boo!", "surprise!", "whoa" | shocked face and a jump |
-| "Mochi", "kitty" | Mochi says hi |
+| "groom", "wash your face" | (for Mochi, really) he tries to wash his face like a cat |
+| "Mochi", "kitty" | Mochi says hi (and see below: talk to her by name) |
 | anything he doesn't know | tilts his head, confused but happy |
 
 > Why a text box? Minecraft Bedrock add-ons aren't allowed to use the microphone, so the keyboard's
 > voice typing does the listening. Add your own phrases in the `VOICE` list in `scripts/text.js`,
 > and teach Jerry new mishearings in `MISHEARD`.
+
+## Mochi the cat 🐱
+
+At **Buddy** friendship, **Mochi** joins the family. She looks like a regular tamed cat (any vanilla coat;
+an older Mochi keeps hers), but she has a personality:
+
+- **Talk to her by name**: *"Mochi, sit"*, *"Mochi, roll over"*, *"kitty, high five"*. She knows sit, loaf
+  (lie down), come, roll over, paw, high five, wave, beg, play dead, spin, jump, chase her tail, shy,
+  stretch, groom, zoomies and more, and practices them like Jerry does. Ask for a dog trick and you get
+  cat sass.
+- **Tap her** to pet her (purrs and a happy face). Treats and the brush work on her too.
+- She has **faces** like Jerry (happy, love, big eyes, shocked, sleepy), washes her face, loafs,
+  stretches, gets the zoomies, hisses at monsters, sleeps on your pillow and sometimes brings you a gift.
+- **Wardrobe**: pick her fur and collar colour, or use a dye on her.
 
 ## Friendship
 

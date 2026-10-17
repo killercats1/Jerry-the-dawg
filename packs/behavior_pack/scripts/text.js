@@ -76,6 +76,65 @@ export const PET = [
 ];
 
 export const PLAY_CAT = " §dMochi§7 joins in!";
+
+// ---------------------------------------------------------------- Mochi
+// Talk to her by name ("Mochi, sit!"). She knows the cat-sized tricks; the rest get cat sass.
+export const PET_CAT = [
+  "§dMochi§7 purrs and headbutts your hand.",
+  "§dMochi§7 slow-blinks at you. That's cat for \"I love you\".",
+  "§dMochi§7 kneads the air with her little paws. Purrrr.",
+];
+export const CAT_REPLIES = {
+  love: ["§dMochi§7 purrs so loud it echoes.", "§dMochi§7 slow-blinks at you. She loves you too."],
+  sit: ["§dMochi§7 sits... because she wanted to anyway.", "§dMochi§7 sits down and wraps her tail around her paws."],
+  lie: ["§dMochi§7 tucks her paws in. Perfect loaf.", "§dMochi§7 becomes a loaf of bread. A purring loaf."],
+  come: ["§dMochi§7 trots over, tail up like a question mark.", "§dMochi§7 comes over. Eventually. On her own terms."],
+  roll: ["§dMochi§7 rolls over and shows her belly. It's a trap. (It's not. Rub it.)", "§dMochi§7 flops over, paws in the air."],
+  greet: ["§dMochi§f: Mrrp! §7(That means hi.)", "§dMochi§7 meows back at you and slow-blinks."],
+  bark: ["§dMochi§f: Meow! §7(She does not bark. She would like that noted.)", "§dMochi§f: Mrrrow!"],
+  spin: ["§dMochi§7 does a little twirl, tail swishing.", "§dMochi§7 spins around once. Graceful."],
+  spinleft: ["§dMochi§7 twirls to the left!"], spinright: ["§dMochi§7 twirls to the right!"],
+  hop: ["§dMochi§7 does a big cat pounce!", "§dMochi§7 jumps straight up like a spring. Boing!"],
+  paw: ["§dMochi§7 puts her tiny paw in your hand. Toe beans!", "§dMochi§7 gives you her paw. Very dignified."],
+  highfive: ["§dMochi§7 boops your hand with her paw. High five!", "§dMochi§7 high fives you. Claws in, don't worry."],
+  wave: ["§dMochi§7 waves her paw at you. So fancy.", "§dMochi§7 swipes the air. That's a wave. Probably."],
+  beg: ["§dMochi§7 sits up on her back legs and stares into your soul.", "§dMochi§7 begs like a little meerkat."],
+  dead: ["§dMochi§7 flops dramatically onto her side. The drama!", "§dMochi§7 plays dead. Her tail is still twitching."],
+  chase: ["§dMochi§7 spots her own tail. It must be destroyed.", "§dMochi§7 chases her tail around and around."],
+  shy: ["§dMochi§7 hides her face behind her paw. Cute overload.", "§dMochi§7 covers her eyes... then peeks at you."],
+  stretch: ["§dMochi§7 does a looong cat stretch, bum in the air.", "§dMochi§7 stretches out her front paws. *yawn*"],
+  groom: ["§dMochi§7 licks her paw and washes her face. Very important business.", "§dMochi§7 grooms herself. She's already perfect."],
+  find: ["§dMochi§7 sniffs around... and finds a dust bunny. She's very proud.", "§dMochi§7 hunts around and pounces on a leaf!"],
+  excited: ["§dMochi§7's ears perk up. Did someone say snacks?", "§dMochi§f: Mrrrow? §7(Treats?)"],
+  yawn: ["§dMochi§7 does a tiny yawn. Her tongue sticks out a bit.", "§dMochi§7 curls up for a cat nap."],
+  shock: ["§dMochi§7 jumps three feet in the air! Her tail is a bottle brush.", "§dMochi§7's eyes go HUGE."],
+  play: ["§dMochi§7 gets the zoomies and tears around you!", "§dMochi§7 pounces on everything. Zoomies!"],
+};
+export const CAT_SASS = [
+  "§dMochi§7 stares at you. Cats don't do §f{trick}§7. She licks her paw instead.",
+  "§dMochi§7 looks at you, then looks at §bJerry§7. That's a dog trick, apparently.",
+  "§dMochi§7 yawns. §f{trick}§7? Absolutely not.",
+];
+export const CAT_OOPS = [
+  { action: "groom", text: "§dMochi§7 started to §f{trick}§7... then decided to wash her paw instead." },
+  { action: "sit", text: "§dMochi§7 heard §f{trick}§7 and just sat down. Cats." },
+  { action: "tilt", text: "§dMochi§7 tilted her head at §f{trick}§7. She's thinking about it." },
+];
+export const CAT_MASTERED = "§e* * * §dMochi§e mastered §f{trick}§e! * * *";
+export const CAT_NOT_HERE = "§dMochi§7 is too far away to hear you. Try the whistle!";
+export const MOCHI_MOMENTS = [
+  { sound: "mob.cat.purr", face: "happy", action: "groom", text: "§dMochi§7 is washing her face with her paw." },
+  { sound: "mob.cat.purr", face: "sleepy", action: "lie", text: "§dMochi§7 tucks her paws in and becomes a loaf." },
+  { sound: "mob.cat.meow", face: "sleepy", action: "stretch", text: "§dMochi§7 does a big, long cat stretch." },
+  { sound: "mob.cat.purreow", face: "shocked", action: "zoomies", text: "§dMochi§7 suddenly gets the zoomies! Where is she going?!" },
+  { sound: "mob.cat.purr", face: "love", text: "§dMochi§7 slow-blinks at you. That's cat for \"I love you\"." },
+  { sound: "mob.cat.meow", face: "puppy", action: "tilt", text: "§dMochi§7 is staring at absolutely nothing. Spooky. (Cute.)" },
+];
+export const CAT_GIFTS = [
+  { item: "minecraft:string", name: "a piece of string. Her favourite toy" },
+  { item: "minecraft:feather", name: "a feather" },
+  { item: "minecraft:cod", name: "a fish. Fresh. Very fresh" },
+];
 export const TOO_FAR = "§7Jerry's too far away to play. Try the whistle!";
 
 export const FULL = " §8(He's had plenty for now!)";
@@ -126,6 +185,8 @@ export const VOICE = [
     replies: ["§bJerry§7 hides his face behind his paw... then peeks out. So shy!", "§bJerry§7 covers his eyes. Peekaboo!"] },
   { words: ["big stretch", "stretch", "stretchy", "yoga"], face: "sleepy", action: "stretch",
     replies: ["§bJerry§7 does a big long streeeetch.", "§bJerry§7 stretches out his front paws and wiggles his bum."] },
+  { words: ["groom", "wash your face", "wash", "clean yourself", "lick your paw", "bath"], face: "happy", action: "groom",
+    replies: ["§bJerry§7 tries to wash his face like a cat. It doesn't really work.", "§bJerry§7 licks his paw, very pleased with himself."] },
   { words: ["play dead", "bang", "you're dead", "youre dead"], face: "sleepy", action: "dead",
     replies: ["§bJerry§7 flops over dramatically. Award-winning performance.", "§bJerry§7 plays dead... but his tail is still wagging."] },
   { words: ["roll over", "roll", "belly rub", "belly rubs", "belly"], face: "happy", action: "roll",
@@ -233,7 +294,8 @@ export const TOO_SLEEPY = "§bJerry§7 is too sleepy for tricks... *yawn* He lie
 export const TRICK_NAMES = {
   paw: "shake", highfive: "high five", wave: "wave", beg: "beg", roll: "roll over", dead: "play dead",
   bow: "bow", dance: "dance", backflip: "backflip", howl: "howl", chase: "chase his tail", spin: "spin",
-  lie: "lie down", hop: "jump", find: "find it", shy: "be shy", stretch: "stretch",
+  lie: "lie down", hop: "jump", find: "find it", shy: "be shy", stretch: "stretch", groom: "groom",
+  fetch: "fetch", play: "zoomies", bone: "fetch her bone", excited: "treats", yawn: "nap", shock: "boo",
 };
 export const FOUND_IT = [
   "§bJerry§7 found a treat! *crunch crunch* What a nose!",
@@ -260,11 +322,13 @@ export const FETCH_LOST = "§7The ball's gone... §bJerry§7 looks around, confu
 
 // ---------------------------------------------------------------- smart reactions
 export const GUARD = "§bJerry§c growls! §7There's a §f{mob}§7 nearby, watch out!";
+export const GUARD_CAT = " §dMochi§7 puffs up and hisses.";
 export const DEFEND = "§bJerry§c jumps in to protect you from the §f{mob}§c!";
 export const WORRIED = "§bJerry§7 rushes over to check on you. You okay?";
 export const BEG_FOOD = "§bJerry§7 watches you eat with HUGE puppy eyes...";
 export const WELCOME_HOME = "§bJerry§7 is SO happy you're back! Zoomies!";
 export const BEDTIME = "§bJerry§7 curls up at the foot of your bed. Goodnight!";
+export const BEDTIME_CAT = "§bJerry§7 curls up at the foot of your bed, and §dMochi§7 loafs right on your pillow. Goodnight!";
 
 // ---------------------------------------------------------------- the status screen (sneak + Dog Whistle)
 export const STATUS_TITLE = "Jerry";
@@ -278,6 +342,10 @@ export const WARDROBE_HAT = "Hat";
 export const WARDROBE_NECK = "Neck";
 export const WARDROBE_COAT = "Fur";
 export const WARDROBE_COLLAR = "Collar colour §7(or use any dye on him)";
+export const WARDROBE_CAT_COAT = "§dMochi§f's fur";
+export const WARDROBE_CAT_COLLAR = "§dMochi§f's collar §7(dyes work on her too)";
+// Order matches the vanilla cat variants (and Mochi's jf:coat property).
+export const CAT_COATS = ["White", "Tuxedo", "Red tabby", "Siamese", "British shorthair", "Calico", "Persian", "Ragdoll", "Tabby", "Black", "Jellie"];
 export const HATS = ["None", "Party hat", "Flower crown", "Cool shades"];
 export const NECKS = ["None", "Bandana", "Bow tie"];
 // Order matches Array.coats in the resource pack (the game's own wolf coats).
@@ -293,6 +361,7 @@ export const LOOK_SAVED = [
   "§bJerry§7 looks fabulous and he knows it.",
 ];
 export const COLLAR_DYED = "§bJerry§7's collar is now §f{colour}§7. He loves it!";
+export const CAT_COLLAR_DYED = "§dMochi§7's collar is now §f{colour}§7. She pretends not to care, but she loves it.";
 export const STATUS_CLOSE = "Close";
 export const TRICKS_TITLE = "Jerry's tricks";
 export const TRICKS_BACK = "Back";

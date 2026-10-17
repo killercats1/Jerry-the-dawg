@@ -15,7 +15,6 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-W, H = 48, 32  # final size: 6x4 face pixels at 8x
 SS = 4         # supersampling
 
 # Vanilla tame wolf face, per face-pixel (columns 0-5, rows 0-3). Rows 1-2, columns 1 and 4
@@ -36,9 +35,11 @@ def hex_rgb(h):
 
 
 class Canvas:
-    def __init__(self):
-        self.px = [[(0, 0, 0)] * (W * SS) for _ in range(H * SS)]
-        for row, cols in enumerate(FUR):
+    # fur: rows of face-pixel colours (hex) painted as the background, 8x8 final pixels each.
+    def __init__(self, fur=FUR):
+        self.w, self.h = len(fur[0]) * 8, len(fur) * 8
+        self.px = [[(0, 0, 0)] * (self.w * SS) for _ in range(self.h * SS)]
+        for row, cols in enumerate(fur):
             for col, colour in enumerate(cols):
                 self.rect(col * 8, row * 8, col * 8 + 8, row * 8 + 8, hex_rgb(colour))
 
@@ -49,9 +50,9 @@ class Canvas:
                 self.px[y][x] = colour
 
     def ellipse(self, cx, cy, rx, ry, colour, mirror=True):
-        for x_c in ([cx, W - cx] if mirror else [cx]):
-            for y in range(max(0, int((cy - ry) * SS)), min(H * SS, int((cy + ry) * SS) + 1)):
-                for x in range(max(0, int((x_c - rx) * SS)), min(W * SS, int((x_c + rx) * SS) + 1)):
+        for x_c in ([cx, self.w - cx] if mirror else [cx]):
+            for y in range(max(0, int((cy - ry) * SS)), min(self.h * SS, int((cy + ry) * SS) + 1)):
+                for x in range(max(0, int((x_c - rx) * SS)), min(self.w * SS, int((x_c + rx) * SS) + 1)):
                     dx, dy = (x + 0.5) / SS - x_c, (y + 0.5) / SS - cy
                     if (dx / rx) ** 2 + (dy / ry) ** 2 <= 1:
                         self.px[y][x] = colour
@@ -70,14 +71,14 @@ class Canvas:
         for y in range(int((cy - r * 0.4) * SS), int((cy + size * 0.55) * SS)):
             fy = (y + 0.5) / SS
             half = (cy + size * 0.55 - fy) / (size * 0.95) * size * 0.98
-            for x_c in (cx, W - cx):
+            for x_c in (cx, self.w - cx):
                 self.rect(x_c - half, fy, x_c + half, fy + 1 / SS, colour)
 
     def pixels(self):
         out = []
-        for y in range(H):
+        for y in range(self.h):
             row = []
-            for x in range(W):
+            for x in range(self.w):
                 block = [self.px[y * SS + j][x * SS + i] for j in range(SS) for i in range(SS)]
                 row.append(tuple(sum(c[k] for c in block) // len(block) for k in range(3)) + (255,))
             out.append(row)

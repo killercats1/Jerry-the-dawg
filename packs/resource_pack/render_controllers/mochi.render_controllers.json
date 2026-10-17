@@ -1,0 +1,105 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.jf_mochi": {
+      "arrays": {
+        "textures": {
+          "Array.coats": [
+            "Texture.coat_white",
+            "Texture.coat_tuxedo",
+            "Texture.coat_red",
+            "Texture.coat_siamese",
+            "Texture.coat_british",
+            "Texture.coat_calico",
+            "Texture.coat_persian",
+            "Texture.coat_ragdoll",
+            "Texture.coat_tabby",
+            "Texture.coat_black",
+            "Texture.coat_jellie"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.coats[query.property('jf:coat')]"
+      ]
+    },
+    "controller.render.jf_mochi_face": {
+      "arrays": {
+        "textures": {
+          "Array.faces": [
+            "Texture.face_white_happy",
+            "Texture.face_white_puppy",
+            "Texture.face_white_shocked",
+            "Texture.face_white_love",
+            "Texture.face_white_sleepy",
+            "Texture.face_tuxedo_happy",
+            "Texture.face_tuxedo_puppy",
+            "Texture.face_tuxedo_shocked",
+            "Texture.face_tuxedo_love",
+            "Texture.face_tuxedo_sleepy",
+            "Texture.face_red_happy",
+            "Texture.face_red_puppy",
+            "Texture.face_red_shocked",
+            "Texture.face_red_love",
+            "Texture.face_red_sleepy",
+            "Texture.face_siamese_happy",
+            "Texture.face_siamese_puppy",
+            "Texture.face_siamese_shocked",
+            "Texture.face_siamese_love",
+            "Texture.face_siamese_sleepy",
+            "Texture.face_british_happy",
+            "Texture.face_british_puppy",
+            "Texture.face_british_shocked",
+            "Texture.face_british_love",
+            "Texture.face_british_sleepy",
+            "Texture.face_calico_happy",
+            "Texture.face_calico_puppy",
+            "Texture.face_calico_shocked",
+            "Texture.face_calico_love",
+            "Texture.face_calico_sleepy",
+            "Texture.face_persian_happy",
+            "Texture.face_persian_puppy",
+            "Texture.face_persian_shocked",
+            "Texture.face_persian_love",
+            "Texture.face_persian_sleepy",
+            "Texture.face_ragdoll_happy",
+            "Texture.face_ragdoll_puppy",
+            "Texture.face_ragdoll_shocked",
+            "Texture.face_ragdoll_love",
+            "Texture.face_ragdoll_sleepy",
+            "Texture.face_tabby_happy",
+            "Texture.face_tabby_puppy",
+            "Texture.face_tabby_shocked",
+            "Texture.face_tabby_love",
+            "Texture.face_tabby_sleepy",
+            "Texture.face_black_happy",
+            "Texture.face_black_puppy",
+            "Texture.face_black_shocked",
+            "Texture.face_black_love",
+            "Texture.face_black_sleepy",
+            "Texture.face_jellie_happy",
+            "Texture.face_jellie_puppy",
+            "Texture.face_jellie_shocked",
+            "Texture.face_jellie_love",
+            "Texture.face_jellie_sleepy"
+          ]
+        }
+      },
+      "geometry": "Geometry.face",
+      "materials": [
+        {
+          "*": "Material.face"
+        }
+      ],
+      "textures": [
+        "Array.faces[query.property('jf:coat') * 5 + math.max(0, query.property('jf:face') - 1)]"
+      ]
+    }
+  }
+}
