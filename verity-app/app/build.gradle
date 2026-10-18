@@ -1,0 +1,47 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.jerrythedawg.verity"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.jerrythedawg.verity"
+        minSdk 26
+        targetSdk 34
+        // CI sets the build number, so every new APK installs over the old one.
+        versionCode Integer.parseInt(System.getenv("BUILD_NUMBER") ?: "1")
+        versionName "1.0." + (System.getenv("BUILD_NUMBER") ?: "0")
+    }
+
+    // A fixed key (checked in, not a secret) so new versions install over old ones.
+    signingConfigs {
+        shared {
+            storeFile file("../../voice-app/jerry-voice.keystore")
+            storePassword "jerryvoice"
+            keyAlias "jerryvoice"
+            keyPassword "jerryvoice"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.shared
+        }
+        debug {
+            signingConfig signingConfigs.shared
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

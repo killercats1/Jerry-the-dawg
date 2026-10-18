@@ -1,0 +1,48 @@
+name: Build Verity Voice app
+
+on:
+  push:
+    paths:
+      - "verity-app/**"
+      - ".github/workflows/verity-app.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Build the APK
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          gradle -p verity-app assembleRelease --no-daemon --stacktrace
+          mkdir -p out
+          cp verity-app/app/build/outputs/apk/release/app-release.apk out/VerityVoice.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VerityVoice
+          path: out/VerityVoice.apk
+      - name: Publish (always at the same download link)
+        if: github.ref == 'refs/heads/MAIN'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: verity-voice
+          target_commitish: ${{ github.sha }}
+          name: "Verity Voice app (Android)"
+          body: |
+            **Verity Voice**: talk to PnTMC's Verity (Bedrock add-on) out loud on Android, no Termux needed.
+            Download `VerityVoice.apk` below, install it, paste your Groq + FishAudio keys and tap Start.
+            Build ${{ github.run_number }}. Setup guide: verity-app/README.md
+          files: out/VerityVoice.apk
+          make_latest: false
