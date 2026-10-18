@@ -40,6 +40,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.error
 import urllib.request
 import uuid
 
@@ -119,12 +120,23 @@ def transcribe_groq(audio, filename, mime, key):
     request = urllib.request.Request(
         "https://api.groq.com/openai/v1/audio/transcriptions",
         data=body,
-        headers={"Authorization": f"Bearer {key}", "Content-Type": f"multipart/form-data; boundary={boundary}"},
+        # Groq's firewall turns away Python's default "Python-urllib" user agent with 403 Forbidden.
+        headers={"Authorization": f"Bearer {key}", "Content-Type": f"multipart/form-data; boundary={boundary}",
+                 "User-Agent": "JerryVoice/2.0 (Minecraft add-on helper)", "Accept": "application/json"},
     )
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             text = json.loads(response.read()).get("text", "").strip()
-    except Exception as error:  # noqa: BLE001 - show any network/API problem and keep going
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode(errors="replace")[:200].replace("\n", " ")
+        if error.code == 401:
+            log("Groq says the key is wrong. Copy it again from https://console.groq.com/keys and run once with --groq-key NEW_KEY")
+        elif error.code == 429:
+            log("Groq says slow down (free limit reached for now). Try again in a minute.")
+        else:
+            log(f"Groq transcription failed: HTTP {error.code}: {detail}")
+        return ""
+    except Exception as error:  # noqa: BLE001 - show any network problem and keep going
         log(f"Groq transcription failed: {error}")
         return ""
     return "" if text.lower() in HALLUCINATIONS else text
@@ -280,6 +292,7 @@ PAGE = r"""<!doctype html>
 </main><script>
 const $ = (id) => document.getElementById(id);
 let stream, ctx, running = false, level = 0, speaking = false, recorder, chunks = [], startT = 0, lastLoud = 0, noise = 0.01;
+let lastAudioBeat = 0, keepAlive;
 
 async function beat() {
   try {
@@ -292,7 +305,11 @@ async function beat() {
   }
 }
 setInterval(beat, 2000); beat();
-document.addEventListener("visibilitychange", beat);
+document.addEventListener("visibilitychange", () => {
+  // Tell the helper right away (sendBeacon still works while the page is being hidden).
+  navigator.sendBeacon("/beat", JSON.stringify({ hidden: document.hidden, running, level }));
+  if (!document.hidden && ctx && ctx.state === "suspended") ctx.resume();
+});
 
 function send(blob) {
   fetch("/clip", { method: "POST", headers: { "Content-Type": blob.type || "audio/webm" }, body: blob })
@@ -326,13 +343,26 @@ async function start() {
     if (!speaking) noise = noise * 0.995 + level * 0.005;
     const loud = level > Math.max(0.02, noise * 3);
     if (loud) lastLoud = now;
+    // Timers slow down in the background, but this audio callback keeps running, so beat from here too.
+    if (document.hidden && now - lastAudioBeat > 5) { lastAudioBeat = now; beat(); }
     if (!speaking && loud) { speaking = true; startT = now; startClip(); }
     else if (speaking && (now - lastLoud > 0.8 || now - startT > 7)) { speaking = false; if (recorder.state !== "inactive") recorder.stop(); }
   };
+  // Keep-alive: a silent sound playing on a loop tells Chrome this page is busy with audio, so it's
+  // less likely to pause it when you switch apps. Shows up as a media notification.
+  if (!keepAlive) {
+    const silence = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const dest = ctx.createMediaStreamDestination();
+    const loop = ctx.createBufferSource(); loop.buffer = silence; loop.loop = true; loop.connect(dest); loop.start();
+    keepAlive = new Audio(); keepAlive.srcObject = dest.stream; keepAlive.loop = true;
+    keepAlive.play().catch(() => {});
+    if ("mediaSession" in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: "Jerry is listening", artist: "Jerry Voice" });
+  }
+  stream.getAudioTracks()[0].onended = () => { running = false; $("mic").textContent = "stopped by the phone"; $("mic").className = "bad"; beat(); };
   running = true;
   $("mic").textContent = "listening"; $("mic").className = "ok";
   $("go").textContent = "Stop"; $("go").className = "stop";
-  $("hint").innerHTML = "Listening! Now switch to <b>Minecraft</b> and talk to Jerry. Chrome shows a microphone notification while this is on.";
+  $("hint").innerHTML = "Listening! Now switch to <b>Minecraft</b> with the <b>Home</b> or <b>recent apps</b> button (not Back, that closes the page) and talk to Jerry.";
   beat();
 }
 
@@ -402,6 +432,7 @@ async def on_http(reader, writer, args):
                 log({None: "Browser page open (not listening yet: tap Start).",
                      False: "Browser page is listening.",
                      True: "Browser page is listening in the background."}[hidden])
+            BROWSER["warned"] = False
             respond("200 OK", "application/json", json.dumps({"minecraft": bool(game and not game.closed)}))
         elif method == "POST" and path == "/clip":
             kind = headers.get("content-type", "audio/webm").split(";")[0]
@@ -426,6 +457,19 @@ async def heartbeat(game):
     while not game.closed:
         await game.command("scriptevent jf:voice_hello")
         await asyncio.sleep(5)
+
+
+async def watch_page():
+    """Browser mode: say so when the page stops checking in (Chrome paused or closed it)."""
+    while True:
+        await asyncio.sleep(5)
+        quiet = time.time() - BROWSER["last_beat"]
+        if BROWSER["hidden"] is not None and quiet > 20 and not BROWSER.get("warned"):
+            BROWSER["warned"] = True
+            BROWSER["hidden"] = None
+            log("The browser page stopped answering: Chrome paused or closed it when you left. Go back to it,\n"
+                "  tap Start listening again, and switch apps with Home/recent apps (not Back). If it keeps\n"
+                "  happening: Settings > Apps > Chrome > Battery > Unrestricted.")
 
 
 async def hear(game, args, event_id):
@@ -591,7 +635,7 @@ async def main():
 """, flush=True)
         open_in_chrome(url)
         async with server, web:
-            await asyncio.gather(server.serve_forever(), web.serve_forever())
+            await asyncio.gather(server.serve_forever(), web.serve_forever(), watch_page())
         return
     print(f"""
   Jerry Voice is running (speech: {args.engine}{', always listening' if args.always else ''}).
