@@ -93,8 +93,9 @@ Install the free **Jerry Voice** helper on your phone and you can just *talk*: p
 connects with `/connect 127.0.0.1:3000`, the same trick the Verity add-on uses, but with no Beta APIs
 and no API key. **Setup guide: [voice-helper/README.md](voice-helper/README.md)**
 
-On phones that block the microphone while a game is open (most newer Androids, like the Galaxy A35),
-use the helper's **browser mode**: a Chrome page does the listening in the background. See the guide.
+**Phone blocks the microphone while Minecraft is open?** (Most newer Androids do, like the Galaxy A35.)
+Use the **Jerry Voice app** instead: a tiny app that keeps listening while you play, no Termux needed.
+**[Get it and set it up: voice-app/README.md](voice-app/README.md)**
 
 Get the helper with one line in Termux:
 
