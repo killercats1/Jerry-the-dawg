@@ -26,7 +26,10 @@ final class AppLog {
                 LINES.removeFirst();
             }
         }
-        android.util.Log.i("JerryVoice", message);
+        try {
+            android.util.Log.i("JerryVoice", message);
+        } catch (Throwable ignored) { // (no Android logging when tested on a computer)
+        }
         Listener l = listener;
         if (l != null) {
             l.onLog();
