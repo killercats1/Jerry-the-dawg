@@ -88,6 +88,8 @@ Chrome page do the listening:
    You can also press **Talk to Your Dog** first and then say anything.
 
 Leave Chrome on that page in the background. Your recordings go to Groq to be turned into text.
+**Use Chrome for this page** even if you normally use another browser (Opera, Samsung Internet...):
+other browsers may switch the microphone off when you leave them. The helper tries to open Chrome by itself.
 
 ## Always listening (no button)
 

@@ -506,6 +506,19 @@ async def on_connect(reader, writer, args):
 KEY_FILE = os.path.expanduser("~/.jerry_voice_key")
 
 
+def open_in_chrome(url):
+    """Open the page in Chrome specifically: other browsers (Opera, Samsung Internet...) may turn the
+    microphone off once you switch to Minecraft. Falls back to the default browser."""
+    if shutil.which("am"):
+        result = subprocess.run(["am", "start", "-a", "android.intent.action.VIEW", "-d", url, "-p", "com.android.chrome"],
+                                capture_output=True, text=True)
+        if result.returncode == 0 and "Error" not in (result.stdout + result.stderr):
+            return
+    if shutil.which("termux-open-url"):
+        subprocess.Popen(["termux-open-url", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+
 def check_engine(args):
     if args.browser:
         if not args.groq_key and os.environ.get("JERRY_FAKE_TRANSCRIPT") is None:
@@ -562,13 +575,12 @@ async def main():
         url = f"http://127.0.0.1:{args.web_port}"
         print(f"""
   Jerry Voice is running in browser mode.
-  1. Open {url} in Chrome and tap "Start listening" (allow the microphone).
+  1. Open {url} in Chrome (not Opera or other browsers) and tap "Start listening".
   2. Open Minecraft, join your world, and type in chat:   /connect 127.0.0.1:{args.port}
   3. Just talk: "Jerry, roll over!" (or use Talk to Your Dog first, then say anything).
   Press Ctrl+C here to stop.
 """, flush=True)
-        if shutil.which("termux-open-url"):
-            subprocess.Popen(["termux-open-url", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        open_in_chrome(url)
         async with server, web:
             await asyncio.gather(server.serve_forever(), web.serve_forever())
         return
