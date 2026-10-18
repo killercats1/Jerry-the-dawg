@@ -1752,6 +1752,8 @@ function onVoiceStatus(player, status) {
       tiltHead(dog); // ears up, big eyes: he's listening
       showFace(dog, "puppy", 90);
     }
+  } else if (status === "nobrowser") {
+    tell(player, T.VOICE_NO_BROWSER);
   } else if (status === "blocked") {
     // The phone's speech recognizer failed (e.g. no mic in the background): fall back to the talk box.
     actionbar(player, T.VOICE_BLOCKED);

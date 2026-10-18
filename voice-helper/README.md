@@ -70,6 +70,25 @@ You do **not** need Beta APIs or any other experiment.
 
 If the helper isn't running, Talk to Jerry just opens the text box like before, so nothing breaks.
 
+## Phone blocks the mic while Minecraft is open? Use browser mode 🌐
+
+Newer Android phones (Android 11+, e.g. Samsung Galaxy A-series) don't let apps in the background use
+the microphone, so Termux can't hear you while Minecraft is on screen (you'll see "NO MATCH").
+**Chrome is allowed to keep a web page's microphone on** (like a video call), so browser mode lets a
+Chrome page do the listening:
+
+1. Get a free key at <https://console.groq.com/keys> (it turns your voice into text).
+2. In Termux, run this once (the key is saved, so next time it's just `python ~/jerry_voice.py --browser`):
+   ```
+   python ~/jerry_voice.py --browser --groq-key YOUR_KEY
+   ```
+3. Chrome opens **http://127.0.0.1:3001** (if not, open it yourself). Tap **Start listening** and
+   **Allow** the microphone. Chrome shows a "using microphone" notification while it's on.
+4. Switch to **Minecraft**, `/connect 127.0.0.1:3000`, and just talk: *"Jerry, roll over!"*
+   You can also press **Talk to Your Dog** first and then say anything.
+
+Leave Chrome on that page in the background. Your recordings go to Groq to be turned into text.
+
 ## Always listening (no button)
 
 ```
