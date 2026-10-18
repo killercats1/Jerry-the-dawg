@@ -569,9 +569,18 @@ async def main():
         sys.exit(1)
 
     # Only accept connections from this phone (Minecraft connects to 127.0.0.1), never the network.
-    server = await asyncio.start_server(lambda r, w: on_connect(r, w, args), "127.0.0.1", args.port)
+    try:
+        server = await asyncio.start_server(lambda r, w: on_connect(r, w, args), "127.0.0.1", args.port)
+        web = await asyncio.start_server(lambda r, w: on_http(r, w, args), "127.0.0.1", args.web_port) if args.browser else None
+    except OSError as error:
+        if error.errno not in (98, 48):  # "address already in use" (Linux/Android, macOS)
+            raise
+        print("Jerry Voice is already running (maybe in another Termux session or tab).\n"
+              "Stop the old one first, then start again:\n\n"
+              "    pkill -f jerry_voice.py\n"
+              f"    python ~/jerry_voice.py{' --browser' if args.browser else ''}\n")
+        sys.exit(1)
     if args.browser:
-        web = await asyncio.start_server(lambda r, w: on_http(r, w, args), "127.0.0.1", args.web_port)
         url = f"http://127.0.0.1:{args.web_port}"
         print(f"""
   Jerry Voice is running in browser mode.
