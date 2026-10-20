@@ -18,6 +18,7 @@ import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
@@ -33,6 +34,7 @@ public class MainActivity extends Activity {
     static final String PREFS = "jerry_voice";
     static final String PREF_ENGINE = "engine";
     static final String PREF_KEY = "groq_key";
+    static final String PREF_SMART = "smart_jerry";
     private static final int ASK_PERMISSIONS = 1;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -43,6 +45,7 @@ public class MainActivity extends Activity {
     private Button startStop;
     private EditText keyBox;
     private RadioButton groqChoice;
+    private CheckBox smartBox;
 
     private final Runnable refresh = new Runnable() {
         @Override
@@ -86,9 +89,13 @@ public class MainActivity extends Activity {
         keyBox.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
         keyBox.setTextColor(Color.WHITE);
         keyBox.setHintTextColor(Color.GRAY);
-        keyBox.setVisibility(useGroq ? View.VISIBLE : View.GONE);
+        page.addView(smartBox = check("🧠 Smart Jerry: he understands anything you say and answers back (AI, uses the same free Groq key)"));
+        smartBox.setChecked(prefs.getBoolean(PREF_SMART, false));
         page.addView(keyBox);
-        engines.setOnCheckedChangeListener((group, id) -> keyBox.setVisibility(groqChoice.isChecked() ? View.VISIBLE : View.GONE));
+        Runnable showKey = () -> keyBox.setVisibility(groqChoice.isChecked() || smartBox.isChecked() ? View.VISIBLE : View.GONE);
+        showKey.run();
+        engines.setOnCheckedChangeListener((group, id) -> showKey.run());
+        smartBox.setOnCheckedChangeListener((box, on) -> showKey.run());
 
         startStop = new Button(this);
         startStop.setTextSize(20);
@@ -149,6 +156,7 @@ public class MainActivity extends Activity {
         prefs.edit()
                 .putString(PREF_ENGINE, groqChoice.isChecked() ? "groq" : "phone")
                 .putString(PREF_KEY, keyBox.getText().toString().trim())
+                .putBoolean(PREF_SMART, smartBox.isChecked())
                 .apply();
         if (groqChoice.isChecked() && keyBox.getText().toString().trim().isEmpty()) {
             AppLog.add("No Groq key yet, so using the phone's speech recognition.");
@@ -206,6 +214,14 @@ public class MainActivity extends Activity {
         t.setTextColor(color);
         t.setPadding(0, dp(4), 0, dp(4));
         return t;
+    }
+
+    private CheckBox check(String label) {
+        CheckBox c = new CheckBox(this);
+        c.setText(label);
+        c.setTextColor(Color.WHITE);
+        c.setPadding(0, dp(6), 0, dp(6));
+        return c;
     }
 
     private RadioButton radio(String label) {

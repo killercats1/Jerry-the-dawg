@@ -35,6 +35,20 @@ Stop it from the notification (**Stop**) or in the app.
 - **Groq Whisper**: records with the app and sends each clip to Groq to turn into text. Needs a free key
   from <https://console.groq.com/keys>. Try it if the phone's recognition doesn't hear you or beeps a lot.
 
+## 🧠 Smart Jerry (AI)
+
+Tick **Smart Jerry** in the app and paste a free Groq key (<https://console.groq.com/keys>, the same
+kind of key as Groq Whisper). Then Jerry understands *anything* and answers back in chat:
+
+- *"Jerry, what's your favourite food?"* → **Jerry:** Bones! Definitely bones. And treats. Mostly treats. Woof!
+- *"Jerry, you're the best boy in the whole world"* → he answers and wiggles happily
+- *"Jerry, are you tired?"* → he tells you how he feels (he knows his hunger, energy and fun) and might yawn
+
+He picks his own tricks to go with what he says, remembers the last few things you talked about, and
+knows his family (Mochi and the puppy), his friendship level and which tricks he's mastered. Simple
+commands like "sit" or "roll over" still happen instantly without the AI. Works for typed chat in the
+Talk box too, and for every player in the world while your phone is connected.
+
 ## Problems?
 
 The app's screen shows what it's doing. Tap **"Don't let the phone pause Jerry Voice"** if it stops by

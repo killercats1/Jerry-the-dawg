@@ -100,6 +100,10 @@ and no API key. **Setup guide: [voice-helper/README.md](voice-helper/README.md)*
 Use the **Jerry Voice app** instead: a tiny app that keeps listening while you play, no Termux needed.
 **[Get it and set it up: voice-app/README.md](voice-app/README.md)**
 
+**🧠 Smart Jerry (AI):** tick *Smart Jerry* in the Jerry Voice app (free Groq key) and Jerry understands
+anything you say and answers back in chat, picking his own tricks to match: *"Jerry, what's your favourite
+food?"*, *"Jerry, are you tired?"* Simple commands still work instantly without it.
+
 Get the helper with one line in Termux:
 
 ```

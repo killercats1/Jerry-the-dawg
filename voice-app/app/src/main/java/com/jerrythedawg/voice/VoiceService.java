@@ -27,6 +27,7 @@ public class VoiceService extends Service implements Heard, MinecraftLink.Listen
     private MinecraftLink link;
     private PhoneListener phone;
     private GroqListener groq;
+    private volatile JerryBrain brain; // Smart Jerry (AI answers), when it's on
     private PowerManager.WakeLock wakeLock;
     private volatile long talkUntil;
 
@@ -53,10 +54,18 @@ public class VoiceService extends Service implements Heard, MinecraftLink.Listen
         wakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "JerryVoice:listening");
         wakeLock.acquire(6 * 60 * 60 * 1000L);
 
-        link = new MinecraftLink(PORT, this);
-        link.start();
         SharedPreferences prefs = getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE);
         String key = prefs.getString(MainActivity.PREF_KEY, "").trim();
+        if (prefs.getBoolean(MainActivity.PREF_SMART, false)) {
+            if (key.isEmpty()) {
+                AppLog.add("Smart Jerry needs a Groq key (free at console.groq.com), so it's off for now.");
+            } else {
+                brain = new JerryBrain(key);
+                AppLog.add("Smart Jerry is on: ask him anything!");
+            }
+        }
+        link = new MinecraftLink(PORT, this);
+        link.start();
         if ("groq".equals(prefs.getString(MainActivity.PREF_ENGINE, "phone")) && !key.isEmpty()) {
             groq = new GroqListener(key, this);
             groq.start();
@@ -93,6 +102,31 @@ public class VoiceService extends Service implements Heard, MinecraftLink.Listen
     @Override
     public void onTalkPressed() {
         talkUntil = System.currentTimeMillis() + 8000;
+    }
+
+    @Override
+    public boolean smart() {
+        return brain != null;
+    }
+
+    /** The add-on put a question for Smart Jerry in this player's tags (jf_q:... and jf_ctx:...). */
+    @Override
+    public void onAskAI(String player) {
+        new Thread(() -> {
+            String question = "";
+            String context = "";
+            for (String tag : link.tags(player)) {
+                if (tag.startsWith("jf_q:")) question = tag.substring(5).trim();
+                else if (tag.startsWith("jf_ctx:")) context = tag.substring(7).trim();
+            }
+            JerryBrain b = brain;
+            if (question.isEmpty() || b == null) return;
+            AppLog.add("Asking Smart Jerry: \"" + question + "\"");
+            JerryBrain.Answer a = b.reply(player, question, context);
+            if (a == null) return; // the add-on gives up by itself after a few seconds
+            AppLog.add("Jerry: " + a.say + (a.actions.isEmpty() ? "" : "  [" + a.actions + "]"));
+            link.command("scriptevent jf:ai_reply " + player + "|" + a.actions + "|" + a.face + "|" + a.say);
+        }, "smart-jerry").start();
     }
 
     /** Something was said: pass it to the add-on (like the Termux helper does). */

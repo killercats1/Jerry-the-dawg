@@ -87,7 +87,7 @@ const reactedAt = new Map(); // "playerId:reaction" -> seconds, so reactions don
 const awaySince = new Map(); // player id -> seconds when the dog was last nearby
 const listening = new Map(); // player id -> { dog id, until tick } while he's all ears ("listen up")
 // The optional phone voice helper (voice-helper/jerry_voice.py) checks in every few seconds.
-const voiceHelper = { lastSeen: -999, lastListener: undefined };
+const voiceHelper = { lastSeen: -999, lastListener: undefined, ai: false };
 const LISTEN_TAG = "jf_listen"; // the helper listens when it sees this tag on a player
 
 // ---------------------------------------------------------------- helpers
@@ -1778,12 +1778,18 @@ function startTalking(player) {
   }, 50);
 }
 
-function onVoiceHello() {
+function onVoiceHello(message) {
   const wasConnected = voiceConnected();
+  const hadAI = voiceHelper.ai;
   voiceHelper.lastSeen = seconds;
-  if (wasConnected) return;
+  voiceHelper.ai = /\bai\b/.test(String(message)); // "Smart Jerry" is on in the app
+  if (wasConnected) {
+    if (voiceHelper.ai && !hadAI) for (const player of world.getAllPlayers()) tell(player, T.AI_ON);
+    return;
+  }
   for (const player of world.getAllPlayers()) {
     tell(player, T.VOICE_CONNECTED);
+    if (voiceHelper.ai) tell(player, T.AI_ON);
     const dog = findDog(player);
     if (dog && isNear(dog, player, 24)) {
       showSpeaker(dog, 50);
@@ -1992,6 +1998,7 @@ function hearSpeech(player, said) {
   // listening and he reacts.
   const start = saidDogName(said, player) ? ALERT_TICKS : 0;
   if (start) alertPet(player, dog);
+  if (wantsAI(said, commands, player)) return askAI(player, dog, said, start);
   const speakerTicks = commands.some((entry) => entry.action === "bark") ? 70 : 45;
   system.runTimeout(() => isValid(dog) && showSpeaker(dog, speakerTicks), Math.max(1, start));
   if (!commands.length) {
@@ -2006,6 +2013,124 @@ function hearSpeech(player, said) {
     at += actionTicks(entry);
   }
   return at;
+}
+
+// ---------------------------------------------------------------- smart Jerry (AI)
+// With "Smart Jerry" on in the Jerry Voice app, anything that isn't a simple command ("Jerry, what's
+// your favourite food?") goes to an AI that answers as Jerry and picks what he does. Add-ons can't
+// reach the internet, so the question goes out in tags on you (jf_q:..., jf_ctx:..., jf_ai_ask) and
+// the app answers over /connect with "/scriptevent jf:ai_reply <name>|<actions>|<face>|<words>".
+
+const AI_ASK_TAG = "jf_ai_ask";
+const AI_WAIT_TICKS = 240; // 12 seconds, then he gives up and tilts his head
+const AI_FACES = new Set(["happy", "puppy", "love", "sleepy", "shocked"]);
+const AI_ACTIONS = new Set(T.VOICE.map((entry) => entry.action).filter((action) => action !== "mochi"));
+const aiPending = new Map(); // player id -> { dog id, token }
+const CHATTY = /^(what|whats|what's|why|how|who|where|when|which|do|does|did|are|is|can|could|would|will|should|have|has|tell|i|i'm|im|you|you're|youre|your|guess|wanna|want|did|was|were)\b/;
+
+const aiReady = () => voiceConnected() && voiceHelper.ai;
+
+// Simple commands stay instant; questions, chatting and anything he doesn't know go to the AI.
+function wantsAI(said, commands, player) {
+  if (!aiReady() || commands.some((entry) => entry.action === "math")) return false;
+  const words = cleanWords(normalizeNames(said.toLowerCase().replace(/[^a-z' ]+/g, " "), player))
+    .split(" ")
+    .filter((word) => word && word !== "jerry" && word !== "hey");
+  if (!commands.length) return words.length > 0;
+  const question = /\?\s*$/.test(said);
+  if (words.length <= 3 && !question) return false;
+  return question || words.length > 5 || CHATTY.test(words.join(" "));
+}
+
+const tagSafe = (text, max = 150) => String(text).replace(/§./g, "").replace(/[,|"\\]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+
+function clearAITags(player) {
+  for (const tag of player.getTags()) {
+    if (tag === AI_ASK_TAG || tag.startsWith("jf_q:") || tag.startsWith("jf_ctx:")) player.removeTag(tag);
+  }
+}
+
+// What the AI should know about him right now (no commas: tags are listed comma-separated).
+function aiContext(player, dog) {
+  const needs = getNeeds(player);
+  const skills = getSkills(player);
+  const mastered = Object.keys(skills).filter((key) => !key.includes(":") && skills[key] >= MASTER_AT);
+  return [
+    `dog=${dogName(player)}`,
+    `owner=${player.name}`,
+    `friendship=${T.LEVELS[levelOf(getNum(player, PROP.friendship))]}`,
+    `mood=${moodOf(needs)}`,
+    `hunger=${needs.hunger}/100`,
+    `energy=${needs.energy}/100`,
+    `fun=${needs.fun}/100`,
+    `cat=${player.getDynamicProperty(PROP.hasCat) ? catName(player) : "none yet"}`,
+    `puppy=${player.getDynamicProperty(PROP.hasPup) ? pupName(player) : "none yet"}`,
+    `time=${isNight() ? "night" : "day"}`,
+    `resting=${isSitting(dog) ? "yes" : "no"}`,
+    `place=${dog.dimension.id.replace("minecraft:", "")}`,
+    `mastered=${mastered.map((key) => T.TRICK_NAMES[key] ?? key).join(" / ") || "nothing yet"}`,
+  ].join("; ");
+}
+
+function askAI(player, dog, said, start) {
+  clearAITags(player);
+  player.addTag(`jf_q:${tagSafe(said)}`);
+  player.addTag(`jf_ctx:${tagSafe(aiContext(player, dog), 400)}`);
+  player.addTag(AI_ASK_TAG);
+  const token = (aiPending.get(player.id)?.token ?? 0) + 1;
+  aiPending.set(player.id, { dog: dog.id, token });
+  // He thinks about it: ears up, head tilted, speaker icon on until the answer comes.
+  system.runTimeout(() => {
+    if (!isValid(dog) || aiPending.get(player.id)?.token !== token) return;
+    showSpeaker(dog, AI_WAIT_TICKS);
+    showFace(dog, "puppy", AI_WAIT_TICKS);
+    tiltHead(dog);
+  }, Math.max(1, start));
+  system.runTimeout(() => {
+    if (aiPending.get(player.id)?.token !== token) return;
+    aiPending.delete(player.id);
+    if (!isValid(player)) return;
+    clearAITags(player);
+    tell(player, T.AI_NO_ANSWER);
+    if (isValid(dog)) {
+      showSpeaker(dog, 1);
+      tiltHead(dog);
+      sound(dog.dimension, "mob.wolf.whine", dog.location);
+    }
+  }, AI_WAIT_TICKS);
+  return 70 + start;
+}
+
+function onAIReply(message) {
+  const [name = "", actionList = "", face = "", ...rest] = String(message).split("|");
+  const words = rest.join("|").replace(/§/g, "").trim().slice(0, 240);
+  const player = world.getAllPlayers().find((p) => p.name === name.trim());
+  if (!player) return;
+  const pending = aiPending.get(player.id);
+  aiPending.delete(player.id);
+  clearAITags(player);
+  let dog;
+  try {
+    dog = pending ? world.getEntity(pending.dog) : undefined;
+  } catch {}
+  if (!isValid(dog)) dog = findDog(player);
+  if (!isValid(dog)) return;
+  showSpeaker(dog, 40);
+  if (words) player.sendMessage(`§b${dogName(player)}§f: ${words}`);
+  const actions = actionList
+    .split(",")
+    .map((action) => action.trim().toLowerCase())
+    .filter((action) => AI_ACTIONS.has(action))
+    .slice(0, 3);
+  let at = 6;
+  for (const action of actions) {
+    // He already said his piece, so no canned reply; praise still counts as friendship.
+    const entry = { action, praise: action === "love" };
+    system.runTimeout(() => isValid(player) && isValid(dog) && respond(player, dog, entry), at);
+    at += actionTicks(entry);
+  }
+  if (!actions.length) sound(dog.dimension, "mob.wolf.panting", dog.location);
+  if (AI_FACES.has(face)) system.runTimeout(() => isValid(dog) && showFace(dog, face, 80), at);
 }
 
 function hearCat(player, said) {
@@ -2311,7 +2436,7 @@ function respond(player, dog, entry) {
     }
   }
   if (entry.praise && earn(player, "talk")) reply += `  ${friendshipBar(player)}`;
-  tell(player, reply);
+  if (reply) tell(player, reply);
 }
 
 function talkAction(player, dog, action) {
@@ -2606,7 +2731,8 @@ function resetPets(player) {
 
 system.afterEvents.scriptEventReceive.subscribe(
   ({ id, sourceEntity, message }) => {
-    if (id === "jf:voice_hello") return onVoiceHello();
+    if (id === "jf:voice_hello") return onVoiceHello(message);
+    if (id === "jf:ai_reply") return onAIReply(message);
     const players = world.getAllPlayers();
     // Commands from the voice helper normally run as you; if not, use whoever asked to talk.
     const player =

@@ -28,10 +28,17 @@ final class MinecraftLink {
     interface Listener {
         /** You used "Talk to Your Dog" in the game. */
         void onTalkPressed();
+
+        /** Smart Jerry is on (the add-on then sends us questions). */
+        boolean smart();
+
+        /** The add-on wants Smart Jerry to answer this player (their question is in their tags). */
+        void onAskAI(String player);
     }
 
     private static final String WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     private static final String LISTEN_TAG = "jf_listen"; // the add-on tags you when you press Talk
+    private static final String AI_ASK_TAG = "jf_ai_ask"; // ...and this when Smart Jerry should answer
 
     private final int port;
     private final Listener listener;
@@ -64,6 +71,25 @@ final class MinecraftLink {
     boolean connected() {
         Client c = client;
         return c != null && !c.closed;
+    }
+
+    static String stripColors(String text) {
+        return String.valueOf(text).replaceAll("§.", "");
+    }
+
+    /** A player's tags, from "/tag <name> list" ("Steve has 3 tags: a, b, c"). */
+    java.util.List<String> tags(String player) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        JSONObject r = command("tag \"" + player + "\" list");
+        if (r == null) return out;
+        String msg = stripColors(r.optString("statusMessage", ""));
+        int colon = msg.indexOf(':');
+        if (colon < 0) return out;
+        for (String t : msg.substring(colon + 1).split(",")) {
+            String tag = t.trim();
+            if (!tag.isEmpty()) out.add(tag);
+        }
+        return out;
     }
 
     /** Runs a command in the game as you (returns Minecraft's answer, or null). */
@@ -269,13 +295,26 @@ final class MinecraftLink {
                 long now = System.currentTimeMillis();
                 if (now - lastHello > 5000) {
                     lastHello = now;
-                    command("scriptevent jf:voice_hello", 4000);
+                    command("scriptevent jf:voice_hello" + (listener.smart() ? " ai" : ""), 4000);
                 }
                 JSONObject found = command("testfor @a[tag=" + LISTEN_TAG + "]", 4000);
                 if (found != null && found.optInt("statusCode", -1) == 0) {
                     command("tag @a remove " + LISTEN_TAG, 4000);
                     command("scriptevent jf:voice_status listening", 4000);
                     listener.onTalkPressed();
+                }
+                if (listener.smart()) {
+                    JSONObject asking = command("testfor @a[tag=" + AI_ASK_TAG + "]", 4000);
+                    if (asking != null && asking.optInt("statusCode", -1) == 0) {
+                        // "Found Steve" or "Found Steve, Alex"
+                        String names = stripColors(asking.optString("statusMessage", "")).replaceFirst("^\\s*Found\\s*", "");
+                        for (String name : names.split(",")) {
+                            String who = name.trim();
+                            if (who.isEmpty() || who.contains("\"")) continue;
+                            command("tag \"" + who + "\" remove " + AI_ASK_TAG, 4000);
+                            listener.onAskAI(who);
+                        }
+                    }
                 }
                 try {
                     Thread.sleep(300);
