@@ -109,6 +109,10 @@ export const CAT_REPLIES = {
   yawn: ["§dMochi§7 does a tiny yawn. Her tongue sticks out a bit.", "§dMochi§7 curls up for a cat nap."],
   shock: ["§dMochi§7 jumps three feet in the air! Her tail is a bottle brush.", "§dMochi§7's eyes go HUGE."],
   play: ["§dMochi§7 gets the zoomies and tears around you!", "§dMochi§7 pounces on everything. Zoomies!"],
+  hug: ["§dMochi§7 allows the hug for exactly three seconds. Then she headbutts your chin. Love!", "§dMochi§7 purrs in your arms... then wriggles free. That counts."],
+  sleep: ["§dMochi§7 curls into a perfect circle and falls asleep. Shhh.", "§dMochi§7 tucks her nose under her tail. Goodnight, Mochi."],
+  sneeze: ["§dMochi§f: *tiny sneeze* §7She looks offended at her own nose.", "§dMochi§7 sneezes the smallest sneeze ever recorded."],
+  catch: ["§dMochi§7 swats the treat out of the air and eats it like it was her idea.", "§dMochi§7 pounces and catches it! Purr-fect."],
 };
 export const CAT_SASS = [
   "§dMochi§7 stares at you. Cats don't do §f{trick}§7. She licks her paw instead.",
@@ -197,7 +201,7 @@ export const CAT_ARRIVES = [
 // Used by the "Talk to Your Dog" item. On phones, tap the microphone on the keyboard to say it out loud.
 
 export const TALK_TITLE = "Talk to Jerry";
-export const TALK_LABEL = "Say something to Jerry!\n§7Tap the §fmicrophone§7 on your keyboard and say it out loud.\nTricks: sit, lie down, shake, high five, wave, beg, roll over, play dead, bow, spin, dance, backflip, howl, chase your tail, speak, fetch\nOr a few at once: \"sit, then shake, then roll over\"";
+export const TALK_LABEL = "Say something to Jerry!\n§7Tap the §fmicrophone§7 on your keyboard and say it out loud.\nTricks: sit, lie down, shake, high five, wave, beg, roll over, play dead, bow, spin, dance, backflip, howl, chase your tail, speak, fetch, hug, scratch, shake off, catch, sneeze, back up, go to sleep\nMath: \"what's 2 plus 3?\"\nOr a few at once: \"sit, then shake, then roll over\"";
 export const TALK_PLACEHOLDER = "Good boy, Jerry!";
 export const TALK_KEEP_GOING = "Keep talking (this box pops back up after Jerry answers)";
 
@@ -209,6 +213,7 @@ export const MISHEARD = {
   spinning: "spin", spins: "spin", jumping: "jump", jumps: "jump", barking: "bark", sleeping: "sleep",
   mocha: "mochi", moshi: "mochi", mochis: "mochi", mochie: "mochi", motchi: "mochi",
   comeon: "come", kom: "come",
+  hugging: "hug", hugged: "hug", scratching: "scratch", sneezing: "sneeze", sneezes: "sneeze", catching: "catch",
 };
 // Distinctive words that still count when one letter is off, like "speek" or "fetchh".
 export const FUZZY_WORDS = ["speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello", "backflip", "stretch", "peekaboo"];
@@ -218,6 +223,14 @@ export const FUZZY_WORDS = ["speak", "fetch", "mochi", "jerry", "belly", "zoomie
 export const VOICE = [
   { words: ["good boy", "good dog", "love you", "best boy", "good job", "well done", "cute"], face: "love", action: "love", praise: true,
     replies: ["§bJerry§7's tail is wagging so fast it's basically a propeller.", "§bJerry§7 knows. He's very aware. *happy wiggle*"] },
+  { words: ["give me a hug", "hug me", "hug", "hugs", "cuddle", "cuddles", "snuggle"], face: "love", action: "hug", praise: true,
+    replies: ["§bJerry§7 stands up and gives you the biggest hug. *happy wiggle*", "§bJerry§7 wraps his paws around you. Best hug ever."] },
+  { words: ["scratch your ear", "scratch", "itchy", "itch", "got fleas"], face: "happy", action: "scratch",
+    replies: ["§bJerry§7 sits and scratches behind his ear. *thump thump thump*", "§bJerry§7 finds the itchy spot. Ahhh, that's the one."] },
+  { words: ["sneeze", "achoo", "a choo", "bless you", "ah choo"], face: "shocked", action: "sneeze",
+    replies: ["§bJerry§f: Achoo! §7(Bless you, Jerry.)", "§bJerry§7 does the tiniest sneeze and looks surprised at himself."] },
+  { words: ["catch", "catch it", "catch the treat", "heads up"], face: "happy", action: "catch",
+    replies: ["§bJerry§7 snaps the treat right out of the air! *crunch*", "§bJerry§7 catches it like a pro. Didn't even blink."] },
   { words: ["find it", "find the treat", "go find", "find", "search", "sniff", "seek", "where is it"], face: "puppy", action: "find",
     replies: ["§bJerry§7 puts his nose to the ground. *sniff sniff*", "§bJerry§7 goes into detective mode."] },
   { words: ["hide your face", "cover your eyes", "are you shy", "shy", "peekaboo", "peek a boo", "embarrassed", "blush"], face: "puppy", action: "shy",
@@ -226,6 +239,8 @@ export const VOICE = [
     replies: ["§bJerry§7 does a big long streeeetch.", "§bJerry§7 stretches out his front paws and wiggles his bum."] },
   { words: ["groom", "wash your face", "wash", "clean yourself", "lick your paw", "bath"], face: "happy", action: "groom",
     replies: ["§bJerry§7 tries to wash his face like a cat. It doesn't really work.", "§bJerry§7 licks his paw, very pleased with himself."] },
+  { words: ["go to sleep", "go to bed", "goodnight", "good night", "night night", "sleep tight", "bedtime", "lights out"], action: "sleep",
+    replies: ["§bJerry§7 curls up and closes his eyes. Goodnight, Jerry. Say §f\"come\"§7 to wake him.", "§bJerry§7 does three little circles and falls asleep. Shhh."] },
   { words: ["play dead", "bang", "you're dead", "youre dead"], face: "sleepy", action: "dead",
     replies: ["§bJerry§7 flops over dramatically. Award-winning performance.", "§bJerry§7 plays dead... but his tail is still wagging."] },
   { words: ["roll over", "roll", "belly rub", "belly rubs", "belly"], face: "happy", action: "roll",
@@ -236,6 +251,8 @@ export const VOICE = [
     replies: ["§bJerry§7 sits down and waits patiently. Say §f\"come\"§7 to call him.", "§bJerry§7 sits like a very good boy. Say §f\"come\"§7 when you're ready."] },
   { words: ["lie down", "lay down", "down", "lie", "lay"], face: "happy", action: "lie",
     replies: ["§bJerry§7 lies down and gets comfy. Say §f\"come\"§7 to call him.", "§bJerry§7 flops down on his belly. Comfy."] },
+  { words: ["shake it off", "shake off", "shake yourself", "dry off", "you're wet", "youre wet", "you're soaked"], face: "happy", action: "shakeoff",
+    replies: ["§bJerry§7 shakes from nose to tail. Water EVERYWHERE.", "§bJerry§7 does a big wet-dog shake. You're soaked now."] },
   { words: ["high five", "high fives", "hi five", "high"], face: "happy", action: "highfive",
     replies: ["§bJerry§7 gives you a high five! *boop*", "§bJerry§7 slaps your hand with his paw. Nailed it."] },
   { words: ["shake", "paw", "give me your paw", "gimme paw", "shake hands"], face: "happy", action: "paw",
@@ -246,6 +263,8 @@ export const VOICE = [
     replies: ["§bJerry§7 takes a bow. Thank you, thank you.", "§bJerry§7 does a big play bow. He wants to play!"] },
   { words: ["dance", "boogie", "party", "dance party"], face: "happy", action: "dance",
     replies: ["§bJerry§7 stands up on his back legs and DANCES!", "§bJerry§7 has moves. Serious moves."] },
+  { words: ["back up", "backup", "back off", "go back", "reverse", "beep beep", "step back"], face: "happy", action: "backup",
+    replies: ["§bJerry§7 walks backwards. Beep. Beep. Beep.", "§bJerry§7 backs up very carefully, looking right at you."] },
   { words: ["backflip", "back flip", "flip", "do a flip"], face: "happy", action: "backflip",
     replies: ["§bJerry§7 does a BACKFLIP! How?!", "§bJerry§7 flips and sticks the landing. 10/10."] },
   { words: ["howl", "sing", "awoo", "awooo", "wolf"], face: "sleepy", action: "howl",
@@ -339,7 +358,20 @@ export const TRICK_NAMES = {
   bow: "bow", dance: "dance", backflip: "backflip", howl: "howl", chase: "chase his tail", spin: "spin",
   lie: "lie down", hop: "jump", find: "find it", shy: "be shy", stretch: "stretch", groom: "groom",
   fetch: "fetch", play: "zoomies", bone: "fetch her bone", excited: "treats", yawn: "nap", shock: "boo",
+  shakeoff: "shake off", scratch: "scratch", hug: "hug", sneeze: "sneeze", catch: "catch", sleep: "go to sleep", backup: "back up",
+  math: "math",
 };
+export const MATH_DONE = [
+  "§bJerry§7 barked §f{n}§7 {times}. He's a genius!",
+  "§bJerry§7 barks §f{n}§7 {times} and looks VERY proud. Correct!",
+  "§f{n}§7! §bJerry§7 got it right. Somebody call the dog university.",
+];
+export const MATH_ZERO = "§bJerry§7 stares at you and doesn't bark at all. Zero barks. ...Correct!";
+export const MATH_HARD = [
+  "§bJerry§7 tilts his head. That's too much math for one dog. (Try answers from 1 to 10!)",
+  "§bJerry§7 counts on his paws and runs out of paws. (Try answers from 1 to 10!)",
+];
+export const PUP_MATH = "§ePip§7 barks §f{n}§7 times too. Not quite, little guy. *tail wag anyway*";
 export const FOUND_IT = [
   "§bJerry§7 found a treat! *crunch crunch* What a nose!",
   "§bJerry§7 sniffs out a treat and gobbles it up. Detective Jerry strikes again.",

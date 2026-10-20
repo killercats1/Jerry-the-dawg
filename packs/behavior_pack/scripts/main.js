@@ -53,6 +53,7 @@ const FETCH_SLOTS = 8; // matches the jf:fetch_chase_0..7 behaviors in entities/
 const POSE = {
   stand: 0, sit: 1, roll: 2, tilt: 3, paw: 4, wave: 5, beg: 6,
   playDead: 7, lie: 8, bow: 9, dance: 10, backflip: 11, howl: 12, sniff: 13, shy: 14, stretch: 15, groom: 16,
+  scratch: 17, shakeOff: 18, hug: 19, sleep: 20, sneeze: 21, // Jerry and the puppy only (Mochi stops at groom)
 };
 const DEFAULT_DOG_NAME = "Jerry";
 const DEFAULT_CAT_NAME = "Mochi";
@@ -1105,11 +1106,13 @@ function updateNeeds(player, dog) {
 
 const PRACTICE = new Set([
   "paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin", "lie", "hop",
-  "find", "shy", "stretch",
+  "find", "shy", "stretch", "shakeoff", "scratch", "sneeze", "catch", "backup",
 ]);
 // The tricks Mochi knows (practiced like Jerry's). Anything else gets cat sass.
-const CAT_PRACTICE = new Set(["paw", "highfive", "wave", "beg", "roll", "dead", "spin", "lie", "hop", "shy", "stretch", "chase", "groom"]);
-const CAT_ALWAYS = new Set(["love", "sit", "come", "greet", "bark", "spinleft", "spinright", "find", "excited", "yawn", "shock", "play", "mochi"]);
+const CAT_PRACTICE = new Set(["paw", "highfive", "wave", "beg", "roll", "dead", "spin", "lie", "hop", "shy", "stretch", "chase", "groom", "catch"]);
+const CAT_ALWAYS = new Set([
+  "love", "sit", "come", "greet", "bark", "spinleft", "spinright", "find", "excited", "yawn", "shock", "play", "mochi", "hug", "sleep", "sneeze",
+]);
 const MASTER_AT = 5; // successful tries to master a trick
 
 function getSkills(player) {
@@ -1856,19 +1859,52 @@ function matchVoice(part) {
 function parseCommands(said, player) {
   const parts = said
     .toLowerCase()
+    .replace(/(\d)\s*-\s*(?=\d)/g, "$1 minus ")
     .replace(/-/g, " ")
     .replace(/[,.!?;:]+/g, " | ")
     .replace(/\b(and then|then|after that|and)\b/g, " | ")
-    .split("|")
-    .map((part) => part.replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ").trim())
-    .map((part) => (player ? normalizeNames(part, player) : part))
-    .filter(Boolean);
+    .split("|");
   const entries = [];
-  for (const part of parts) {
-    const entry = matchVoice(part);
+  for (const raw of parts) {
+    let part = raw.replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ").trim();
+    if (player) part = normalizeNames(part, player);
+    const entry = mathProblem(raw) ?? (part ? matchVoice(part) : undefined);
     if (entry && entries[entries.length - 1] !== entry) entries.push(entry);
   }
   return entries.slice(0, 4);
+}
+
+// "What's 2 plus 3?" -> he barks 5 times. Also "count to 4" and "how many legs do you have".
+const NUMBER_WORDS = [
+  "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+  "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+];
+const NUM = `(\\d+|${NUMBER_WORDS.join("|")})`;
+const NUM_AFTER = `(\\d+|${NUMBER_WORDS.join("|")}|to|too|for)`; // "two plus to" is what the mic hears sometimes
+const SUMS = [
+  { re: "plus|\\+|add", op: (a, b) => a + b },
+  { re: "minus|take away|takeaway", op: (a, b) => a - b },
+  { re: "times|x|\\*|×|multiplied by", op: (a, b) => a * b },
+  { re: "divided by|over|\\/|÷", op: (a, b) => a / b },
+];
+const toNumber = (word) => (/^\d+$/.test(word) ? Number(word) : { to: 2, too: 2, for: 4 }[word] ?? NUMBER_WORDS.indexOf(word));
+
+function mathProblem(text) {
+  const t = ` ${text.toLowerCase().replace(/\s+/g, " ")} `;
+  let answer;
+  for (const sum of SUMS) {
+    const m = t.match(new RegExp(`\\b${NUM}\\s*(?:${sum.re})\\s*${NUM_AFTER}\\b`));
+    if (m) {
+      answer = sum.op(toNumber(m[1]), toNumber(m[2]));
+      break;
+    }
+  }
+  const count = t.match(new RegExp(`\\bcount (?:up )?to ${NUM}\\b`));
+  if (answer === undefined && count) answer = toNumber(count[1]);
+  if (answer === undefined && /\bhow many legs\b/.test(t)) answer = 4;
+  if (answer === undefined) return undefined;
+  const ok = Number.isInteger(answer) && answer >= 0 && answer <= 10;
+  return { action: "math", count: ok ? answer : -1 };
 }
 
 // How long each reaction takes, so the next command (or the talk box) waits for it.
@@ -1876,8 +1912,9 @@ const ACTION_TICKS = {
   roll: 56, spin: 34, play: 50, greet: 40, paw: 50, highfive: 50, wave: 50, beg: 50,
   dead: 75, lie: 25, bow: 45, dance: 75, backflip: 30, howl: 55, chase: 75,
   find: 110, shy: 65, stretch: 55, spinleft: 34, spinright: 34, groom: 70,
+  shakeoff: 35, scratch: 65, hug: 65, sneeze: 25, catch: 30, backup: 34, sleep: 40,
 };
-const actionTicks = (entry) => ACTION_TICKS[entry.action] ?? 30;
+const actionTicks = (entry) => (entry.action === "math" ? 30 + Math.max(1, entry.count) * 10 : ACTION_TICKS[entry.action] ?? 30);
 
 // Did you say Mochi's name (or "kitty")? Then the commands are for her.
 function talkingToCat(said, player) {
@@ -2042,9 +2079,30 @@ function respondCat(player, cat, entry) {
     case "play":
       catZoomies(cat);
       break;
+    case "hug":
+      // she allows it. Briefly. Then a headbutt.
+      sparkle(cat);
+      showFace(cat, "love", 60);
+      sound(dim, "mob.cat.purr", cat.location);
+      system.runTimeout(() => isValid(cat) && hop(cat, 0.25), 40);
+      if (earn(player, "talk")) actionbar(player, friendshipBar(player));
+      break;
+    case "sleep":
+      sound(dim, "mob.cat.purr", cat.location);
+      sit(cat, POSE.lie);
+      showFace(cat, "sleepy", 1200);
+      break;
+    case "sneeze":
+      tiltHead(cat);
+      system.runTimeout(() => isValid(cat) && sound(cat.dimension, "mob.panda.sneeze", cat.location, { pitch: 1.9 }), 6);
+      break;
+    case "catch":
+      hop(cat, 0.5);
+      system.runTimeout(() => isValid(cat) && sound(cat.dimension, "random.eat", cat.location, { pitch: 1.4 }), 10);
+      break;
   }
-  const faces = { lie: "sleepy", yawn: "sleepy", shock: "shocked", dead: "sleepy", beg: "puppy", excited: "puppy", shy: "puppy" };
-  if (action !== "love") showFace(cat, faces[action] ?? "happy", actionTicks(entry) + 20);
+  const faces = { lie: "sleepy", yawn: "sleepy", shock: "shocked", dead: "sleepy", beg: "puppy", excited: "puppy", shy: "puppy", sneeze: "shocked" };
+  if (action !== "love" && action !== "hug" && action !== "sleep") showFace(cat, faces[action] ?? "happy", actionTicks(entry) + 20);
   const replies = T.CAT_REPLIES[action];
   if (replies) tell(player, pick(replies));
 }
@@ -2080,6 +2138,7 @@ function respondPup(player, pup, entry) {
     return tell(player, T.PUP_MOMENTS[3].text);
   }
   if (entry.action === "find") return trick(pup, POSE.sniff, 50, false);
+  if (entry.action === "math") return doMath(player, pup, entry);
   if (PUP_SKIP.has(entry.action)) return tiltHead(pup);
   if (PRACTICE.has(entry.action) && Math.random() < 0.3) {
     pupOops(pup);
@@ -2105,10 +2164,10 @@ function pupZoomies(pup) {
 }
 
 // When Jerry does a trick, the puppy (if he's around) tries to copy him.
-const PUP_FOLLOWS = new Set(["sit", "lie", "come"]); // these he always copies
+const PUP_FOLLOWS = new Set(["sit", "lie", "come", "sleep"]); // these he always copies
 const PUP_COPIES = new Set([
   "roll", "paw", "highfive", "wave", "beg", "dead", "bow", "dance", "howl", "chase", "spin", "spinleft", "spinright",
-  "hop", "bark", "shy", "stretch", "love", "shock",
+  "hop", "bark", "shy", "stretch", "love", "shock", "shakeoff", "scratch", "sneeze", "hug", "catch", "backup",
 ]);
 
 function pupCopies(player, action) {
@@ -2163,6 +2222,7 @@ function respond(player, dog, entry) {
   }
   if (entry.action === "play") return play(player);
   if (entry.action === "fetch") return throwBall(player);
+  if (entry.action === "math") return doMath(player, dog, entry);
   if (PRACTICE.has(entry.action)) {
     changeNeeds(player, { fun: 3, energy: -1 });
     // Too sleepy? Sometimes he'd rather nap.
@@ -2299,7 +2359,126 @@ function talkAction(player, dog, action) {
       sound(dim, "mob.wolf.panting", dog.location, { pitch: 0.8 });
       trick(dog, POSE.stretch, 50);
       return changeNeeds(player, { energy: 2 });
+    case "shakeoff":
+      trick(dog, POSE.shakeOff, 30);
+      sound(dim, "mob.wolf.shake", dog.location);
+      for (let i = 0; i < 3; i++) system.runTimeout(() => isValid(dog) && sparkle(dog, "minecraft:water_splash_particle", 10), i * 8);
+      return;
+    case "scratch":
+      trick(dog, POSE.scratch, 60);
+      // *thump thump thump* goes the back paw
+      for (let i = 0; i < 5; i++) system.runTimeout(() => isValid(dog) && sound(dog.dimension, "mob.wolf.step", dog.location, { pitch: 1.3 }), 8 + i * 8);
+      return;
+    case "hug":
+      if (!isNear(dog, player, 4)) bring(dog, player);
+      lookAt(dog, player);
+      trick(dog, POSE.hug, 60);
+      sparkle(dog, "minecraft:heart_particle", 4);
+      system.runTimeout(() => isValid(dog) && sparkle(dog, "minecraft:heart_particle", 4), 30);
+      return sound(dim, "mob.wolf.panting", dog.location);
+    case "sneeze":
+      trick(dog, POSE.sneeze, 20, false);
+      return system.runTimeout(() => {
+        if (!isValid(dog)) return;
+        sound(dog.dimension, "mob.panda.sneeze", dog.location, { pitch: isPup(dog) ? 1.7 : 1.3 });
+        sparkle(dog, "minecraft:basic_smoke_particle", 3);
+      }, 9);
+    case "catch":
+      lookAt(dog, player);
+      trick(dog, POSE.beg, 24);
+      system.runTimeout(() => isValid(dog) && hop(dog, 0.45), 6);
+      return system.runTimeout(() => {
+        if (!isValid(dog)) return;
+        sound(dog.dimension, "random.eat", dog.location);
+        sparkle(dog, "minecraft:villager_happy", 5);
+        changeNeeds(player, { hunger: 2, fun: 2 });
+      }, 12);
+    case "backup":
+      return backUp(player, dog);
+    case "sleep":
+      sound(dim, "mob.wolf.panting", dog.location, { pitch: 0.6 });
+      changeNeeds(player, { energy: 10 });
+      if (!isPup(dog) && goToBed(player, dog, true)) return; // he has a bed: off he goes
+      sit(dog, POSE.sleep);
+      showFace(dog, "sleepy", 1200);
+      // a little snore
+      return system.runTimeout(() => isValid(dog) && restPose(dog) === POSE.sleep && sound(dog.dimension, "mob.wolf.panting", dog.location, { pitch: 0.5 }), 60);
   }
+}
+
+// Turns a pet to face you.
+function lookAt(pet, player) {
+  try {
+    const dx = player.location.x - pet.location.x;
+    const dz = player.location.z - pet.location.z;
+    pet.setRotation({ x: 0, y: (Math.atan2(-dx, dz) * 180) / Math.PI });
+  } catch {}
+}
+
+// "Back up!": he walks backwards a few steps, still looking at you. Beep. Beep. Beep.
+function backUp(player, dog) {
+  if (isSitting(dog)) stand(dog);
+  trick(dog, POSE.stand, 28); // pauses his follow brain while he reverses
+  const from = player.location;
+  let ticks = 0;
+  const run = system.runInterval(() => {
+    if (!isValid(dog) || ++ticks > 24) return system.clearRun(run);
+    const p = dog.location;
+    let dx = p.x - from.x;
+    let dz = p.z - from.z;
+    let d = Math.hypot(dx, dz);
+    if (d < 0.1) {
+      const yaw = (dog.getRotation().y * Math.PI) / 180;
+      dx = Math.sin(yaw); // straight behind him
+      dz = -Math.cos(yaw);
+      d = 1;
+    }
+    const v = dog.getVelocity();
+    try {
+      dog.applyImpulse({ x: ((dx / d) * 0.12 - v.x) * 0.35, y: 0, z: ((dz / d) * 0.12 - v.z) * 0.35 });
+      dog.setRotation({ x: 0, y: (Math.atan2(dx, -dz) * 180) / Math.PI });
+    } catch {}
+    if (ticks % 8 === 1) sound(dog.dimension, "note.pling", dog.location, { pitch: 2 });
+  }, 1);
+}
+
+// "What's 2 plus 3?" He barks the answer. He's very smart.
+function doMath(player, dog, entry) {
+  const n = entry.count;
+  const say = (text) => tell(player, isPup(dog) ? text.replace(/Jerry/g, "Pip") : text);
+  if (n < 0) {
+    tiltHead(dog);
+    showFace(dog, "puppy", 60);
+    sound(dog.dimension, "mob.wolf.whine", dog.location);
+    return say(pick(T.MATH_HARD));
+  }
+  if (n === 0) {
+    tiltHead(dog);
+    showFace(dog, "happy", 60);
+    return say(T.MATH_ZERO);
+  }
+  trick(dog, POSE.sit, 20 + n * 10); // sits up nice and tall to concentrate
+  for (let i = 0; i < n; i++) {
+    system.runTimeout(() => {
+      if (!isValid(dog)) return;
+      sound(dog.dimension, "mob.wolf.bark", dog.location);
+    }, 8 + i * 10);
+  }
+  system.runTimeout(() => {
+    if (!isValid(dog) || !isValid(player)) return;
+    sparkle(dog, "minecraft:villager_happy", 6);
+    showFace(dog, "happy", 40);
+    let reply = pick(T.MATH_DONE).replace("{n}", String(n)).replace("{times}", n === 1 ? "time" : "times");
+    if (earn(player, "talk")) reply += `  ${friendshipBar(player)}`;
+    say(reply);
+    // The puppy has a go too. He's still learning to count.
+    const pup = findPup(player);
+    if (!isPup(dog) && isNear(pup, player, 24) && Math.random() < 0.5) {
+      const guess = n + (Math.random() < 0.5 ? 1 : -1) || 2;
+      for (let i = 0; i < guess; i++) system.runTimeout(() => isValid(pup) && sound(pup.dimension, "mob.wolf.bark", pup.location, { pitch: 1.6 }), 10 + i * 8);
+      system.runTimeout(() => isValid(player) && tell(player, T.PUP_MATH.replace("{n}", String(guess))), 14 + guess * 8);
+    }
+  }, 14 + n * 10);
 }
 
 // "Find it!": he sniffs around a few spots near you, nose to the ground, and finds a treat.

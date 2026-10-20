@@ -94,7 +94,9 @@
         "sniff": "animation.jf_mochi.sniff",
         "shy": "animation.jf_mochi.shy",
         "stretch": "animation.jf_mochi.stretch",
-        "groom": "animation.jf_mochi.groom"
+        "groom": "animation.jf_mochi.groom",
+        "shake_off": "animation.jf_mochi.shake_off",
+        "scratch": "animation.jf_mochi.scratch"
       },
       "scripts": {
         "animate": [

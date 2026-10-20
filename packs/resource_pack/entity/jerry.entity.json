@@ -52,6 +52,11 @@
         "sniff": "animation.jf_jerry.sniff",
         "shy": "animation.jf_jerry.shy",
         "stretch": "animation.jf_jerry.stretch",
+        "scratch": "animation.jf_jerry.scratch",
+        "shake_off": "animation.jf_jerry.shake_off",
+        "hug": "animation.jf_jerry.hug",
+        "sleep": "animation.jf_jerry.sleep",
+        "sneeze": "animation.jf_jerry.sneeze",
         "baby": "animation.jf_jerry.baby"
       },
       "scripts": {

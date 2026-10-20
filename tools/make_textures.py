@@ -144,6 +144,18 @@ DOG_FACE = [
     "................",
 ]
 
+# The "Z" that floats up when he snores (particles/jf_zzz.json).
+ZZZ = [
+    "kkkkkkkk",
+    "kwwwwwwk",
+    "kkkkwwkk",
+    "..kwwk..",
+    ".kwwk...",
+    "kwwkkkkk",
+    "kwwwwwwk",
+    "kkkkkkkk",
+]
+
 
 def write_png(path, grid, scale=1, background=None):
     for row in grid:
@@ -178,6 +190,7 @@ def main():
     write_png(items / "tennis_ball.png", BALL)
     write_png(items / "talk.png", TALK)
     write_png(items / "dog_treat.png", TREAT)
+    write_png(ROOT / "packs/resource_pack/textures/particle/jf_zzz.png", ZZZ)
     for pack in ("behavior_pack", "resource_pack"):
         write_png(ROOT / "packs" / pack / "pack_icon.png", DOG_FACE, scale=8, background=(255, 211, 110, 255))
     print("Textures written.")

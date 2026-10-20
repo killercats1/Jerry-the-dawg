@@ -44,6 +44,12 @@
             },
             {
               "groom": "query.property('jf:pose') == 16"
+            },
+            {
+              "shake_off": "query.property('jf:pose') == 18"
+            },
+            {
+              "scratch": "query.property('jf:pose') == 17"
             }
           ]
         },
@@ -177,6 +183,28 @@
           "transitions": [
             {
               "default": "query.property('jf:pose') != 16"
+            }
+          ]
+        },
+        "shake_off": {
+          "animations": [
+            "shake_off"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 18"
+            }
+          ]
+        },
+        "scratch": {
+          "animations": [
+            "scratch"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 17"
             }
           ]
         }
