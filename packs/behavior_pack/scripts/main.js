@@ -53,7 +53,7 @@ const FETCH_SLOTS = 8; // matches the jf:fetch_chase_0..7 behaviors in entities/
 const POSE = {
   stand: 0, sit: 1, roll: 2, tilt: 3, paw: 4, wave: 5, beg: 6,
   playDead: 7, lie: 8, bow: 9, dance: 10, backflip: 11, howl: 12, sniff: 13, shy: 14, stretch: 15, groom: 16,
-  scratch: 17, shakeOff: 18, hug: 19, sleep: 20, sneeze: 21, // Jerry and the puppy only (Mochi stops at groom)
+  scratch: 17, shakeOff: 18, hug: 19, sleep: 20, sneeze: 21, // Mochi has scratch and shakeOff too, but not the rest
 };
 const DEFAULT_DOG_NAME = "Jerry";
 const DEFAULT_CAT_NAME = "Mochi";
@@ -1112,6 +1112,7 @@ const PRACTICE = new Set([
 const CAT_PRACTICE = new Set(["paw", "highfive", "wave", "beg", "roll", "dead", "spin", "lie", "hop", "shy", "stretch", "chase", "groom", "catch"]);
 const CAT_ALWAYS = new Set([
   "love", "sit", "come", "greet", "bark", "spinleft", "spinright", "find", "excited", "yawn", "shock", "play", "mochi", "hug", "sleep", "sneeze",
+  "scratch", "shakeoff",
 ]);
 const MASTER_AT = 5; // successful tries to master a trick
 
@@ -2096,6 +2097,13 @@ function respondCat(player, cat, entry) {
       tiltHead(cat);
       system.runTimeout(() => isValid(cat) && sound(cat.dimension, "mob.panda.sneeze", cat.location, { pitch: 1.9 }), 6);
       break;
+    case "scratch":
+      trick(cat, POSE.scratch, 60);
+      break;
+    case "shakeoff":
+      trick(cat, POSE.shakeOff, 30);
+      sparkle(cat, "minecraft:water_splash_particle", 8);
+      break;
     case "catch":
       hop(cat, 0.5);
       system.runTimeout(() => isValid(cat) && sound(cat.dimension, "random.eat", cat.location, { pitch: 1.4 }), 10);
@@ -2401,9 +2409,17 @@ function talkAction(player, dog, action) {
       if (!isPup(dog) && goToBed(player, dog, true)) return; // he has a bed: off he goes
       sit(dog, POSE.sleep);
       showFace(dog, "sleepy", 1200);
-      // a little snore
-      return system.runTimeout(() => isValid(dog) && restPose(dog) === POSE.sleep && sound(dog.dimension, "mob.wolf.panting", dog.location, { pitch: 0.5 }), 60);
+      return snore(dog, 0);
   }
+}
+
+// Little Zzz's float up while he sleeps, until he gets up (or a minute passes).
+function snore(dog, n) {
+  if (!isValid(dog) || restPose(dog) !== POSE.sleep || n >= 12) return;
+  const at = dog.location;
+  particle(dog.dimension, "jf:zzz", { x: at.x, y: at.y + 0.8, z: at.z });
+  if (n % 3 === 1) sound(dog.dimension, "mob.wolf.panting", at, { pitch: 0.5 });
+  system.runTimeout(() => snore(dog, n + 1), 100);
 }
 
 // Turns a pet to face you.

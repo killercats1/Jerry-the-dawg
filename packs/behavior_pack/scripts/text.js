@@ -112,6 +112,8 @@ export const CAT_REPLIES = {
   hug: ["§dMochi§7 allows the hug for exactly three seconds. Then she headbutts your chin. Love!", "§dMochi§7 purrs in your arms... then wriggles free. That counts."],
   sleep: ["§dMochi§7 curls into a perfect circle and falls asleep. Shhh.", "§dMochi§7 tucks her nose under her tail. Goodnight, Mochi."],
   sneeze: ["§dMochi§f: *tiny sneeze* §7She looks offended at her own nose.", "§dMochi§7 sneezes the smallest sneeze ever recorded."],
+  scratch: ["§dMochi§7 scratches behind her ear with her back paw. *scritch scritch*", "§dMochi§7 finds an itch and deals with it. Elegantly."],
+  shakeoff: ["§dMochi§7 shakes herself off and glares at you. She did NOT ask to be wet.", "§dMochi§7 does a tiny cat shake. Every hair is back in place."],
   catch: ["§dMochi§7 swats the treat out of the air and eats it like it was her idea.", "§dMochi§7 pounces and catches it! Purr-fect."],
 };
 export const CAT_SASS = [

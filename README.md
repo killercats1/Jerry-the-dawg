@@ -109,6 +109,7 @@ pkg update -y && pkg install -y python termux-api curl && curl -fLo ~/jerry_voic
 | "sit", "stay" | sits and stays until you say "come" |
 | "lie down", "down" | lies down on his belly and stays |
 | "come", "here", "let's go" | comes to you, even from far away (and gets up) |
+| "shake it off", "dry off" | a big wet-dog shake, water everywhere |
 | "shake", "paw" | sits and gives you his paw |
 | "high five" | high fives you |
 | "wave", "say bye" | waves his paw |
@@ -117,6 +118,13 @@ pkg update -y && pkg install -y python termux-api curl && curl -fLo ~/jerry_voic
 | "play dead", "bang" | flops onto his side (eyes closed, tail still wagging) |
 | "bow", "take a bow" | play bow: front down, bum up |
 | "stretch", "big stretch" | a big long stretch, front paws out |
+| "scratch", "itchy" | sits and scratches behind his ear with his back paw |
+| "hug", "cuddle" | stands up and hugs you with his front paws (+ a little friendship) |
+| "catch" | snaps a treat out of the air |
+| "sneeze", "achoo" | a tiny sneeze |
+| "back up", "beep beep" | walks backwards, still looking at you (beep, beep, beep) |
+| "go to sleep", "goodnight" | curls up and sleeps (Zzz) until you say "come". Got a dog bed? He goes to it |
+| "what's 2 plus 3?", "count to 4" | barks the answer! Plus, minus, times and divided by, answers from 1 to 10 |
 | "find it", "find the treat" | nose to the ground, sniffs around and finds a hidden treat |
 | "shy", "hide your face", "peekaboo" | covers his eyes with his paw, then peeks out |
 | "dance", "party" | stands on his back legs and dances to a little tune |
@@ -148,8 +156,8 @@ an older Mochi keeps hers), but she has a personality:
 
 - **Talk to her by name**: *"Mochi, sit"*, *"Mochi, roll over"*, *"kitty, high five"*. She knows sit, loaf
   (lie down), come, roll over, paw, high five, wave, beg, play dead, spin, jump, chase her tail, shy,
-  stretch, groom, zoomies and more, and practices them like Jerry does. Ask for a dog trick and you get
-  cat sass.
+  stretch, groom, scratch, shake off, catch, sneeze, hug (briefly), go to sleep, zoomies and more, and
+  practices them like Jerry does. Ask for a dog trick (or math) and you get cat sass.
 - **Tap her** to pet her (purrs and a happy face). Treats and the brush work on her too.
 - She has **faces** like Jerry (happy, love, big eyes, shocked, sleepy), washes her face, loafs,
   stretches, gets the zoomies, hisses at monsters, sleeps on your pillow and sometimes brings you a gift.
@@ -161,7 +169,8 @@ At **Inseparable** friendship, a **puppy** joins the family. You get to name him
 He's a little Jerry with a big head and one of the wolf coats (change it in the wardrobe).
 
 - He **copies Jerry's tricks**: when Jerry rolls over, the puppy tries too... and sometimes falls over.
-  He always copies "sit", "lie down" and "come".
+  He always copies "sit", "lie down", "come" and "go to sleep". When Jerry does math, he has a go too
+  (he's usually off by one).
 - **Talk to him by name** (*"Pip, wave"*): he knows Jerry's tricks, but he's little, so he messes up a lot.
 - He naps a lot, pounces on Jerry's tail, gets the zoomies and snuggles up with Jerry at bedtime.
 - He never fights (Jerry does the protecting) and, like everyone, can't get hurt.
