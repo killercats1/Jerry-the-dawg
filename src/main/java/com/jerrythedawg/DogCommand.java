@@ -64,6 +64,8 @@ final class DogCommand implements CommandExecutor {
             } else if (!pets.rename(player, "pup", rest, false)) {
                 pets.tell(player, "§7That name didn't work. Try letters and numbers (up to 20).");
             }
+        } else if (sub.equals("catcoat") || sub.equals("coat")) {
+            pets.setCatCoat(player, rest);
         } else if (sub.equals("call") || sub.equals("whistle")) {
             pets.whistle(player);
         } else if (sub.equals("status")) {

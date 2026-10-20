@@ -38,6 +38,7 @@ final class Pets {
     private static final int PUP_LEVEL = 3;
     private static final Material[] GIFTS = {
         Material.STICK, Material.BONE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.FEATHER, Material.EMERALD};
+    private static final Material[] CAT_GIFTS = {Material.STRING, Material.FEATHER, Material.RAW_FISH};
 
     private final JerryPlugin plugin;
     private final Random random = new Random();
@@ -58,17 +59,20 @@ final class Pets {
     /** Tricks that need practice before he's perfect at them. */
     static final Set<String> PRACTICE = new HashSet<String>(Arrays.asList(
         "paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin", "lie", "hop", "shakeoff",
-        "find", "shy", "stretch", "spinleft", "spinright"));
+        "find", "shy", "stretch", "spinleft", "spinright", "scratch", "sneeze", "catch", "backup"));
     static final int MASTER_AT = 5;
 
     /** What Mochi will do when you ask her (she's a cat: she does the rest on her own terms). */
     static final Set<String> CAT_TRICKS = new HashSet<String>(Arrays.asList(
-        "sit", "lie", "come", "paw", "highfive", "roll", "hop", "spin", "spinleft", "spinright", "chase", "purr", "love"));
-    static final Set<String> CAT_PRACTICE = new HashSet<String>(Arrays.asList("paw", "highfive", "roll", "hop", "spin", "chase"));
+        "sit", "lie", "come", "paw", "highfive", "roll", "hop", "spin", "spinleft", "spinright", "chase", "purr", "love",
+        "wave", "beg", "dead", "shy", "stretch", "groom", "find", "excited", "yawn", "shock", "play", "bark",
+        "hug", "sleep", "sneeze", "scratch", "shakeoff", "catch"));
+    static final Set<String> CAT_PRACTICE = new HashSet<String>(Arrays.asList(
+        "paw", "highfive", "roll", "hop", "spin", "chase", "wave", "beg", "dead", "shy", "stretch", "groom", "catch"));
     /** Tricks the puppy tries to copy when Jerry does them. */
     private static final Set<String> COPYABLE = new HashSet<String>(Arrays.asList(
         "sit", "lie", "paw", "highfive", "wave", "beg", "roll", "dead", "bow", "dance", "backflip", "howl", "chase", "spin",
-        "hop", "bark", "spinleft", "spinright", "stretch", "shy", "shakeoff"));
+        "hop", "bark", "spinleft", "spinright", "stretch", "shy", "shakeoff", "scratch", "sneeze", "hug", "catch", "backup"));
 
     Pets(JerryPlugin plugin) {
         this.plugin = plugin;
@@ -249,7 +253,7 @@ final class Pets {
         cat.setAdult();
         cat.setTamed(true);
         cat.setOwner(player);
-        cat.setCatType(Ocelot.Type.RED_CAT);
+        cat.setCatType(data.catCoat);
         cat.setCustomName(data.catName);
         cat.setRemoveWhenFarAway(false);
         data.catId = cat.getUniqueId();
@@ -272,6 +276,40 @@ final class Pets {
         cache.put(pup.getUniqueId(), pup);
         plugin.markDirty();
         return pup;
+    }
+
+    /** /dog catcoat ginger|black|siamese */
+    void setCatCoat(Player player, String which) {
+        PetData data = plugin.data(player);
+        if (!data.hasCat) {
+            tell(player, Text.NO_CAT);
+            return;
+        }
+        String w = which.toLowerCase(java.util.Locale.ROOT).trim();
+        Ocelot.Type type;
+        String name;
+        if (w.startsWith("black") || w.startsWith("tux")) {
+            type = Ocelot.Type.BLACK_CAT;
+            name = "black";
+        } else if (w.startsWith("siam") || w.startsWith("white") || w.startsWith("cream")) {
+            type = Ocelot.Type.SIAMESE_CAT;
+            name = "siamese";
+        } else if (w.startsWith("ginger") || w.startsWith("orange") || w.startsWith("red") || w.startsWith("tabby")) {
+            type = Ocelot.Type.RED_CAT;
+            name = "ginger";
+        } else {
+            tell(player, Text.CAT_COAT_HELP);
+            return;
+        }
+        data.catCoat = type;
+        plugin.markDirty();
+        Ocelot cat = findCat(player);
+        if (cat != null) {
+            cat.setCatType(type);
+            particles(cat.getLocation(), Effect.HAPPY_VILLAGER, 6);
+            sound(cat, Sound.CAT_PURREOW, 1f);
+        }
+        tell(player, Text.CAT_COAT_SET.replace("{coat}", name));
     }
 
     void onJoin(final Player player) {
@@ -590,6 +628,16 @@ final class Pets {
     }
 
     private void bringGift(Player player, Wolf dog) {
+        // Sometimes it's Mochi with a present instead.
+        Ocelot cat = findCat(player);
+        if (isNear(cat, player, 16) && random.nextInt(100) < 35) {
+            int c = random.nextInt(CAT_GIFTS.length);
+            cat.getWorld().dropItemNaturally(cat.getLocation(), new ItemStack(CAT_GIFTS[c], 1));
+            sound(cat, Sound.CAT_PURREOW, 1f);
+            particles(cat.getLocation(), Effect.HAPPY_VILLAGER, 6);
+            tell(player, Text.CAT_GIFT.replace("{gift}", Text.CAT_GIFT_NAMES[c]));
+            return;
+        }
         int i = random.nextInt(GIFTS.length);
         dog.getWorld().dropItemNaturally(dog.getLocation(), new ItemStack(GIFTS[i], 1));
         sound(dog, Sound.WOLF_BARK, 1f);
@@ -997,9 +1045,24 @@ final class Pets {
         if (!isNear(dog, player, 24) || !canReact(player, "bed", 300)) {
             return;
         }
-        dog.setSitting(true);
+        if (!home.goToBed(player, dog, true)) {
+            dog.setSitting(true);
+        }
         changeNeeds(plugin.data(player), 0, 40, 0);
-        tell(player, Text.BEDTIME);
+        String pupText = "";
+        Wolf pup = findPup(player);
+        if (isNear(pup, player, 24)) {
+            pup.setSitting(true);
+            pupText = Text.BEDTIME_PUP;
+        }
+        Ocelot cat = findCat(player);
+        if (isNear(cat, player, 24)) {
+            cat.setSitting(true);
+            sound(cat, Sound.CAT_PURR, 0.8f);
+            tell(player, Text.BEDTIME_CAT + pupText);
+        } else {
+            tell(player, Text.BEDTIME + pupText);
+        }
     }
 
     // ------------------------------------------------------------------ items
@@ -1162,8 +1225,27 @@ final class Pets {
             sound(dog, Sound.WOLF_WHINE, 1.2f);
             hearts(dog);
         } else if ("shakeoff".equals(action)) {
-            dog.playEffect(EntityEffect.WOLF_SHAKE);
-            sound(dog, Sound.WOLF_SHAKE, 1f);
+            shakeOff(dog, 1f);
+        } else if ("scratch".equals(action)) {
+            scratch(dog, 1f);
+        } else if ("hug".equals(action)) {
+            hug(player, dog);
+        } else if ("sneeze".equals(action)) {
+            sneeze(dog, 1f);
+        } else if ("catch".equals(action)) {
+            catchTreat(player, dog, 1f);
+        } else if ("backup".equals(action)) {
+            backUp(player, dog);
+        } else if ("sleep".equals(action)) {
+            changeNeeds(plugin.data(player), 0, 10, 0);
+            sound(dog, Sound.WOLF_PANT, 0.6f);
+            if (!home.goToBed(player, dog, true)) { // he has a bed: off he goes
+                dog.setSitting(true);
+                snore(dog);
+            }
+        } else if ("groom".equals(action)) {
+            sound(dog, Sound.WOLF_PANT, 1.2f);
+            particles(dog.getLocation().add(0, 0.6, 0), Effect.HAPPY_VILLAGER, 3);
         } else if ("paw".equals(action) || "highfive".equals(action)) {
             hearts(dog);
             sound(dog, "highfive".equals(action) ? Sound.ORB_PICKUP : Sound.WOLF_PANT, 1.4f);
@@ -1298,8 +1380,8 @@ final class Pets {
     }
 
     /** "Are you shy?": he turns away, then peeks back at you. */
-    private void shy(final Player player, final Wolf dog) {
-        sound(dog, Sound.WOLF_WHINE, 1.4f);
+    private void shy(final Player player, final LivingEntity dog) {
+        sound(dog, dog instanceof Ocelot ? Sound.CAT_MEOW : Sound.WOLF_WHINE, 1.4f);
         face(dog, player.getLocation(), 180);
         later(35, new Runnable() {
             @Override
@@ -1313,7 +1395,7 @@ final class Pets {
     }
 
     /** Turns the pet to face a spot (offset 180 = facing away from it). */
-    private void face(Entity pet, Location spot, float offset) {
+    void face(Entity pet, Location spot, float offset) {
         Location l = pet.getLocation();
         double dx = spot.getX() - l.getX();
         double dz = spot.getZ() - l.getZ();
@@ -1351,6 +1433,78 @@ final class Pets {
             cat.setSitting(false);
             spin(cat, 3);
             sound(cat, Sound.CAT_MEOW, 1.4f);
+        } else if ("wave".equals(action) || "bark".equals(action)) {
+            sound(cat, Sound.CAT_MEOW, 1f);
+            particles(cat.getLocation(), Effect.HAPPY_VILLAGER, 4);
+        } else if ("beg".equals(action)) {
+            sitFor(cat, 50);
+            sound(cat, Sound.CAT_PURREOW, 1f);
+        } else if ("dead".equals(action)) {
+            sitFor(cat, 60);
+            sound(cat, Sound.CAT_MEOW, 0.7f);
+            final Ocelot c = cat;
+            later(40, new Runnable() {
+                @Override
+                public void run() {
+                    if (c.isValid()) {
+                        hearts(c); // "I'm alive!"
+                    }
+                }
+            });
+        } else if ("shy".equals(action)) {
+            shy(player, cat);
+        } else if ("stretch".equals(action) || "groom".equals(action)) {
+            sitFor(cat, 50);
+            sound(cat, Sound.CAT_PURR, "stretch".equals(action) ? 0.8f : 1f);
+        } else if ("find".equals(action)) {
+            final Ocelot c = cat;
+            cat.setSitting(false);
+            walkTo(cat, cat.getLocation().add(random.nextDouble() * 6 - 3, 0, random.nextDouble() * 6 - 3), 1.1);
+            later(40, new Runnable() {
+                @Override
+                public void run() {
+                    if (c.isValid()) {
+                        hop(c, 0.45); // pounce!
+                        sound(c, Sound.CAT_MEOW, 1.3f);
+                    }
+                }
+            });
+        } else if ("excited".equals(action)) {
+            hop(cat, 0.3);
+            sound(cat, Sound.CAT_PURREOW, 1.2f);
+        } else if ("yawn".equals(action)) {
+            cat.setSitting(true);
+            sound(cat, Sound.CAT_PURR, 0.8f);
+        } else if ("shock".equals(action)) {
+            hop(cat, 0.55);
+            sound(cat, Sound.CAT_HISS, 1f);
+        } else if ("play".equals(action)) {
+            catZoomies(cat);
+        } else if ("hug".equals(action)) {
+            // she allows it. Briefly. Then a headbutt.
+            final Ocelot c = cat;
+            hearts(cat);
+            sound(cat, Sound.CAT_PURR, 1f);
+            later(40, new Runnable() {
+                @Override
+                public void run() {
+                    if (c.isValid()) {
+                        hop(c, 0.25);
+                    }
+                }
+            });
+        } else if ("sleep".equals(action)) {
+            cat.setSitting(true);
+            sound(cat, Sound.CAT_PURR, 0.8f);
+            snore(cat);
+        } else if ("sneeze".equals(action)) {
+            sneeze(cat, 1.4f);
+        } else if ("scratch".equals(action)) {
+            scratch(cat, 1.4f);
+        } else if ("shakeoff".equals(action)) {
+            shakeOff(cat, 1.5f);
+        } else if ("catch".equals(action)) {
+            catchTreat(player, cat, 1.4f);
         } else {
             sound(cat, Sound.CAT_PURR, 1f); // purr, love
             hearts(cat);
@@ -1389,8 +1543,25 @@ final class Pets {
         } else if ("bark".equals(action) || "greet".equals(action) || "wave".equals(action)) {
             sound(pup, Sound.WOLF_BARK, 1.8f);
         } else if ("shakeoff".equals(action)) {
-            pup.playEffect(EntityEffect.WOLF_SHAKE);
-            sound(pup, Sound.WOLF_SHAKE, 1.6f);
+            shakeOff(pup, 1.6f);
+        } else if ("scratch".equals(action)) {
+            scratch(pup, 1.7f);
+        } else if ("sneeze".equals(action)) {
+            sneeze(pup, 1.7f);
+        } else if ("catch".equals(action)) {
+            catchTreat(player, pup, 1.6f);
+        } else if ("backup".equals(action)) {
+            backUp(player, pup);
+        } else if ("sleep".equals(action)) {
+            pup.setSitting(true);
+            sound(pup, Sound.WOLF_PANT, 1.2f);
+            snore(pup);
+        } else if ("hug".equals(action)) {
+            if (!isNear(pup, player, 4)) {
+                walkTo(pup, player.getLocation(), 1.3);
+            }
+            hearts(pup);
+            sound(pup, Sound.WOLF_PANT, 1.7f);
         } else if ("paw".equals(action) || "highfive".equals(action) || "love".equals(action) || "shy".equals(action)) {
             hearts(pup);
             sound(pup, Sound.WOLF_PANT, 1.7f);
@@ -1410,6 +1581,18 @@ final class Pets {
             pupTrick(player, pup, action, true); // where Jerry goes, the puppy goes
             return;
         }
+        if ("sleep".equals(action)) {
+            later(20, new Runnable() {
+                @Override
+                public void run() {
+                    if (pup.isValid() && player.isOnline()) {
+                        pupTrick(player, pup, action, true); // naps are contagious
+                        tell(player, Text.PUP_SLEEP);
+                    }
+                }
+            });
+            return;
+        }
         if (!COPYABLE.contains(action) || random.nextInt(10) >= 6) {
             return;
         }
@@ -1424,6 +1607,272 @@ final class Pets {
                 tell(player, (ok ? pick(Text.PUP_COPY) : pick(Text.PUP_COPY_FAIL)).replace("{trick}", trickName(action)));
             }
         });
+    }
+
+    // ------------------------------------------------------------------ the newer tricks
+    // 1.8.8 has no custom animations, so these are sitting, moving, sounds and particles.
+
+    static boolean isSitting(Entity pet) {
+        return pet instanceof Wolf ? ((Wolf) pet).isSitting() : pet instanceof Ocelot && ((Ocelot) pet).isSitting();
+    }
+
+    /** Sits for a moment, then goes back to how he was. */
+    void sitFor(final Entity pet, long ticks) {
+        final boolean was = isSitting(pet);
+        setSitting(pet, true);
+        later(ticks, new Runnable() {
+            @Override
+            public void run() {
+                if (pet.isValid()) {
+                    setSitting(pet, was);
+                }
+            }
+        });
+    }
+
+    /** A big wet-dog shake: water flies everywhere. */
+    void shakeOff(final LivingEntity pet, float pitch) {
+        if (pet instanceof Wolf) {
+            pet.playEffect(EntityEffect.WOLF_SHAKE);
+            sound(pet, Sound.WOLF_SHAKE, pitch);
+        } else {
+            hop(pet, 0.15);
+            sound(pet, Sound.CAT_MEOW, pitch);
+        }
+        for (int i = 0; i < 3; i++) {
+            later(i * 8, new Runnable() {
+                @Override
+                public void run() {
+                    if (pet.isValid()) {
+                        particles(pet.getLocation(), Effect.SPLASH, 10);
+                        particles(pet.getLocation(), Effect.WATERDRIP, 4);
+                    }
+                }
+            });
+        }
+    }
+
+    /** Sits and scratches behind an ear: *thump thump thump*. */
+    void scratch(final LivingEntity pet, final float pitch) {
+        sitFor(pet, 60);
+        for (int i = 0; i < 5; i++) {
+            later(8 + i * 8, new Runnable() {
+                @Override
+                public void run() {
+                    if (pet.isValid()) {
+                        sound(pet, Sound.STEP_WOOD, pitch);
+                    }
+                }
+            });
+        }
+    }
+
+    /** A tiny sneeze: a sharp breath in, then *choo* and a little puff. */
+    void sneeze(final LivingEntity pet, final float pitch) {
+        final boolean cat = pet instanceof Ocelot;
+        sound(pet, cat ? Sound.CAT_MEOW : Sound.WOLF_WHINE, Math.min(2f, pitch + 0.5f));
+        later(9, new Runnable() {
+            @Override
+            public void run() {
+                if (!pet.isValid()) {
+                    return;
+                }
+                sound(pet, cat ? Sound.CAT_HISS : Sound.WOLF_BARK, Math.min(2f, pitch + 0.6f));
+                Location nose = pet.getEyeLocation().add(pet.getLocation().getDirection().multiply(0.6));
+                for (int i = 0; i < 3; i++) {
+                    pet.getWorld().playEffect(nose, Effect.CLOUD, 0);
+                }
+            }
+        });
+    }
+
+    /** Snaps a treat out of the air. */
+    void catchTreat(final Player player, final LivingEntity pet, final float pitch) {
+        face(pet, player.getLocation(), 0);
+        later(6, new Runnable() {
+            @Override
+            public void run() {
+                if (pet.isValid()) {
+                    hop(pet, 0.45);
+                }
+            }
+        });
+        later(12, new Runnable() {
+            @Override
+            public void run() {
+                if (!pet.isValid()) {
+                    return;
+                }
+                sound(pet, Sound.EAT, pitch);
+                particles(pet.getLocation().add(0, 0.6, 0), Effect.HAPPY_VILLAGER, 5);
+                if (player.isOnline() && pet.getUniqueId().equals(plugin.data(player).dogId)) {
+                    changeNeeds(plugin.data(player), 2, 0, 2);
+                }
+            }
+        });
+    }
+
+    /** Stands up on his back legs (as much as a 1.8 wolf can) and hugs you. */
+    private void hug(final Player player, final Wolf dog) {
+        dog.setSitting(false);
+        if (!isNear(dog, player, 4)) {
+            walkTo(dog, player.getLocation(), 1.3);
+        }
+        hearts(dog);
+        sound(dog, Sound.WOLF_PANT, 1f);
+        later(20, new Runnable() {
+            @Override
+            public void run() {
+                if (dog.isValid() && player.isOnline()) {
+                    face(dog, player.getLocation(), 0);
+                    hop(dog, 0.3);
+                }
+            }
+        });
+        later(30, new Runnable() {
+            @Override
+            public void run() {
+                if (dog.isValid()) {
+                    hearts(dog);
+                }
+            }
+        });
+    }
+
+    /** "Back up!": a few careful steps backwards, still looking at you. Beep. Beep. Beep. */
+    void backUp(final Player player, final LivingEntity pet) {
+        if (busy.contains(pet.getUniqueId())) {
+            return;
+        }
+        setSitting(pet, false);
+        busy.add(pet.getUniqueId());
+        final Location from = player.getLocation();
+        new BukkitRunnable() {
+            private int ticks;
+
+            @Override
+            public void run() {
+                if (!pet.isValid() || ++ticks > 24 || !pet.getWorld().equals(from.getWorld())) {
+                    done();
+                    return;
+                }
+                Location at = pet.getLocation();
+                double dx = at.getX() - from.getX();
+                double dz = at.getZ() - from.getZ();
+                double d = Math.hypot(dx, dz);
+                if (d < 0.1) { // right on top of you: straight back from where he's facing
+                    Vector facing = at.getDirection();
+                    dx = -facing.getX();
+                    dz = -facing.getZ();
+                    d = Math.max(0.01, Math.hypot(dx, dz));
+                }
+                Location next = at.clone().add(dx / d * 0.12, 0, dz / d * 0.12);
+                if (next.getBlock().getType().isSolid() || next.clone().add(0, 1, 0).getBlock().getType().isSolid()) {
+                    done(); // bumped into something
+                    return;
+                }
+                next.setYaw((float) Math.toDegrees(Math.atan2(dx, -dz))); // still facing you
+                next.setPitch(0);
+                pet.teleport(next);
+                if (ticks % 8 == 1) {
+                    pet.getWorld().playSound(pet.getLocation(), Sound.NOTE_PLING, 0.6f, 2f);
+                }
+            }
+
+            private void done() {
+                cancel();
+                busy.remove(pet.getUniqueId());
+            }
+        }.runTaskTimer(plugin, 1L, 1L);
+    }
+
+    /** Little puffs and snores while he sleeps, until he gets up (or a minute passes). */
+    void snore(final LivingEntity pet) {
+        new BukkitRunnable() {
+            private int n;
+
+            @Override
+            public void run() {
+                if (!pet.isValid() || !isSitting(pet) || n >= 12) {
+                    cancel();
+                    return;
+                }
+                pet.getWorld().playEffect(pet.getEyeLocation().add(0, 0.4, 0), Effect.CLOUD, 0);
+                if (n % 3 == 1) {
+                    sound(pet, pet instanceof Ocelot ? Sound.CAT_PURR : Sound.WOLF_PANT, 0.5f);
+                }
+                n++;
+            }
+        }.runTaskTimer(plugin, 40L, 100L);
+    }
+
+    /** "What's 2 plus 3?" He barks the answer. He's very smart. (count -1 = too hard) */
+    void doMath(final Player player, final Wolf dog, final int n, final boolean isPup) {
+        final float pitch = isPup ? 1.8f : 1f;
+        if (n < 0) {
+            sound(dog, Sound.WOLF_WHINE, pitch);
+            face(dog, player.getLocation(), 0);
+            tell(player, asPup(pick(Text.MATH_HARD), isPup));
+            return;
+        }
+        if (n == 0) {
+            face(dog, player.getLocation(), 0);
+            tell(player, asPup(Text.MATH_ZERO, isPup));
+            return;
+        }
+        sitFor(dog, 20 + n * 10); // sits up nice and tall to concentrate
+        for (int i = 0; i < n; i++) {
+            later(8 + i * 10, new Runnable() {
+                @Override
+                public void run() {
+                    if (dog.isValid()) {
+                        sound(dog, Sound.WOLF_BARK, pitch);
+                    }
+                }
+            });
+        }
+        later(14 + n * 10, new Runnable() {
+            @Override
+            public void run() {
+                if (!dog.isValid() || !player.isOnline()) {
+                    return;
+                }
+                particles(dog.getLocation().add(0, 0.6, 0), Effect.HAPPY_VILLAGER, 6);
+                String reply = pick(Text.MATH_DONE).replace("{n}", String.valueOf(n)).replace("{times}", n == 1 ? "time" : "times");
+                if (earn(player, "talk", 2, 30)) {
+                    reply += "  " + friendshipBar(plugin.data(player));
+                }
+                tell(player, asPup(reply, isPup));
+                // The puppy has a go too. He's still learning to count.
+                final Wolf pup = findPup(player);
+                if (!isPup && isNear(pup, player, 24) && random.nextBoolean()) {
+                    int g = n + (random.nextBoolean() ? 1 : -1);
+                    final int guess = g == 0 ? 2 : g;
+                    for (int i = 0; i < guess; i++) {
+                        later(10 + i * 8, new Runnable() {
+                            @Override
+                            public void run() {
+                                if (pup.isValid()) {
+                                    sound(pup, Sound.WOLF_BARK, 1.8f);
+                                }
+                            }
+                        });
+                    }
+                    later(14 + guess * 8, new Runnable() {
+                        @Override
+                        public void run() {
+                            if (player.isOnline()) {
+                                tell(player, Text.PUP_MATH.replace("{n}", String.valueOf(guess)));
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    private static String asPup(String text, boolean isPup) {
+        return isPup ? text.replace("§bJerry", "§aPip").replace("Jerry", "Pip") : text;
     }
 
     // ------------------------------------------------------------------ effects

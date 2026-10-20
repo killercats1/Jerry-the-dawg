@@ -164,16 +164,30 @@ final class Home {
         if (data.hunger < 40) {
             Block bowl = nearest(data.bowls, Material.CAULDRON, player, dog, true);
             if (bowl != null) {
-                goTo(player, dog, bowl, true);
+                goTo(player, dog, bowl, true, false);
                 return;
             }
         }
         if (data.energy < 30 || Pets.isNight(dog.getWorld())) {
             Block bed = nearest(data.beds, Material.CARPET, player, dog, false);
             if (bed != null && pets.canReact(player, "bednap", 300)) {
-                goTo(player, dog, bed, false);
+                goTo(player, dog, bed, false, false);
             }
         }
+    }
+
+    /** "Go to sleep" (or your bedtime): off to his bed if there's one nearby. Returns false if there isn't. */
+    boolean goToBed(Player player, Wolf dog, boolean quiet) {
+        if (pets.isBusy(dog)) {
+            return false;
+        }
+        Block bed = nearest(plugin.data(player).beds, Material.CARPET, player, dog, false);
+        if (bed == null) {
+            return false;
+        }
+        dog.setSitting(false);
+        goTo(player, dog, bed, false, quiet);
+        return true;
     }
 
     /** Is he napping on one of his beds? (Naps there recharge him faster.) */
@@ -216,9 +230,11 @@ final class Home {
         return best;
     }
 
-    private void goTo(final Player player, final Wolf dog, final Block spot, final boolean eat) {
+    private void goTo(final Player player, final Wolf dog, final Block spot, final boolean eat, final boolean quiet) {
         pets.setBusy(dog, true);
-        pets.tell(player, eat ? Text.GOING_TO_EAT : Text.GOING_TO_BED);
+        if (!quiet) {
+            pets.tell(player, eat ? Text.GOING_TO_EAT : Text.GOING_TO_BED);
+        }
         final Location target = spot.getLocation().add(0.5, 0, 0.5);
         new BukkitRunnable() {
             private int steps;
@@ -262,7 +278,10 @@ final class Home {
                     dog.setSitting(true);
                     pets.sound(dog, Sound.WOLF_PANT, 0.7f);
                     pets.changeNeeds(data, 0, 10, 0);
-                    pets.tell(player, Text.NAP_ON_BED);
+                    pets.snore(dog);
+                    if (!quiet) {
+                        pets.tell(player, Text.NAP_ON_BED);
+                    }
                 }
             }
 

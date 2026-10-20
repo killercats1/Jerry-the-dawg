@@ -27,21 +27,25 @@ Friendship unlocks **Mochi the cat**, **gifts** and finally **a puppy**.
 - **Protects you.** If something attacks you, he goes after it (he can't get hurt). Creepers excepted,
   for everyone's sake. He doesn't pick fights on his own, and the cat just hisses.
 - **He cares.** He rushes over if you get hurt, begs while you eat, does zoomies when you come back,
-  and curls up by your bed when you sleep.
+  and curls up by your bed when you sleep (Mochi and the puppy snuggle up too).
 - **Status:** `/dog status` or **sneak + use the Dog Whistle** shows his mood, needs and friendship.
 
 ## Mochi the cat 🐱
 
 Mochi joins at **Buddy**. She has her own personality: she purrs when you **sneak + right-click** her,
 gets random zoomies, naps at night and **hisses at monsters**. Say her name to talk to her:
-*"Mochi, high five!"* She knows sit, come, paw, high five, roll over, jump, spin, chase her tail and purr
-(and practices them, like Jerry). Ask her for anything else and she'll just lick her paw.
+*"Mochi, high five!"* She knows sit, come, paw, high five, wave, beg, roll over, play dead, jump, spin,
+chase her tail, shy, stretch, groom, purr, scratch, shake off, catch, sneeze, go to sleep and hug (she allows
+it for about three seconds, then headbutts you). She practices them, like Jerry. Ask her for math or
+anything else very dog-like and she'll just lick her paw. Sometimes she brings you a gift too (string,
+a feather or a fish), and `/dog catcoat ginger|black|siamese` picks her coat.
 
 ## The puppy 🐾
 
 At **Inseparable** a puppy joins the family: a little wolf pup called **Pip** (rename him with
 `/dog pupname <name>` or a name tag). He follows you, comes with the whistle, never fights, and tries
-to copy whatever trick Jerry does (not always successfully). Talk to him by name: *"Pip, sit"*.
+to copy whatever trick Jerry does (not always successfully), always naps when Jerry does, and barks
+along to Jerry's math (usually off by one). Talk to him by name: *"Pip, sit"*.
 
 ## What's different from the Bedrock version
 
@@ -87,7 +91,6 @@ Say his name and a trick in chat, or use `/dog <trick>`:
 | "wave", "beg" | waves / begs with a whine |
 | "roll over" | rolls around |
 | "play dead" | flops down dramatically (then hearts: he's fine!) |
-| "shake off" | does the wet-dog shake |
 | "dance" | hops and spins to a little tune |
 | "backflip" | jumps and flips |
 | "howl" | a real wolf howl |
@@ -96,6 +99,15 @@ Say his name and a trick in chat, or use `/dog <trick>`:
 | "are you shy?", "hide your face" | turns away all shy, then peeks back at you |
 | "stretch" | a big stretch and a yawn |
 | "spin left" / "spin right" | spins that way |
+| "shake it off", "dry off" | a big wet-dog shake, with water flying everywhere |
+| "scratch", "itchy" | sits and scratches: *thump thump thump* |
+| "hug", "cuddle" | comes over and hugs you (+ friendship) |
+| "catch" | jumps up and snaps a treat out of the air |
+| "sneeze", "achoo" | a tiny sneeze and a little puff |
+| "back up", "beep beep" | walks backwards, still looking at you. Beep. Beep. Beep. |
+| "go to sleep", "goodnight" | goes to his dog bed if there is one, or curls up right there and snores until "come" |
+| "groom", "wash your face" | tries to wash his face like a cat |
+| "what's 2 plus 3?", "count to 4", "how many legs do you have?" | barks the answer (plus, minus, times, divided by; answers 1 to 10) |
 | "chase your tail", "spin", "jump", "speak", "bow" | exactly what it sounds like |
 | "good boy" | wags (+ friendship) |
 
@@ -124,6 +136,7 @@ like any tamed wolf.
 | `/dog name <name>` | rename your dog (a name tag works too) |
 | `/dog catname <name>` | rename your cat |
 | `/dog pupname <name>` | rename your puppy |
+| `/dog catcoat ginger\|black\|siamese` | pick Mochi's coat |
 | `/dog call` | call your pets |
 | `/dog status` | mood, needs and friendship |
 | `/dog items` | get the pet items again (and the bed/bowl, if you haven't put them down) |

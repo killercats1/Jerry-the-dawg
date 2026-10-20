@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.DyeColor;
+import org.bukkit.entity.Ocelot;
 
 /** Everything saved about one player's pets (stored in plugins/JerryTheDawg/pets.yml). */
 final class PetData {
@@ -30,6 +31,8 @@ final class PetData {
     /** Collar colours (dye him to change it; it's kept when he's whistled back or respawned). */
     DyeColor collar = DyeColor.RED;
     DyeColor pupCollar = DyeColor.LIGHT_BLUE;
+    /** Mochi's coat (/dog catcoat). */
+    Ocelot.Type catCoat = Ocelot.Type.RED_CAT;
 
     // Needs, 0-100. They slowly go down; treats, naps and play bring them back.
     int hunger = 80;

@@ -101,6 +101,7 @@ public final class JerryPlugin extends JavaPlugin {
             d.gotFurniture = s.getBoolean("got-furniture");
             d.collar = dye(s.getString("collar"), DyeColor.RED);
             d.pupCollar = dye(s.getString("pup-collar"), DyeColor.LIGHT_BLUE);
+            d.catCoat = catCoat(s.getString("cat-coat"));
             d.beds.addAll(s.getStringList("beds"));
             d.bowls.addAll(s.getStringList("bowls"));
             d.quiet = s.getBoolean("quiet");
@@ -138,6 +139,7 @@ public final class JerryPlugin extends JavaPlugin {
             yaml.set(k + ".got-furniture", d.gotFurniture);
             yaml.set(k + ".collar", d.collar.name());
             yaml.set(k + ".pup-collar", d.pupCollar.name());
+            yaml.set(k + ".cat-coat", d.catCoat.name());
             yaml.set(k + ".beds", d.beds);
             yaml.set(k + ".bowls", d.bowls);
             yaml.set(k + ".quiet", d.quiet);
@@ -165,6 +167,15 @@ public final class JerryPlugin extends JavaPlugin {
             return DyeColor.valueOf(text);
         } catch (IllegalArgumentException ex) {
             return fallback;
+        }
+    }
+
+    private static org.bukkit.entity.Ocelot.Type catCoat(String text) {
+        try {
+            org.bukkit.entity.Ocelot.Type type = org.bukkit.entity.Ocelot.Type.valueOf(text);
+            return type == org.bukkit.entity.Ocelot.Type.WILD_OCELOT ? org.bukkit.entity.Ocelot.Type.RED_CAT : type;
+        } catch (RuntimeException ex) { // missing or unknown
+            return org.bukkit.entity.Ocelot.Type.RED_CAT;
         }
     }
 

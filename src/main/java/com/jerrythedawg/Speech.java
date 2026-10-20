@@ -1,9 +1,12 @@
 package com.jerrythedawg;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bukkit.entity.Ocelot;
 import org.bukkit.entity.Player;
@@ -79,13 +82,17 @@ final class Speech {
                     }
                 }
             });
-            at += ticksFor(entry.action);
+            at += ticksFor(entry);
         }
     }
 
     private void respond(Player player, Wolf dog, Text.Voice entry) {
         if ("play".equals(entry.action) || "fetch".equals(entry.action)) {
             pets.trick(player, dog, entry.action); // these say their own thing
+            return;
+        }
+        if ("math".equals(entry.action)) {
+            pets.doMath(player, dog, entry.count, false);
             return;
         }
         if (Pets.PRACTICE.contains(entry.action)) {
@@ -157,7 +164,7 @@ final class Speech {
                     }
                 }
             });
-            at += ticksFor(entry.action);
+            at += ticksFor(entry);
         }
     }
 
@@ -205,23 +212,41 @@ final class Speech {
                         return;
                     }
                     String action = entry.action;
+                    if ("math".equals(action)) {
+                        pets.doMath(player, pup, entry.count, true);
+                        return;
+                    }
                     if ("love".equals(action)) {
                         pets.pupTrick(player, pup, action, true);
                         pets.tell(player, Text.PUP_LOVE);
                         return;
                     }
                     // Puppies get "sit" and "come" right; anything fancier is a coin toss.
-                    boolean ok = "sit".equals(action) || "come".equals(action) || "lie".equals(action) || random.nextInt(10) < 6;
+                    boolean ok = "sit".equals(action) || "come".equals(action) || "lie".equals(action) || "sleep".equals(action)
+                        || "hug".equals(action) || random.nextInt(10) < 6;
                     pets.pupTrick(player, pup, action, ok);
                     String name = Text.TRICK_NAMES.containsKey(action) ? Text.TRICK_NAMES.get(action) : entry.words.get(0);
                     pets.tell(player, (ok ? Text.PUP_DID : Text.PUP_OOPS).replace("{trick}", name));
                 }
             });
-            at += ticksFor(entry.action);
+            at += ticksFor(entry);
         }
     }
 
-    private static long ticksFor(String action) {
+    private static long ticksFor(Text.Voice entry) {
+        String action = entry.action;
+        if ("math".equals(action)) {
+            return 30 + Math.max(1, entry.count) * 10;
+        }
+        if ("scratch".equals(action) || "hug".equals(action)) {
+            return 65;
+        }
+        if ("shakeoff".equals(action) || "backup".equals(action)) {
+            return 35;
+        }
+        if ("sleep".equals(action)) {
+            return 40;
+        }
         if ("find".equals(action)) {
             return 140;
         }
@@ -245,16 +270,16 @@ final class Speech {
 
     /** "sit, then roll over and speak" -> [sit, roll, bark] */
     List<Text.Voice> parse(String said, PetData data) {
-        String marked = said.toLowerCase(Locale.ROOT).replace('-', ' ')
+        String marked = said.toLowerCase(Locale.ROOT).replaceAll("(\\d)\\s*-\\s*(?=\\d)", "$1 minus ").replace('-', ' ')
             .replaceAll("[,.!?;:]+", " | ")
             .replaceAll("\\b(and then|then|after that|and)\\b", " | ");
         List<Text.Voice> out = new ArrayList<Text.Voice>();
         for (String part : marked.split("\\|")) {
             String words = normalizeNames(cleanWords(simplify(part)), data);
-            if (words.isEmpty()) {
-                continue;
+            Text.Voice entry = mathProblem(part);
+            if (entry == null && !words.isEmpty()) {
+                entry = match(words);
             }
-            Text.Voice entry = match(words);
             if (entry != null && (out.isEmpty() || out.get(out.size() - 1) != entry)) {
                 out.add(entry);
             }
@@ -263,6 +288,64 @@ final class Speech {
             }
         }
         return out;
+    }
+
+    // "What's 2 plus 3?" -> he barks 5 times. Also "count to 4" and "how many legs do you have".
+    private static final String[] NUMBER_WORDS = {
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+        "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"};
+    private static final String NUM = "(\\d+|" + String.join("|", NUMBER_WORDS) + ")";
+    private static final String NUM_AFTER = "(\\d+|" + String.join("|", NUMBER_WORDS) + "|to|too|for)"; // "two plus to" is a common mishearing
+    private static final String[] SUMS = {"plus|\\+|add", "minus|take away|takeaway", "times|x|\\*|\u00d7|multiplied by", "divided by|over|/|\u00f7"};
+    private static final Pattern[] SUM_PATTERNS = new Pattern[SUMS.length];
+    private static final Pattern COUNT = Pattern.compile("\\bcount (?:up )?to " + NUM + "\\b");
+    private static final Pattern LEGS = Pattern.compile("\\bhow many legs\\b");
+
+    static {
+        for (int i = 0; i < SUMS.length; i++) {
+            SUM_PATTERNS[i] = Pattern.compile("\\b" + NUM + "\\s*(?:" + SUMS[i] + ")\\s*" + NUM_AFTER + "\\b");
+        }
+    }
+
+    private static int toNumber(String word) {
+        if (word.matches("\\d+")) {
+            return word.length() > 6 ? Integer.MAX_VALUE : Integer.parseInt(word);
+        }
+        if ("to".equals(word) || "too".equals(word)) {
+            return 2;
+        }
+        if ("for".equals(word)) {
+            return 4;
+        }
+        return Arrays.asList(NUMBER_WORDS).indexOf(word);
+    }
+
+    /** A math problem he can bark the answer to, or null if this part of what you said isn't one. */
+    static Text.Voice mathProblem(String text) {
+        String t = " " + text.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ") + " ";
+        Double answer = null;
+        for (int i = 0; i < SUM_PATTERNS.length && answer == null; i++) {
+            Matcher m = SUM_PATTERNS[i].matcher(t);
+            if (m.find()) {
+                double a = toNumber(m.group(1));
+                double b = toNumber(m.group(2));
+                answer = i == 0 ? a + b : i == 1 ? a - b : i == 2 ? a * b : (b == 0 ? Double.NaN : a / b);
+            }
+        }
+        if (answer == null) {
+            Matcher m = COUNT.matcher(t);
+            if (m.find()) {
+                answer = (double) toNumber(m.group(1));
+            } else if (LEGS.matcher(t).find()) {
+                answer = 4.0;
+            }
+        }
+        if (answer == null) {
+            return null;
+        }
+        double n = answer;
+        boolean ok = !Double.isNaN(n) && n == Math.rint(n) && n >= 0 && n <= 10;
+        return new Text.Voice(ok ? (int) n : -1);
     }
 
     private static Text.Voice match(String words) {
