@@ -1551,13 +1551,13 @@
         },
         "leg3": {
           "rotation": [
-            "-160 + math.sin(query.anim_time * 360.0) * 3",
+            "-130 + math.sin(query.anim_time * 360.0) * 3",
             0,
-            -15
+            -30
           ],
           "position": [
             0,
-            0,
+            -3,
             0
           ]
         },
@@ -1576,15 +1576,8 @@
         "head": {
           "rotation": [
             0,
-            -10,
-            "-15 + math.sin(query.anim_time * 180.0) * 3"
-          ]
-        },
-        "speaker": {
-          "rotation": [
-            0,
             10,
-            15
+            "40 + math.sin(query.anim_time * 180.0) * 3"
           ]
         }
       }
@@ -1600,10 +1593,10 @@
           ]
         },
         "wave1": {
-          "scale": "1.0 + math.sin(query.anim_time * 540.0) * 0.3"
+          "scale": "math.mod(query.anim_time, 0.9) > 0.2 ? 1.0 : 0.0"
         },
         "wave2": {
-          "scale": "1.0 + math.sin(query.anim_time * 540.0 - 100.0) * 0.3"
+          "scale": "math.mod(query.anim_time, 0.9) > 0.45 ? 1.0 : 0.0"
         }
       }
     }

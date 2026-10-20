@@ -80,7 +80,7 @@ Jerry makes faces like in the video: **happy** (^ ^) when you pet, brush or play
 2. Tap the **microphone button on your keyboard** and say it out loud. Your phone's voice typing
    turns it into text. (On Windows, press **Win + H**. Or just type.)
 3. Just like in the video, a **speaker icon pops up over Jerry's head** when he hears you, and he reacts.
-   Say **"Jerry, listen up!"** and he cups a paw to his ear while the icon pulses with sound waves.
+   Say **"Jerry, listen up!"** and he raises a paw and leans his head on it while the speaker icon above him blinks its sound waves.
    Then just say what you want (no need to say his name again).
 4. With **Keep talking** on, the talk box pops back up after he answers, so you can keep the
    conversation going: just tap the mic again. Close the box (or send nothing) to stop.

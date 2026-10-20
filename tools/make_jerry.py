@@ -50,9 +50,10 @@ WOLF_BONES = [
 EXTRAS_BONES = [
     ("root", None, [0, 7, 0], None, []),
     ("head", "root", [-1, 10.5, -7], None, []),
-    # The "I'm listening!" speaker icon. Hidden unless the jf:speaking property is on. The two sound
-    # waves are their own bones so they can pulse out from the speaker while he listens.
-    ("speaker", "head", [0, 22, -7], None, [cube([-1, 17, -7], [6, 10, 0], [0, 0])]),
+    # The "I'm listening!" speaker icon. Hidden unless the jf:speaking property is on. It hangs over his
+    # head but isn't part of it, so it stays upright when he tilts his head to listen. The two sound
+    # waves are their own bones so they can blink on one after the other.
+    ("speaker", "root", [0, 22, -7], None, [cube([-1, 17, -7], [6, 10, 0], [0, 0])]),
     ("wave1", "speaker", [-1, 22, -7], None, [cube([-3, 20, -7], [1, 4, 0], [12, 0])]),
     ("wave2", "speaker", [-1, 22, -7], None, [cube([-5, 17, -7], [2, 10, 0], [14, 0])]),
     # A bone held across the mouth, sticking out both sides. Shown when jf:bone is on.
@@ -152,16 +153,16 @@ PALETTE.update({"O": (236, 230, 214, 255), "Q": (196, 188, 170, 255),  # bone co
                 "l": (102, 187, 106, 255), "L": (56, 142, 60, 255),       # leaves
                 "e": (66, 66, 66, 255), "N": (21, 40, 90, 255), "u": (48, 79, 254, 255)})  # frames, navy, blue
 
-SPEAKER_ICON = [
+SPEAKER_ICON = [  # a hollow outline, like the one in the video
     "....kk....",
-    "...kwk..k.",
-    "kkkwwk...k",
-    "kwwwwk.k.k",
-    "kwwwwk.k.k",
-    "kwwwwk.k.k",
-    "kwwwwk.k.k",
-    "kkkwwk...k",
-    "...kwk..k.",
+    "...k.k..k.",
+    "kkk..k...k",
+    "k....k.k.k",
+    "k....k.k.k",
+    "k....k.k.k",
+    "k....k.k.k",
+    "kkk..k...k",
+    "...k.k..k.",
     "....kk....",
 ]
 
