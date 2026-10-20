@@ -57,7 +57,9 @@
         "hug": "animation.jf_jerry.hug",
         "sleep": "animation.jf_jerry.sleep",
         "sneeze": "animation.jf_jerry.sneeze",
-        "baby": "animation.jf_jerry.baby"
+        "baby": "animation.jf_jerry.baby",
+        "listen": "animation.jf_jerry.listen",
+        "speaker_waves": "animation.jf_jerry.speaker_waves"
       },
       "scripts": {
         "animate": [

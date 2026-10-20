@@ -85,6 +85,7 @@ export const PET_CAT = [
   "§dMochi§7 kneads the air with her little paws. Purrrr.",
 ];
 export const CAT_REPLIES = {
+  listen: ["§dMochi§7 flicks one ear at you. That's all you get.", "§dMochi§7 is listening. She's just pretending she isn't."],
   love: ["§dMochi§7 purrs so loud it echoes.", "§dMochi§7 slow-blinks at you. She loves you too."],
   sit: ["§dMochi§7 sits... because she wanted to anyway.", "§dMochi§7 sits down and wraps her tail around her paws."],
   lie: ["§dMochi§7 tucks her paws in. Perfect loaf.", "§dMochi§7 becomes a loaf of bread. A purring loaf."],
@@ -218,13 +219,15 @@ export const MISHEARD = {
   hugging: "hug", hugged: "hug", scratching: "scratch", sneezing: "sneeze", sneezes: "sneeze", catching: "catch",
 };
 // Distinctive words that still count when one letter is off, like "speek" or "fetchh".
-export const FUZZY_WORDS = ["speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello", "backflip", "stretch", "peekaboo"];
+export const FUZZY_WORDS = ["speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello", "backflip", "stretch", "peekaboo", "listen"];
 
 // The first entry whose words appear in what you said wins, so more specific phrases go first.
 // action: what Jerry does (see talkAction in main.js). praise: also earns a little friendship.
 export const VOICE = [
   { words: ["good boy", "good dog", "love you", "best boy", "good job", "well done", "cute"], face: "love", action: "love", praise: true,
     replies: ["§bJerry§7's tail is wagging so fast it's basically a propeller.", "§bJerry§7 knows. He's very aware. *happy wiggle*"] },
+  { words: ["listen up", "listen", "pay attention", "are you listening", "can you hear me", "attention", "ears up"], action: "listen", // his face is set by startListening
+    replies: ["§bJerry§7 cups a paw to his ear. He's all ears! §7(Go on, tell him something.)", "§bJerry§7 perks up and listens. §7(What do you want him to do?)"] },
   { words: ["give me a hug", "hug me", "hug", "hugs", "cuddle", "cuddles", "snuggle"], face: "love", action: "hug", praise: true,
     replies: ["§bJerry§7 stands up and gives you the biggest hug. *happy wiggle*", "§bJerry§7 wraps his paws around you. Best hug ever."] },
   { words: ["scratch your ear", "scratch", "itchy", "itch", "got fleas"], face: "happy", action: "scratch",
@@ -358,7 +361,7 @@ export const TOO_SLEEPY = "§bJerry§7 is too sleepy for tricks... *yawn* He lie
 export const TRICK_NAMES = {
   paw: "shake", highfive: "high five", wave: "wave", beg: "beg", roll: "roll over", dead: "play dead",
   bow: "bow", dance: "dance", backflip: "backflip", howl: "howl", chase: "chase his tail", spin: "spin",
-  lie: "lie down", hop: "jump", find: "find it", shy: "be shy", stretch: "stretch", groom: "groom",
+  lie: "lie down", hop: "jump", find: "find it", shy: "be shy", stretch: "stretch", groom: "groom", listen: "listen up",
   fetch: "fetch", play: "zoomies", bone: "fetch her bone", excited: "treats", yawn: "nap", shock: "boo",
   shakeoff: "shake off", scratch: "scratch", hug: "hug", sneeze: "sneeze", catch: "catch", sleep: "go to sleep", backup: "back up",
   math: "math",

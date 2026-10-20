@@ -65,6 +65,9 @@
             },
             {
               "sneeze": "query.property('jf:pose') == 21"
+            },
+            {
+              "listen": "query.property('jf:pose') == 22"
             }
           ]
         },
@@ -287,6 +290,17 @@
             }
           ],
           "blend_transition": 0.2
+        },
+        "listen": {
+          "animations": [
+            "listen"
+          ],
+          "blend_transition": 0.2,
+          "transitions": [
+            {
+              "default": "query.property('jf:pose') != 22"
+            }
+          ]
         }
       }
     },
@@ -302,7 +316,8 @@
         },
         "shown": {
           "animations": [
-            "speaker_pop"
+            "speaker_pop",
+            "speaker_waves"
           ],
           "transitions": [
             {

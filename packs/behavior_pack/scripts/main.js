@@ -54,6 +54,7 @@ const POSE = {
   stand: 0, sit: 1, roll: 2, tilt: 3, paw: 4, wave: 5, beg: 6,
   playDead: 7, lie: 8, bow: 9, dance: 10, backflip: 11, howl: 12, sniff: 13, shy: 14, stretch: 15, groom: 16,
   scratch: 17, shakeOff: 18, hug: 19, sleep: 20, sneeze: 21, // Mochi has scratch and shakeOff too, but not the rest
+  listen: 22,
 };
 const DEFAULT_DOG_NAME = "Jerry";
 const DEFAULT_CAT_NAME = "Mochi";
@@ -84,6 +85,7 @@ const fighting = new Map(); // dog id -> { attacker id, until tick } while he's 
 const errands = new Map(); // dog id -> his trip to the food bowl or his bed
 const reactedAt = new Map(); // "playerId:reaction" -> seconds, so reactions don't spam
 const awaySince = new Map(); // player id -> seconds when the dog was last nearby
+const listening = new Map(); // player id -> { dog id, until tick } while he's all ears ("listen up")
 // The optional phone voice helper (voice-helper/jerry_voice.py) checks in every few seconds.
 const voiceHelper = { lastSeen: -999, lastListener: undefined };
 const LISTEN_TAG = "jf_listen"; // the helper listens when it sees this tag on a player
@@ -453,6 +455,31 @@ function setFor(dog, key, value, resetTo, ticks) {
 
 // The speaker icon that pops up over Jerry's head when he hears you.
 const showSpeaker = (dog, ticks) => setFor(dog, "jf:speaking", true, false, ticks);
+
+// "Jerry, listen up!": he cups a paw to his ear and the speaker icon pulses until you tell him
+// something (or about 10 seconds pass). While he's listening you don't need to say his name.
+function startListening(player, dog, ticks = 200) {
+  listening.set(player.id, { dog: dog.id, until: system.currentTick + ticks });
+  trick(dog, POSE.listen, ticks);
+  showSpeaker(dog, ticks);
+  showFace(dog, "puppy", ticks);
+  sound(dog.dimension, "mob.wolf.whine", dog.location, { pitch: 1.5 });
+}
+
+const isListening = (player) => (listening.get(player.id)?.until ?? 0) > system.currentTick;
+
+// You said something: he puts his paw down and gets on with it.
+function stopListening(player) {
+  const info = listening.get(player.id);
+  listening.delete(player.id);
+  if (!info || info.until <= system.currentTick) return;
+  let pet, pose;
+  try {
+    pet = world.getEntity(info.dog);
+    pose = pet?.getProperty("jf:pose");
+  } catch {}
+  if (isValid(pet) && pose === POSE.listen) trick(pet, restPose(pet) ?? POSE.stand, 1);
+}
 
 // Jerry's expressions (face overlays in the resource pack), matching the jf:face property.
 const FACE = { normal: 0, happy: 1, puppy: 2, shocked: 3, love: 4, sleepy: 5 };
@@ -1112,7 +1139,7 @@ const PRACTICE = new Set([
 const CAT_PRACTICE = new Set(["paw", "highfive", "wave", "beg", "roll", "dead", "spin", "lie", "hop", "shy", "stretch", "chase", "groom", "catch"]);
 const CAT_ALWAYS = new Set([
   "love", "sit", "come", "greet", "bark", "spinleft", "spinright", "find", "excited", "yawn", "shock", "play", "mochi", "hug", "sleep", "sneeze",
-  "scratch", "shakeoff",
+  "scratch", "shakeoff", "listen",
 ]);
 const MASTER_AT = 5; // successful tries to master a trick
 
@@ -1752,10 +1779,7 @@ function onVoiceStatus(player, status) {
     // Keep the hint up while the microphone is open.
     for (let i = 0; i < 3; i++) system.runTimeout(() => isValid(player) && actionbar(player, T.VOICE_LISTENING), i * 40);
     const dog = findDog(player);
-    if (dog && isNear(dog, player, 24)) {
-      tiltHead(dog); // ears up, big eyes: he's listening
-      showFace(dog, "puppy", 90);
-    }
+    if (dog && isNear(dog, player, 24)) startListening(player, dog, 100); // paw to his ear: he's listening
   } else if (status === "nobrowser") {
     tell(player, T.VOICE_NO_BROWSER);
   } else if (status === "blocked") {
@@ -1772,7 +1796,7 @@ function onVoiceStatus(player, status) {
 // anything with his name in it, or a short command on its own ("sit", "roll over").
 function onVoice(player, text, alwaysOn) {
   if (!text) return;
-  if (alwaysOn) {
+  if (alwaysOn && !isListening(player)) {
     const words = cleanWords(normalizeNames(text.toLowerCase().replace(/[^a-z' ]+/g, " "), player));
     const saidName = /\bjerry\b/.test(words);
     const shortCommand = words.split(" ").filter(Boolean).length <= 3 && parseCommands(text, player).length > 0;
@@ -1872,7 +1896,9 @@ function parseCommands(said, player) {
     const entry = mathProblem(raw) ?? (part ? matchVoice(part) : undefined);
     if (entry && entries[entries.length - 1] !== entry) entries.push(entry);
   }
-  return entries.slice(0, 4);
+  // "Jerry, listen up" is one command, not a hello and then a command.
+  const commands = entries.filter((entry) => entry.action !== "greet");
+  return (commands.length ? commands : entries).slice(0, 4);
 }
 
 // "What's 2 plus 3?" -> he barks 5 times. Also "count to 4" and "how many legs do you have".
@@ -1913,7 +1939,7 @@ const ACTION_TICKS = {
   roll: 56, spin: 34, play: 50, greet: 40, paw: 50, highfive: 50, wave: 50, beg: 50,
   dead: 75, lie: 25, bow: 45, dance: 75, backflip: 30, howl: 55, chase: 75,
   find: 110, shy: 65, stretch: 55, spinleft: 34, spinright: 34, groom: 70,
-  shakeoff: 35, scratch: 65, hug: 65, sneeze: 25, catch: 30, backup: 34, sleep: 40,
+  shakeoff: 35, scratch: 65, hug: 65, sneeze: 25, catch: 30, backup: 34, sleep: 40, listen: 20,
 };
 const actionTicks = (entry) => (entry.action === "math" ? 30 + Math.max(1, entry.count) * 10 : ACTION_TICKS[entry.action] ?? 30);
 
@@ -1982,6 +2008,7 @@ function hearCat(player, said) {
 
 function respondCat(player, cat, entry) {
   const action = entry.action;
+  stopListening(player);
   const dim = cat.dimension;
   const trickName = T.TRICK_NAMES[action] ?? action;
   if (!CAT_PRACTICE.has(action) && !CAT_ALWAYS.has(action)) {
@@ -2070,6 +2097,10 @@ function respondCat(player, cat, entry) {
       sound(dim, "mob.cat.purreow", cat.location);
       tiltHead(cat);
       break;
+    case "listen":
+      tiltHead(cat); // one ear flick, that's all you get
+      showSpeaker(cat, 40);
+      break;
     case "yawn":
       sit(cat, POSE.lie);
       break;
@@ -2141,6 +2172,7 @@ function hearPup(player, said) {
 }
 
 function respondPup(player, pup, entry) {
+  if (entry.action !== "listen") stopListening(player);
   if (entry.action === "fetch" || entry.action === "play") {
     pupZoomies(pup);
     return tell(player, T.PUP_MOMENTS[3].text);
@@ -2222,6 +2254,7 @@ function catZoomies(cat) {
 }
 
 function respond(player, dog, entry) {
+  if (entry?.action !== "listen") stopListening(player);
   if (!entry) {
     sound(dog.dimension, "mob.wolf.whine", dog.location);
     tiltHead(dog);
@@ -2291,6 +2324,8 @@ function talkAction(player, dog, action) {
     case "excited":
       hop(dog, 0.35);
       return sound(dim, "mob.wolf.whine", dog.location);
+    case "listen":
+      return startListening(player, dog);
     case "yawn":
       return sound(dim, "mob.wolf.panting", dog.location);
     case "shock":

@@ -50,8 +50,11 @@ WOLF_BONES = [
 EXTRAS_BONES = [
     ("root", None, [0, 7, 0], None, []),
     ("head", "root", [-1, 10.5, -7], None, []),
-    # The "I heard you!" speaker icon. Hidden unless the jf:speaking property is on.
-    ("speaker", "head", [0, 22, -7], None, [cube([-5, 17, -7], [10, 10, 0], [0, 0])]),
+    # The "I'm listening!" speaker icon. Hidden unless the jf:speaking property is on. The two sound
+    # waves are their own bones so they can pulse out from the speaker while he listens.
+    ("speaker", "head", [0, 22, -7], None, [cube([-1, 17, -7], [6, 10, 0], [0, 0])]),
+    ("wave1", "speaker", [-1, 22, -7], None, [cube([-3, 20, -7], [1, 4, 0], [12, 0])]),
+    ("wave2", "speaker", [-1, 22, -7], None, [cube([-5, 17, -7], [2, 10, 0], [14, 0])]),
     # A bone held across the mouth, sticking out both sides. Shown when jf:bone is on.
     ("mouth_bone", "head", [0, 9, -11], None, [
         cube([-3.5, 8.5, -11.5], [7, 1, 1], [0, 11]),
@@ -189,10 +192,13 @@ def geometry(identifier, bones, tex_w, tex_h):
 
 def extras_texture():
     grid = [["."] * 64 for _ in range(32)]
-    # Speaker: box UV for a 10x10x0 plane puts the front at (0, 0) and the back (mirrored) at (10, 0).
-    for y, row in enumerate(SPEAKER_ICON):
-        for x, ch in enumerate(row + row[::-1]):
-            grid[y][x] = ch
+    # Speaker: box UV for a Wx10x0 plane puts the front at (u, 0) and the back (mirrored) at (u + W, 0).
+    # The icon is cut into the speaker (columns 0-5), the small wave (column 7) and the big wave (8-9).
+    for u, (x0, x1), (y0, y1) in ((0, (0, 6), (0, 10)), (12, (7, 8), (3, 7)), (14, (8, 10), (0, 10))):
+        for y in range(y0, y1):
+            part = SPEAKER_ICON[y][x0:x1]
+            for x, ch in enumerate(part + part[::-1]):
+                grid[y - y0][u + x] = ch
     # Bone: shaft (7x1x1 at 0,11 -> 16x2) and two knobs (1x2x2 at 20,0 and 20,4 -> 6x4 each).
     for x0, y0, w, h in ((0, 11, 16, 2), (20, 0, 6, 4), (20, 4, 6, 4)):
         for y in range(y0, y0 + h):
