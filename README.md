@@ -56,6 +56,7 @@ particles:
   shake, a real wolf **howl**, music notes and so on.
 - **No microphone voice.** But you can **talk to him in chat**, which Java servers make easy:
   *"Biscuit, sit then shake!"*
+- The red **"!"** and the speaker icon are floating name tags (■))) instead of a drawn speaker).
 - Tame-style items are named vanilla items (they still work like the Bedrock ones).
 
 ## Install
@@ -81,10 +82,12 @@ works on them:
 
 ## Talking to your dog
 
-Say his name and a trick in chat, or use `/dog <trick>`:
+Say his name and a trick in chat, or use `/dog <trick>`. When you say his name, a **red "!"** pops up
+over his head and he turns to look at you; then a little speaker (■))) ) shows he heard you, and he does it.
 
 | Say | He… |
 |---|---|
+| "Jerry, listen up", "pay attention" | sits with the speaker over his head and music notes for 10 seconds: your next message counts even without his name |
 | "Jerry, sit" / "lie down" | sits and stays until "come" |
 | "come", "here" | comes to you, even from far away |
 | "shake", "paw", "high five" | gives you his paw (hearts!) |
@@ -112,6 +115,30 @@ Say his name and a trick in chat, or use `/dog <trick>`:
 | "good boy" | wags (+ friendship) |
 
 Chain them: *"Jerry, sit then shake then roll over"*. Short commands on their own ("sit") work too.
+
+### 🧠 Smart Jerry (AI)
+
+The server owner can turn on **Smart Jerry**: then questions and chatting that aren't simple commands get
+a real answer, and he picks tricks to match.
+
+> **You:** Biscuit, what's your favourite food?
+> **Biscuit:** Bones! Definitely bones. And treats. Mostly treats. Woof! *(wiggles happily)*
+
+He knows how hungry, tired and playful he is, your friendship level, his family and which tricks he's
+mastered, and remembers the last few things you said. Simple commands ("sit") still happen instantly.
+
+To turn it on you need a free Groq API key from <https://console.groq.com/keys>. Then either set it in
+`plugins/JerryTheDawg/config.yml`:
+
+```yaml
+smart-jerry:
+  enabled: true
+  groq-api-key: "gsk_..."
+```
+
+or type `/dog ai key <key>` and `/dog ai on` (ops only). Spigot writes the commands players type to the
+server log, so the **server console** or `config.yml` is the best place for the key. The AI is asked to
+keep everything kid-friendly. If it can't be reached, he just tilts his head and says so after 12 seconds.
 
 ## Items
 
@@ -141,6 +168,7 @@ like any tamed wolf.
 | `/dog status` | mood, needs and friendship |
 | `/dog items` | get the pet items again (and the bed/bowl, if you haven't put them down) |
 | `/dog quiet` | turn his random chat messages off/on |
+| `/dog ai` | Smart Jerry (AI): how it works, and `on` / `off` / `key <key>` for ops |
 | `/dog reset` | start over with a new dog |
 
 Friendship: New Pal → **Buddy** (Mochi the cat joins) → **Best Friend** (he brings you gifts) → **Inseparable** (a puppy joins).

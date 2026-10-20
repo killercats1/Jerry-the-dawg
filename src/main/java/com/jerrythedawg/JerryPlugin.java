@@ -28,10 +28,15 @@ public final class JerryPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        saveDefaultConfig(); // config.yml: Smart Jerry (AI) settings
         dataFile = new File(getDataFolder(), "pets.yml");
         load();
         pets = new Pets(this);
-        speech = new Speech(this, pets);
+        speech = new Speech(this, pets, new SmartJerry(this, pets));
+        // "!" and speaker bubbles left over from a crash (armor stands are saved with the world).
+        for (org.bukkit.World world : Bukkit.getWorlds()) {
+            pets.holograms().removeStrays(world);
+        }
         getServer().getPluginManager().registerEvents(new PetListener(pets, speech), this);
         DogCommand command = new DogCommand(this, pets, speech);
         getCommand("dog").setExecutor(command);
@@ -59,6 +64,7 @@ public final class JerryPlugin extends JavaPlugin {
     public void onDisable() {
         if (pets != null) {
             pets.removeThrownBalls(); // a game cut off by a restart shouldn't leave a spare ball lying around
+            pets.holograms().removeAll();
         }
         save();
     }

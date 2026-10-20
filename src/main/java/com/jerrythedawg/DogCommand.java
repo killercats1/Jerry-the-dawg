@@ -19,6 +19,10 @@ final class DogCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length > 0 && args[0].equalsIgnoreCase("ai")) {
+            ai(sender, args); // works from the server console too (the best place to type the key)
+            return true;
+        }
         if (!(sender instanceof Player)) {
             sender.sendMessage("Only players have pets!");
             return true;
@@ -85,6 +89,49 @@ final class DogCommand implements CommandExecutor {
             speech.hear(player, join(args, 0));
         }
         return true;
+    }
+
+    /** /dog ai [on|off|key <key>]: Smart Jerry. Anyone can see how to use it; only ops can change it. */
+    private void ai(CommandSender sender, String[] args) {
+        String what = args.length > 1 ? args[1].toLowerCase(java.util.Locale.ROOT) : "";
+        boolean admin = !(sender instanceof Player) || sender.isOp() || sender.hasPermission("jerrythedawg.admin");
+        if (what.isEmpty() || "help".equals(what)) {
+            for (String line : Text.AI_HELP) {
+                say(sender, line);
+            }
+            boolean on = plugin.getConfig().getBoolean("smart-jerry.enabled", false);
+            boolean hasKey = !plugin.getConfig().getString("smart-jerry.groq-api-key", "").trim().isEmpty();
+            say(sender, !on ? Text.AI_OFF : hasKey ? Text.AI_ON : Text.AI_NEEDS_KEY);
+            return;
+        }
+        if (!admin) {
+            say(sender, Text.AI_ADMIN_ONLY);
+            return;
+        }
+        if ("on".equals(what) || "off".equals(what)) {
+            plugin.getConfig().set("smart-jerry.enabled", "on".equals(what));
+            plugin.saveConfig();
+            boolean hasKey = !plugin.getConfig().getString("smart-jerry.groq-api-key", "").trim().isEmpty();
+            say(sender, "off".equals(what) ? Text.AI_OFF : hasKey ? Text.AI_ON : Text.AI_NEEDS_KEY);
+        } else if ("key".equals(what) && args.length > 2) {
+            // Saved, never shown back (or logged by us).
+            plugin.getConfig().set("smart-jerry.groq-api-key", args[2].trim());
+            plugin.saveConfig();
+            say(sender, Text.AI_KEY_SAVED);
+            if (!plugin.getConfig().getBoolean("smart-jerry.enabled", false)) {
+                say(sender, "§7Turn it on with §f/dog ai on");
+            }
+        } else {
+            say(sender, "§7Use §f/dog ai on§7, §f/dog ai off§7 or §f/dog ai key <key>");
+        }
+    }
+
+    private void say(CommandSender sender, String text) {
+        if (sender instanceof Player) {
+            pets.tell((Player) sender, text);
+        } else {
+            sender.sendMessage(text.replaceAll("§.", ""));
+        }
     }
 
     private static String join(String[] args, int from) {

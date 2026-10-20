@@ -8,3 +8,7 @@ commands:
     description: Your dog. Try /dog help
     usage: /dog help
     aliases: [jerry, pet]
+permissions:
+  jerrythedawg.admin:
+    description: Turn Smart Jerry (AI) on or off and set its key
+    default: op

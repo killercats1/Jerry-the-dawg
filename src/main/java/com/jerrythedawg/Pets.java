@@ -54,7 +54,15 @@ final class Pets {
     private final Set<UUID> thrownBalls = new HashSet<UUID>();
     private int ballCounter;
     private final Home home;
+    private final Holograms holograms;
     private long seconds;
+    /** Players whose pet is listening ("listen up"): pet id and when it stops (server ticks). */
+    private final Map<UUID, Object[]> listening = new HashMap<UUID, Object[]>();
+    private long serverTick;
+
+    /** How long the red "!" shows before he reacts (like the Bedrock add-on). */
+    static final long ALERT_TICKS = 22;
+    static final long LISTEN_TICKS = 200;
 
     /** Tricks that need practice before he's perfect at them. */
     static final Set<String> PRACTICE = new HashSet<String>(Arrays.asList(
@@ -64,7 +72,7 @@ final class Pets {
 
     /** What Mochi will do when you ask her (she's a cat: she does the rest on her own terms). */
     static final Set<String> CAT_TRICKS = new HashSet<String>(Arrays.asList(
-        "sit", "lie", "come", "paw", "highfive", "roll", "hop", "spin", "spinleft", "spinright", "chase", "purr", "love",
+        "listen", "sit", "lie", "come", "paw", "highfive", "roll", "hop", "spin", "spinleft", "spinright", "chase", "purr", "love",
         "wave", "beg", "dead", "shy", "stretch", "groom", "find", "excited", "yawn", "shock", "play", "bark",
         "hug", "sleep", "sneeze", "scratch", "shakeoff", "catch"));
     static final Set<String> CAT_PRACTICE = new HashSet<String>(Arrays.asList(
@@ -77,10 +85,79 @@ final class Pets {
     Pets(JerryPlugin plugin) {
         this.plugin = plugin;
         this.home = new Home(plugin, this);
+        this.holograms = new Holograms(plugin);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                serverTick++;
+            }
+        }.runTaskTimer(plugin, 1L, 1L);
     }
 
     Home home() {
         return home;
+    }
+
+    Holograms holograms() {
+        return holograms;
+    }
+
+    // ------------------------------------------------------------------ "!" and "listen up"
+
+    /** You said his name: a red "!" pops up over his head and he turns to look at you. */
+    void alert(Player player, Wolf pet) {
+        holograms.alert(pet, ALERT_TICKS);
+        if (!isBusy(pet)) {
+            face(pet, player.getLocation(), 0);
+        }
+        sound(pet, Sound.WOLF_WHINE, pet.isAdult() ? 1.6f : 1.9f);
+    }
+
+    /** "Listen up!": he sits, the speaker shows over his head and notes float up until you tell him something. */
+    void listen(Player player, final Wolf pet) {
+        final boolean wasSitting = pet.isSitting();
+        pet.setSitting(true);
+        face(pet, player.getLocation(), 0);
+        sound(pet, Sound.WOLF_WHINE, pet.isAdult() ? 1.5f : 1.9f);
+        holograms.speaker(pet, LISTEN_TICKS);
+        listening.put(player.getUniqueId(), new Object[] {pet.getUniqueId(), serverTick + LISTEN_TICKS, wasSitting});
+        final UUID owner = player.getUniqueId();
+        new BukkitRunnable() {
+            private int step;
+
+            @Override
+            public void run() {
+                Object[] l = listening.get(owner);
+                if (!pet.isValid() || l == null || !pet.getUniqueId().equals(l[0]) || step++ * 10 >= LISTEN_TICKS) {
+                    if (l != null && pet.getUniqueId().equals(l[0]) && serverTick >= (Long) l[1]) {
+                        listening.remove(owner);
+                    }
+                    cancel();
+                    return;
+                }
+                pet.getWorld().playEffect(pet.getLocation().add(0, pet.isAdult() ? 1.2 : 0.8, 0), Effect.NOTE, 0);
+            }
+        }.runTaskTimer(plugin, 5L, 10L);
+    }
+
+    boolean isListening(Player player) {
+        Object[] l = listening.get(player.getUniqueId());
+        return l != null && serverTick < (Long) l[1];
+    }
+
+    /** You told him something: he gets up (unless he was already sitting) and gets on with it. */
+    void stopListening(Player player) {
+        Object[] l = listening.remove(player.getUniqueId());
+        if (l == null || serverTick >= (Long) l[1]) {
+            return;
+        }
+        Entity pet = find((UUID) l[0]);
+        if (pet instanceof Wolf && pet.isValid()) {
+            ((Wolf) pet).setSitting((Boolean) l[2]);
+            if (holograms.showing(pet, Holograms.SPEAKER)) {
+                holograms.hide(pet);
+            }
+        }
     }
 
     // ------------------------------------------------------------------ text
@@ -1188,7 +1265,9 @@ final class Pets {
 
     /** Does one trick. 1.8.8 has no custom animations, so tricks use vanilla moves and effects. */
     void trick(final Player player, final Wolf dog, String action) {
-        if ("love".equals(action)) {
+        if ("listen".equals(action)) {
+            listen(player, dog);
+        } else if ("love".equals(action)) {
             hearts(dog);
             sound(dog, Sound.WOLF_PANT, 1f);
             hop(dog, 0.3);
@@ -1405,7 +1484,9 @@ final class Pets {
 
     /** Mochi's tricks (cats do fewer tricks, but they're very good at them). */
     void catTrick(Player player, Ocelot cat, String action) {
-        if ("sit".equals(action) || "lie".equals(action)) {
+        if ("listen".equals(action)) {
+            cat.getWorld().playSound(cat.getLocation(), Sound.CAT_MEOW, 0.4f, 1.7f); // a tiny "mrp"
+        } else if ("sit".equals(action) || "lie".equals(action)) {
             cat.setSitting(true);
             sound(cat, Sound.CAT_MEOW, 1f);
         } else if ("come".equals(action)) {
@@ -1519,7 +1600,9 @@ final class Pets {
             sound(pup, Sound.WOLF_WHINE, 1.8f);
             return;
         }
-        if ("sit".equals(action) || "lie".equals(action) || "dead".equals(action) || "beg".equals(action)
+        if ("listen".equals(action)) {
+            listen(player, pup);
+        } else if ("sit".equals(action) || "lie".equals(action) || "dead".equals(action) || "beg".equals(action)
             || "stretch".equals(action) || "yawn".equals(action)) {
             pup.setSitting(true);
             sound(pup, Sound.WOLF_PANT, 1.7f);
@@ -1893,9 +1976,10 @@ final class Pets {
         }
     }
 
-    /** The "he heard you" note above his head (the speaker icon in the Bedrock version). */
+    /** "He heard you": a note and the speaker over his head for a couple of seconds. */
     void heardYou(Wolf dog) {
         dog.getWorld().playEffect(dog.getLocation().add(0, 1.3, 0), Effect.NOTE, 0);
+        holograms.speaker(dog, 40);
     }
 
     void sound(Entity at, Sound sound, float pitch) {

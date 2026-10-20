@@ -1,0 +1,10 @@
+# Jerry the Dawg
+
+# Smart Jerry: questions and chatting that aren't simple commands ("Jerry, what's your favourite
+# food?") get a real answer from an AI, and he picks tricks to match. Needs a free Groq API key
+# from https://console.groq.com/keys. You can also set these in game (ops) or from the console:
+#   /dog ai on    /dog ai off    /dog ai key <key>
+# (Spigot logs the commands players type, so the console or this file is the best place for the key.)
+smart-jerry:
+  enabled: false
+  groq-api-key: ""

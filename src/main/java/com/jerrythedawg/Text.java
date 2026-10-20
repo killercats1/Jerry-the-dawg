@@ -85,6 +85,16 @@ final class Text {
     static final String DOG_RENAMED = "§aYour dog is now called §bJerry§a! He loves it.";
     static final String CAT_RENAMED = "§aYour cat is now called §dMochi§a! Purrr.";
     static final String PUP_RENAMED = "§aYour puppy is now called §aPip§a! He's thrilled.";
+    /** The chat command for an action (null if there isn't one). */
+    static Voice voiceFor(String action) {
+        for (Voice v : VOICE) {
+            if (v.action.equals(action)) {
+                return v;
+            }
+        }
+        return null;
+    }
+
     static final String NO_PUP = "§7You don't have a puppy yet. Become §fInseparable§7 with §bJerry§7!";
     static final String NO_CAT = "§7You don't have a cat yet. Keep being friends with §bJerry§7!";
     static final String QUIET_ON = "§7Jerry will keep his thoughts to himself (no random messages). §f/dog quiet§7 again to undo.";
@@ -106,7 +116,23 @@ final class Text {
         "§f/dog call§7 - call your pets §8|§f /dog status§7 - mood, needs, friendship (or sneak + use the whistle)",
         "§f/dog items§7 - get the pet items again §8|§f /dog quiet§7 - no random messages",
         "§f/dog pupname <name>§7 - rename your puppy §8|§f /dog catcoat <ginger|black|siamese>§7 - Mochi's coat",
+        "§f\"Jerry, listen up!\"§7 - he sits and listens; for 10 seconds you don't need to say his name",
+        "§f/dog ai§7 - Smart Jerry: ask him anything and he answers (AI; the server owner turns it on)",
     };
+
+    // Smart Jerry (AI).
+    static final String AI_NO_ANSWER = "§7(§bJerry§7 tilts his head. The AI didn't answer in time. Ask the server owner to check Smart Jerry's Groq key.)";
+    static final String[] AI_HELP = {
+        "§6[Smart Jerry]§f Ask §bJerry§f anything in chat: §7\"Jerry, what's your favourite food?\"",
+        "§7He answers (with an AI) and does tricks to match. Simple commands like §fsit§7 still work instantly.",
+        "§7Server owner: §f/dog ai on§7 / §f/dog ai off§7, and set a free Groq key (console.groq.com) with",
+        "§f/dog ai key <key>§7 §8(best typed in the server console: Spigot logs players' commands)§7 or in §fconfig.yml§7.",
+    };
+    static final String AI_ON = "§a[Smart Jerry]§f is on! Ask §bJerry§f anything.";
+    static final String AI_OFF = "§7[Smart Jerry] is off. §bJerry§7 sticks to the tricks he knows.";
+    static final String AI_NEEDS_KEY = "§e[Smart Jerry]§f is on, but needs a Groq key first: §f/dog ai key <key>§7 (free at console.groq.com).";
+    static final String AI_KEY_SAVED = "§a[Smart Jerry]§f Key saved.";
+    static final String AI_ADMIN_ONLY = "§7Only the server owner (an op) can change Smart Jerry.";
 
     /** One voice/chat command: the words that trigger it, what he does, and what he says. */
     static final class Voice {
@@ -144,6 +170,9 @@ final class Text {
         new Voice("love", true, w("good boy", "good dog", "love you", "best boy", "good job", "well done", "cute",
                 "good girl", "good kitty", "good puppy", "good pup"),
             "§bJerry§7's tail is wagging so fast it's basically a propeller.", "§bJerry§7 knows. He's very aware. *happy wiggle*"),
+        new Voice("listen", false, w("listen up", "listen", "pay attention", "are you listening", "can you hear me", "attention", "ears up"),
+            "§bJerry§7 sits and perks his ears right up. He's all ears! §8(Go on, tell him something.)",
+            "§bJerry§7 sits up and listens. §8(What do you want him to do?)"),
         new Voice("hug", true, w("give me a hug", "hug me", "hug", "hugs", "cuddle", "cuddles", "snuggle"),
             "§bJerry§7 stands up and gives you the biggest hug. *happy wiggle*", "§bJerry§7 wraps his paws around you. Best hug ever."),
         new Voice("scratch", false, w("scratch your ear", "scratch", "itchy", "itch", "got fleas"),
@@ -230,6 +259,7 @@ final class Text {
         "§fdance, backflip, howl, chase your tail, spin, spin left/right, jump, speak, shake off,",
         "§ffetch, find it, are you shy, stretch, groom, hug, scratch, sneeze, catch, back up, go to sleep",
         "§fMath: §f\"what's 2 plus 3?\"§7, §f\"count to 4\"§7 (he barks the answer, 1 to 10)",
+        "§f\"Jerry, listen up\"§7: he sits and listens, then your next message counts without his name",
         "§dMochi§7 (say her name first): §fsit, come, paw, high five, wave, beg, roll over, play dead, jump, spin,",
         "§fchase your tail, shy, stretch, groom, purr, hug, scratch, shake off, catch, sneeze, go to sleep",
         "§aPip§7 the puppy tries anything §bJerry§7 does (say his name to talk to him).",
@@ -259,7 +289,7 @@ final class Text {
 
     // Distinctive words that still count when one letter is off, like "speek" or "fetchh".
     static final List<String> FUZZY_WORDS = Arrays.asList(
-        "speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello", "backflip");
+        "speak", "fetch", "mochi", "jerry", "belly", "zoomies", "twirl", "dance", "hello", "backflip", "listen");
 
     // ------------------------------------------------------------------ needs & moods
 
@@ -408,6 +438,8 @@ final class Text {
             "§dMochi§7 does a tiny cat shake. Every hair is back in place."});
         m.put("catch", new String[] {"§dMochi§7 swats the treat out of the air and eats it like it was her idea.",
             "§dMochi§7 pounces and catches it! Purr-fect."});
+        m.put("listen", new String[] {"§dMochi§f: mrp. §7(One ear flicks your way. That's all you get.)",
+            "§dMochi§7 is listening. She's just pretending she isn't."});
         CAT_REPLIES = Collections.unmodifiableMap(m);
     }
 

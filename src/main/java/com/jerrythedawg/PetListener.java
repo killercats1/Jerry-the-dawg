@@ -25,7 +25,9 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 
 final class PetListener implements Listener {
@@ -225,9 +227,21 @@ final class PetListener implements Listener {
         }
     }
 
+    /** The "!" and speaker bubbles never get left behind in an unloaded chunk. */
+    @EventHandler
+    public void onChunkUnload(ChunkUnloadEvent event) {
+        pets.holograms().chunkUnloading(event.getChunk());
+    }
+
+    @EventHandler
+    public void onDeath(EntityDeathEvent event) {
+        pets.holograms().hide(event.getEntity());
+    }
+
     /** If the whistle made a new dog while the old one was in an unloaded chunk, remove the old copy. */
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
+        pets.holograms().removeStrays(event.getChunk().getEntities());
         for (Entity entity : event.getChunk().getEntities()) {
             if (entity instanceof Wolf || entity instanceof Ocelot) {
                 pets.removeIfStaleCopy(entity);

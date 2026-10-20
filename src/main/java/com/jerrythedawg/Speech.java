@@ -18,11 +18,14 @@ final class Speech {
 
     private final JerryPlugin plugin;
     private final Pets pets;
+    private final SmartJerry smart;
     private final Random random = new Random();
 
-    Speech(JerryPlugin plugin, Pets pets) {
+    Speech(JerryPlugin plugin, Pets pets, SmartJerry smart) {
         this.plugin = plugin;
         this.pets = pets;
+        this.smart = smart;
+        smart.setSpeech(this);
     }
 
     /** A chat message: only react to things meant for your pets (a name, or a short command on its own). */
@@ -36,7 +39,8 @@ final class Speech {
         boolean saidName = padded.contains(" jerry ") || (data.hasCat && padded.contains(" mochi "))
             || (data.hasPup && padded.contains(" pip "));
         boolean shortCommand = words.split(" ").length <= 3 && !parse(message, data).isEmpty();
-        if (saidName || shortCommand) {
+        // After "listen up" your next message counts even without his name.
+        if (saidName || shortCommand || pets.isListening(player)) {
             hear(player, message);
         }
     }
@@ -66,13 +70,42 @@ final class Speech {
             pets.tell(player, Text.CANT_HEAR);
             return;
         }
-        pets.heardYou(dog);
-        if (commands.isEmpty()) {
-            pets.sound(dog, org.bukkit.Sound.WOLF_WHINE, 1f);
-            pets.tell(player, pets.pick(Text.UNKNOWN));
+        // Like in the video: say his name and a red "!" pops up first, then he shows he's listening
+        // and reacts.
+        long start = 0;
+        if (padded.contains(" jerry ")) {
+            pets.alert(player, dog);
+            start = Pets.ALERT_TICKS;
+        }
+        if (smart.wants(said, commands, padded.trim())) {
+            if (!isListen(commands)) {
+                pets.stopListening(player);
+            }
+            smart.ask(player, dog, said, start);
             return;
         }
-        long at = 6;
+        pets.later(Math.max(1, start), new Runnable() {
+            @Override
+            public void run() {
+                if (dog.isValid()) {
+                    pets.heardYou(dog);
+                }
+            }
+        });
+        if (commands.isEmpty()) {
+            pets.later(Math.max(1, start), new Runnable() {
+                @Override
+                public void run() {
+                    if (player.isOnline() && dog.isValid()) {
+                        pets.stopListening(player);
+                        pets.sound(dog, org.bukkit.Sound.WOLF_WHINE, 1f);
+                        pets.tell(player, pets.pick(Text.UNKNOWN));
+                    }
+                }
+            });
+            return;
+        }
+        long at = 6 + start;
         for (final Text.Voice entry : commands) {
             pets.later(at, new Runnable() {
                 @Override
@@ -86,7 +119,24 @@ final class Speech {
         }
     }
 
+    private static boolean isListen(List<Text.Voice> commands) {
+        for (Text.Voice v : commands) {
+            if ("listen".equals(v.action)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void respond(Player player, Wolf dog, Text.Voice entry) {
+        respond(player, dog, entry, false);
+    }
+
+    /** fromAI: Smart Jerry already said his piece, so no canned reply (friendship still counts). */
+    void respond(Player player, Wolf dog, Text.Voice entry, boolean fromAI) {
+        if (!"listen".equals(entry.action)) {
+            pets.stopListening(player);
+        }
         if ("play".equals(entry.action) || "fetch".equals(entry.action)) {
             pets.trick(player, dog, entry.action); // these say their own thing
             return;
@@ -110,6 +160,12 @@ final class Speech {
         }
         pets.trick(player, dog, entry.action);
         pets.pupCopies(player, entry.action); // the puppy wants to do it too
+        if (fromAI) {
+            if (entry.praise && pets.earn(player, "talk", 2, 30)) {
+                pets.tell(player, "  " + pets.friendshipBar(plugin.data(player)));
+            }
+            return;
+        }
         String reply;
         if ("mochi".equals(entry.action)) {
             reply = plugin.data(player).hasCat ? pets.pick(Text.MOCHI_HI) : Text.NO_CAT;
@@ -198,12 +254,21 @@ final class Speech {
             pets.tell(player, Text.CANT_HEAR_PUP);
             return;
         }
+        pets.alert(player, pup); // you always say his name to talk to him
         if (commands.isEmpty()) {
-            pets.sound(pup, org.bukkit.Sound.WOLF_BARK, 1.8f);
-            pets.tell(player, pets.pick(Text.PIP_HI));
+            pets.later(Pets.ALERT_TICKS, new Runnable() {
+                @Override
+                public void run() {
+                    if (player.isOnline() && pup.isValid()) {
+                        pets.heardYou(pup);
+                        pets.sound(pup, org.bukkit.Sound.WOLF_BARK, 1.8f);
+                        pets.tell(player, pets.pick(Text.PIP_HI));
+                    }
+                }
+            });
             return;
         }
-        long at = 6;
+        long at = 6 + Pets.ALERT_TICKS;
         for (final Text.Voice entry : commands) {
             pets.later(at, new Runnable() {
                 @Override
@@ -212,6 +277,9 @@ final class Speech {
                         return;
                     }
                     String action = entry.action;
+                    if (!"listen".equals(action)) {
+                        pets.stopListening(player);
+                    }
                     if ("math".equals(action)) {
                         pets.doMath(player, pup, entry.count, true);
                         return;
@@ -223,7 +291,7 @@ final class Speech {
                     }
                     // Puppies get "sit" and "come" right; anything fancier is a coin toss.
                     boolean ok = "sit".equals(action) || "come".equals(action) || "lie".equals(action) || "sleep".equals(action)
-                        || "hug".equals(action) || random.nextInt(10) < 6;
+                        || "hug".equals(action) || "listen".equals(action) || random.nextInt(10) < 6;
                     pets.pupTrick(player, pup, action, ok);
                     String name = Text.TRICK_NAMES.containsKey(action) ? Text.TRICK_NAMES.get(action) : entry.words.get(0);
                     pets.tell(player, (ok ? Text.PUP_DID : Text.PUP_OOPS).replace("{trick}", name));
@@ -233,7 +301,7 @@ final class Speech {
         }
     }
 
-    private static long ticksFor(Text.Voice entry) {
+    static long ticksFor(Text.Voice entry) {
         String action = entry.action;
         if ("math".equals(action)) {
             return 30 + Math.max(1, entry.count) * 10;
@@ -287,7 +355,14 @@ final class Speech {
                 break;
             }
         }
-        return out;
+        // "Jerry, listen up" is one command, not a hello and then a command.
+        List<Text.Voice> real = new ArrayList<Text.Voice>();
+        for (Text.Voice v : out) {
+            if (!"greet".equals(v.action)) {
+                real.add(v);
+            }
+        }
+        return real.isEmpty() ? out : real;
     }
 
     // "What's 2 plus 3?" -> he barks 5 times. Also "count to 4" and "how many legs do you have".
