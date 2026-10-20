@@ -456,6 +456,24 @@ function setFor(dog, key, value, resetTo, ticks) {
 // The speaker icon that pops up over Jerry's head when he hears you.
 const showSpeaker = (dog, ticks) => setFor(dog, "jf:speaking", true, false, ticks);
 
+// You said his name: a red "!" pops up over his head and he turns to look at you (like in the video).
+const ALERT_TICKS = 22;
+function alertPet(player, pet) {
+  setFor(pet, "jf:alert", true, false, ALERT_TICKS);
+  showFace(pet, "puppy", ALERT_TICKS + 10);
+  const dx = player.location.x - pet.location.x;
+  const dz = player.location.z - pet.location.z;
+  try {
+    pet.setRotation({ x: 0, y: (Math.atan2(-dx, dz) * 180) / Math.PI });
+  } catch {}
+  sound(pet.dimension, "mob.wolf.whine", pet.location, { pitch: isPup(pet) ? 1.8 : 1.4 });
+}
+
+function saidDogName(said, player) {
+  const words = ` ${cleanWords(normalizeNames(said.toLowerCase().replace(/[^a-z' ]+/g, " "), player))} `;
+  return / jerry /.test(words);
+}
+
 // "Jerry, listen up!": he cups a paw to his ear and the speaker icon pulses until you tell him
 // something (or about 10 seconds pass). While he's listening you don't need to say his name.
 function startListening(player, dog, ticks = 200) {
@@ -1970,13 +1988,17 @@ function hearSpeech(player, said) {
     tell(player, T.CANT_HEAR);
     return 0;
   }
-  // Like in the video: a speaker icon pops up over Jerry when he hears you, then he reacts.
-  showSpeaker(dog, commands.some((entry) => entry.action === "bark") ? 70 : 45);
+  // Like in the video: say his name and a red "!" pops up first, then the speaker icon shows he's
+  // listening and he reacts.
+  const start = saidDogName(said, player) ? ALERT_TICKS : 0;
+  if (start) alertPet(player, dog);
+  const speakerTicks = commands.some((entry) => entry.action === "bark") ? 70 : 45;
+  system.runTimeout(() => isValid(dog) && showSpeaker(dog, speakerTicks), Math.max(1, start));
   if (!commands.length) {
-    system.runTimeout(() => isValid(player) && isValid(dog) && respond(player, dog, undefined), 12);
-    return 50;
+    system.runTimeout(() => isValid(player) && isValid(dog) && respond(player, dog, undefined), 12 + start);
+    return 50 + start;
   }
-  let at = 12;
+  let at = 12 + start;
   for (const entry of commands) {
     system.runTimeout(() => {
       if (isValid(player) && isValid(dog)) respond(player, dog, entry);
@@ -2159,9 +2181,10 @@ function hearPup(player, said) {
     tell(player, T.PUP_NOT_HERE);
     return 0;
   }
-  showSpeaker(pup, 40);
+  alertPet(player, pup); // you always say his name to talk to him
+  system.runTimeout(() => isValid(pup) && showSpeaker(pup, 40), ALERT_TICKS);
   if (!commands.length) commands.push(T.VOICE.find((entry) => entry.action === "greet"));
-  let at = 12;
+  let at = 12 + ALERT_TICKS;
   for (const entry of commands) {
     system.runTimeout(() => {
       if (isValid(player) && isValid(pup)) respondPup(player, pup, entry);

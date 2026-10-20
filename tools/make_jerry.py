@@ -77,6 +77,14 @@ def solid(origin, size, colour):
     return {"origin": origin, "size": size, "uv": {f: dict(face) for f in ("north", "south", "east", "west", "up", "down")}}
 
 
+# The red "!" that pops up over him when he hears his name. Shown when jf:alert is on.
+ALERT_BONES = [
+    ("alert", "root", [0, 17.5, -7], None, [
+        solid([-1, 17.5, -8], [2, 2, 2], "r"),
+        solid([-1, 20.5, -8], [2, 6, 2], "r"),
+    ]),
+]
+
 NECK = [-1, 10, -3]  # the mane's pivot: "neck" undoes its 90 degree tilt, so the pieces below are upright
 OUTFIT_BONES = [
     ("upperBody", "root", NECK, [90, 0, 0], []),
@@ -220,7 +228,7 @@ def main():
         "format_version": "1.12.0",
         "minecraft:geometry": [
             geometry("geometry.jf_jerry", WOLF_BONES, 64, 32),
-            geometry("geometry.jf_jerry_extras", EXTRAS_BONES + OUTFIT_BONES, 64, 32),
+            geometry("geometry.jf_jerry_extras", EXTRAS_BONES + ALERT_BONES + OUTFIT_BONES, 64, 32),
             geometry("geometry.jf_jerry_face", FACE_BONES, 6, 4),  # textures are 8x (48x32)
             geometry("geometry.jf_tennis_ball", BALL_BONES, 64, 32),
         ],

@@ -326,6 +326,28 @@
           ]
         }
       }
+    },
+    "controller.animation.jf_jerry.alert": {
+      "initial_state": "hidden",
+      "states": {
+        "hidden": {
+          "transitions": [
+            {
+              "shown": "query.property('jf:alert')"
+            }
+          ]
+        },
+        "shown": {
+          "animations": [
+            "alert_pop"
+          ],
+          "transitions": [
+            {
+              "hidden": "!query.property('jf:alert')"
+            }
+          ]
+        }
+      }
     }
   }
 }

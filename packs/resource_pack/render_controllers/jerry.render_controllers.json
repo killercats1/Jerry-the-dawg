@@ -42,6 +42,9 @@
           "speaker": "query.property('jf:speaking')"
         },
         {
+          "alert": "query.property('jf:alert')"
+        },
+        {
           "mouth_bone": "query.property('jf:bone')"
         },
         {

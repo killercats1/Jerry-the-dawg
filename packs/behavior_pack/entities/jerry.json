@@ -21,6 +21,11 @@
           "default": false,
           "client_sync": true
         },
+        "jf:alert": {
+          "type": "bool",
+          "default": false,
+          "client_sync": true
+        },
         "jf:face": {
           "type": "int",
           "range": [

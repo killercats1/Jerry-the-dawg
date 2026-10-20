@@ -59,7 +59,9 @@
         "sneeze": "animation.jf_jerry.sneeze",
         "baby": "animation.jf_jerry.baby",
         "listen": "animation.jf_jerry.listen",
-        "speaker_waves": "animation.jf_jerry.speaker_waves"
+        "speaker_waves": "animation.jf_jerry.speaker_waves",
+        "alert_pop": "animation.jf_jerry.alert_pop",
+        "alert": "controller.animation.jf_jerry.alert"
       },
       "scripts": {
         "animate": [
@@ -70,6 +72,7 @@
           "tail_wag",
           "pose",
           "speaker",
+          "alert",
           {
             "baby": "query.is_baby"
           }

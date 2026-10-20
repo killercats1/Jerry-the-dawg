@@ -1599,6 +1599,48 @@
           "scale": "math.mod(query.anim_time, 0.9) > 0.45 ? 1.0 : 0.0"
         }
       }
+    },
+    "animation.jf_jerry.alert_pop": {
+      "loop": "hold_on_last_frame",
+      "animation_length": 0.35,
+      "bones": {
+        "alert": {
+          "scale": {
+            "0.0": [
+              0.2,
+              0.2,
+              0.2
+            ],
+            "0.15": [
+              1.4,
+              1.4,
+              1.4
+            ],
+            "0.35": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "position": {
+            "0.0": [
+              0,
+              0,
+              0
+            ],
+            "0.15": [
+              0,
+              2,
+              0
+            ],
+            "0.35": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
     }
   }
 }
