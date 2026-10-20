@@ -68,7 +68,7 @@ EXTRAS_BONES = [
 
 # Outfits (part of geometry.jf_jerry_extras). Each piece is made of small solid-colour cubes that
 # all sample one swatch pixel of jf_jerry_extras.png. Coordinates are model space, like the wolf.
-SWATCHES = ["r", "w", "P", "c", "Y", "f", "F", "l", "L", "k", "e", "N", "u"]  # 2x2 squares from (0, 16)
+SWATCHES = ["r", "w", "P", "c", "Y", "f", "F", "l", "L", "k", "e", "N", "u", "R"]  # 2x2 squares from (0, 16)
 
 
 def solid(origin, size, colour):
@@ -80,8 +80,8 @@ def solid(origin, size, colour):
 # The red "!" that pops up over him when he hears his name. Shown when jf:alert is on.
 ALERT_BONES = [
     ("alert", "root", [0, 17.5, -7], None, [
-        solid([-1, 17.5, -8], [2, 2, 2], "r"),
-        solid([-1, 20.5, -8], [2, 6, 2], "r"),
+        solid([-1, 17.5, -8], [2, 2, 2], "R"),
+        solid([-1, 20.5, -8], [2, 6, 2], "R"),
     ]),
 ]
 
@@ -159,7 +159,8 @@ PALETTE.update({"O": (236, 230, 214, 255), "Q": (196, 188, 170, 255),  # bone co
                 "P": (240, 98, 146, 255), "c": (79, 195, 247, 255),       # party pink, sky blue
                 "f": (244, 143, 177, 255), "F": (186, 104, 200, 255),     # flower pink, lilac
                 "l": (102, 187, 106, 255), "L": (56, 142, 60, 255),       # leaves
-                "e": (66, 66, 66, 255), "N": (21, 40, 90, 255), "u": (48, 79, 254, 255)})  # frames, navy, blue
+                "e": (66, 66, 66, 255), "N": (21, 40, 90, 255), "u": (48, 79, 254, 255),  # frames, navy, blue
+                "R": (140, 12, 30, 255)})  # the dark red "!" from the video
 
 SPEAKER_ICON = [  # a hollow outline, like the one in the video
     "....kk....",
